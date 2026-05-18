@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF009688);
+  AppColors._();
 
-  static const background = Color(0xFFF5F7FA);
+  static const Color primary = Color(0xff25624F);
 
-  static const sidebar = Colors.white;
+  static const Color secondary = Color(0xffB8A47C);
 
-  static const textPrimary = Color(0xFF1E293B);
+  static const Color background = Color(0xffF5F7FA);
 
-  static const textSecondary = Color(0xFF64748B);
+  static const Color surface = Colors.white;
 
-  static const border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xff1E1E1E);
 
-  static const card = Colors.white;
+  static const Color textSecondary = Color(0xff817D7D);
+
+  static const Color error = Color(0xffEB2222);
+
+  static const Color lightPrimary = Color(0xffEAF3F0);
+
+  static const Color border = Color(0xffE5E7EB);
 }

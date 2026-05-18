@@ -24,20 +24,67 @@ class LoginPage extends StatelessWidget {
               Expanded(
                 flex: 6,
                 child: Container(
-                  color: AppColors.primary,
-                  child: const Center(
-                    child: Text(
-                      'مديرية التربية في ريف دمشق',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primary,
+                        AppColors.secondary,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 60,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(28),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.12),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.school_rounded,
+                              color: Colors.white,
+                              size: 90,
+                            ),
+                          ),
+                          const SizedBox(height: 36),
+                          const Text(
+                            'مديرية التربية\nفي ريف دمشق',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 48,
+                              height: 1.4,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          Text(
+                            'منصة الإدارة التعليمية الرقمية',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 18,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-
             Expanded(
               flex: 4,
               child: Container(
@@ -45,7 +92,7 @@ class LoginPage extends StatelessWidget {
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
-                    child:  ConstrainedBox(
+                    child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: 420),
                       child: LoginForm(),
                     ),

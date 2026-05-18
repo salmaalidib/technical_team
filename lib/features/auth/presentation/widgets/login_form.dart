@@ -87,7 +87,19 @@ class _LoginFormState extends State<LoginForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const FlutterLogo(size: 72),
+                Container(
+                  height: 90,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_person_rounded,
+                    size: 44,
+                    color: AppColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 const Text(
@@ -149,7 +161,7 @@ class _LoginFormState extends State<LoginForm> {
                       },
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: AppColors.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
