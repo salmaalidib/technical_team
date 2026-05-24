@@ -20,4 +20,5 @@ class AppColors {
   static const Color lightPrimary = Color(0xffEAF3F0);
 
   static const Color border = Color(0xffE5E7EB);
+  static const Color inputBackground = Color(0xffECE8DC);
 }

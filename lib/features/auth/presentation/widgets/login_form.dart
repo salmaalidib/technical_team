@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:technical_team/core/utils/app_snackbar.dart';
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_bloc.dart';
@@ -41,10 +42,9 @@ class _LoginFormState extends State<LoginForm> {
             context,
             message: "تم إرسال OTP",
           );
-          Navigator.pushNamed(
-            context,
-            "/otp",
-            arguments: state.response!.sessionId,
+          context.go(
+            '/otp',
+            extra: state.response!.sessionId,
           );
 
           Navigator.push(

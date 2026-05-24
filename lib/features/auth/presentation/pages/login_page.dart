@@ -71,7 +71,7 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 22),
                           Text(
-                            'منصة الإدارة التعليمية الرقمية',
+                            ' الفريق التقني الخاص بمديرية التربية',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),

@@ -9,7 +9,7 @@ import '../bloc/otp/otp_bloc.dart';
 import '../bloc/otp/otp_state.dart';
 
 import '../widgets/otp_form.dart';
-
+import 'package:go_router/go_router.dart';
 import '../../../../../shared/theme/app_colors.dart';
 
 class OtpPage extends StatelessWidget {
@@ -41,10 +41,7 @@ class OtpPage extends StatelessWidget {
                 message: "تم تسجيل الدخول بنجاح",
               );
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/dashboard",
-              );
+              context.go('/dashboard');
             }
 
             if (state.error?.isNotEmpty == true) {
