@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:technical_team/features/institutions/presentation/widgets/create_institution_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 
@@ -65,7 +66,13 @@ class InstitutionsHeader extends StatelessWidget {
           width: 240,
           height: 58,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.55),
+                builder: (_) => const CreateInstitutionDialog(),
+              );
+            },
             icon: const Icon(Icons.add_rounded, size: 24),
             label: const Text(
               'إنشاء مؤسسة جديدة',
