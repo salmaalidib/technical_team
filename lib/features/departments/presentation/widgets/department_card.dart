@@ -54,41 +54,36 @@ class _DepartmentCardState extends State<DepartmentCard> {
       ),
       child: Column(
         children: [
-          Row(
-            textDirection: TextDirection.ltr,
-            children: [
-              Row(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 720;
+
+              final stats = Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   DepartmentStatItem(
-                    value: widget.transactionsCount,
-                    label: 'معاملة',
-                    color: AppColors.primary,
-                  ),
+                      value: widget.transactionsCount,
+                      label: 'معاملة',
+                      color: AppColors.primary),
                   const SizedBox(width: 42),
                   DepartmentStatItem(
-                    value: widget.employeesCount,
-                    label: 'موظف',
-                    color: AppColors.secondary,
-                  ),
+                      value: widget.employeesCount,
+                      label: 'موظف',
+                      color: AppColors.secondary),
                   const SizedBox(width: 42),
                   DepartmentStatItem(
-                    value: widget.sectionsCount,
-                    label: 'شعبة',
-                    color: AppColors.primary,
-                  ),
+                      value: widget.sectionsCount,
+                      label: 'شعبة',
+                      color: AppColors.primary),
                 ],
-              ),
-              const Spacer(),
-              Row(
+              );
+
+              final titleSide = Row(
                 textDirection: TextDirection.rtl,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   InkWell(
-                    onTap: () {
-                      setState(() {
-                        isExpanded = !isExpanded;
-                      });
-                    },
+                    onTap: () => setState(() => isExpanded = !isExpanded),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       width: 48,
@@ -114,43 +109,64 @@ class _DepartmentCardState extends State<DepartmentCard> {
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
-                      Icons.apartment_outlined,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: const Icon(Icons.apartment_outlined,
+                        color: Colors.white, size: 28),
                   ),
                   const SizedBox(width: 18),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.title,
-                        textAlign: TextAlign.right,
-                        textDirection: TextDirection.rtl,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'مديرية التربية الرئيسية',
-                        textAlign: TextAlign.right,
-                        textDirection: TextDirection.rtl,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          textDirection: TextDirection.rtl,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'مديرية التربية الرئيسية',
+                          textDirection: TextDirection.rtl,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(alignment: Alignment.centerRight, child: titleSide),
+                    const SizedBox(height: 18),
+                    Align(alignment: Alignment.centerLeft, child: stats),
+                  ],
+                );
+              }
+
+              return Row(
+                textDirection: TextDirection.ltr,
+                children: [
+                  stats,
+                  const Spacer(),
+                  Flexible(
+                      child: Align(
+                          alignment: Alignment.centerRight, child: titleSide)),
+                ],
+              );
+            },
           ),
           if (isExpanded) ...[
             const SizedBox(height: 28),
