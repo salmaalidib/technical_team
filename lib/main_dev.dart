@@ -26,14 +26,11 @@ class TechnicalTeamApp extends StatelessWidget {
     //   theme: AppTheme.lightTheme,
     //   routerConfig: AppRouter.router,
     // );
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: dotenv.env['APP_NAME'] ?? 'Technical Team',
       theme: AppTheme.lightTheme,
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const DashboardPage(),
-      },
+      routerConfig: AppRouter.router,
     );
   }
 }

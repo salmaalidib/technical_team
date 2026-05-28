@@ -10,42 +10,40 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShell(
-      child: Container(
-        color: const Color(0xffF0EFE7),
-        padding: const EdgeInsets.fromLTRB(40, 26, 40, 30),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'لوحة التحكم الرئيسية',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+    return Container(
+      color: const Color(0xffF0EFE7),
+      padding: const EdgeInsets.fromLTRB(40, 26, 40, 30),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: const [
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'لوحة التحكم الرئيسية',
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'نظرة شاملة على النظام الإلكتروني',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
+            ),
+            const SizedBox(height: 6),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'نظرة شاملة على النظام الإلكتروني',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: AppColors.textSecondary,
                 ),
               ),
-              SizedBox(height: 34),
-              _QuickActionsSection(),
-              SizedBox(height: 32),
-              _StatsSection(),
-            ],
-          ),
+            ),
+            SizedBox(height: 34),
+            _QuickActionsSection(),
+            SizedBox(height: 32),
+            _StatsSection(),
+          ],
         ),
       ),
     );

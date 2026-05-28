@@ -1,41 +1,56 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/institutions/presentation/pages/institutions_page.dart';
+import '../../shared/layouts/app_shell.dart';
 
 class AppRouter {
-  static const bool devBypassAuth = true;
-
   static final router = GoRouter(
     initialLocation: '/dashboard',
-
-    redirect: (context, state) {
-      if (devBypassAuth) {
-        return null;
-      }
-
-      return null;
-    },
-
+    routerNeglect: true,
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginPage(),
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: LoginPage(),
+        ),
       ),
       GoRoute(
         path: '/otp',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final sessionId = state.extra as String?;
           if (sessionId == null || sessionId.isEmpty) {
-            return const LoginPage();
+            return const NoTransitionPage(child: LoginPage());
           }
-          return OtpPage(sessionId: sessionId);
+
+          return NoTransitionPage(
+            child: OtpPage(sessionId: sessionId),
+          );
         },
       ),
-      GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => const DashboardPage(),
+      ShellRoute(
+        pageBuilder: (context, state, child) {
+          return NoTransitionPage(
+            child: AppShell(child: child),
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/institutions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: InstitutionsPage(),
+            ),
+          ),
+        ],
       ),
     ],
   );
