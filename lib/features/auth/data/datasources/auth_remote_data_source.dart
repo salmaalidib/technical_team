@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/errors/app_exception.dart';
+import '../../../../core/errors/failures.dart';
+
 class AuthRemoteDataSource {
   final Dio dio;
 
@@ -9,54 +12,37 @@ class AuthRemoteDataSource {
     String userName,
     String password,
   ) async {
-
-    print("USERNAME: $userName");
-    print("PASSWORD: $password");
-
-    final response = await dio.post(
-      '/api/auth/login',
-
-      data: {
-        "userName": userName.trim(),
-        "password": password.trim(),
-      },
-
-      options: Options(
-        headers: {
-          "accept": "application/json",
-          "Content-Type": "application/json",
+    try {
+      final response = await dio.post(
+        '/api/auth/login',
+        data: {
+          'userName': userName.trim(),
+          'password': password.trim(),
         },
-      ),
-    );
+      );
 
-    print(response.data);
-
-    return response;
+      return response;
+    } catch (e) {
+      throw AppException(ErrorHandler.handle(e));
+    }
   }
 
   Future<Response> verifyOtp({
-  required String sessionId,
-  required String otp,
-}) async {
+    required String sessionId,
+    required String otp,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/api/auth/verify-otp/login',
+        data: {
+          'session_id': sessionId,
+          'otp': otp.trim(),
+        },
+      );
 
-  final response = await dio.post(
-    '/api/auth/verify-otp/login',
-
-    data: {
-      "session_id": sessionId,
-      "otp": otp,
-    },
-
-    options: Options(
-      headers: {
-        "accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    ),
-  );
-
-  print(response.data);
-
-  return response;
-}
+      return response;
+    } catch (e) {
+      throw AppException(ErrorHandler.handle(e));
+    }
+  }
 }

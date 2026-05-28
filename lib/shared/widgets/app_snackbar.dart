@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/theme/app_colors.dart';
+import '../theme/app_colors.dart';
 
 class AppSnackBar {
   static void show(

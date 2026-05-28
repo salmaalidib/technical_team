@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:technical_team/core/utils/app_snackbar.dart';
+import 'package:technical_team/core/di/injection.dart';
+import 'package:technical_team/shared/widgets/app_snackbar.dart';
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_event.dart';

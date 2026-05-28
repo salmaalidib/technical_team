@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DioClient {
+  DioClient._();
+
   static Dio create() {
     final dio = Dio(
       BaseOptions(

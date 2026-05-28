@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:technical_team/core/di/injection.dart';
 
-import '../../../../core/utils/app_snackbar.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 
 import '../../di/injection.dart';
 

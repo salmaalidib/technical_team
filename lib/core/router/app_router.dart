@@ -9,7 +9,7 @@ import '../../shared/layouts/app_shell.dart';
 
 class AppRouter {
   static final router = GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/login',
     routerNeglect: true,
     routes: [
       GoRoute(
