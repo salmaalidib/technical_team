@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:technical_team/features/departments/presentation/pages/departments_page.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
@@ -48,6 +49,12 @@ class AppRouter {
             path: '/institutions',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: InstitutionsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/departments',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DepartmentsPage(),
             ),
           ),
         ],
