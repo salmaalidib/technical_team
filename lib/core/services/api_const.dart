@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 ///
 /// Mirrors the backend routes mounted in `DirectorateOFEducation/src/app.js`.
 /// The backend issues a short-lived access token plus a rotating refresh
+/// token. The client refreshes via [refresh] on 401 and revokes the refresh
 /// token via [logout].
 ///
 /// Paths are relative (no leading slash); Dio resolves them against

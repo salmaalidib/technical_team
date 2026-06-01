@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../bloc/departments_bloc.dart';
+import 'create_department_dialog.dart';
 
 class DepartmentsHeader extends StatelessWidget {
   const DepartmentsHeader({super.key});
@@ -47,7 +50,17 @@ class DepartmentsHeader extends StatelessWidget {
           width: 210,
           height: 54,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              final bloc = context.read<DepartmentsBloc>();
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.55),
+                builder: (_) => BlocProvider.value(
+                  value: bloc,
+                  child: const CreateDepartmentDialog(),
+                ),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
