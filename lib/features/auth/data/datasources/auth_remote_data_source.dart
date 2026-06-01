@@ -1,48 +1,45 @@
-import 'package:dio/dio.dart';
+import 'package:dartz/dartz.dart';
 
-import '../../../../core/errors/app_exception.dart';
+import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/services/api_const.dart';
+import '../../../../core/services/api_service.dart';
 
+/// Thin remote contract for the auth endpoints. It only chooses the endpoint
+/// and request body; all error mapping lives in [ApiService], so every method
+/// returns `Either<Failure, dynamic>` (the raw decoded body on the right).
 class AuthRemoteDataSource {
-  final Dio dio;
+  final ApiService api;
 
-  AuthRemoteDataSource(this.dio);
+  AuthRemoteDataSource(this.api);
 
-  Future<Response> login(
+  static const _endPoints = EndPoints();
+
+  Future<Either<Failure, dynamic>> login(
     String userName,
     String password,
-  ) async {
-    try {
-      final response = await dio.post(
-        '/api/auth/login',
-        data: {
-          'userName': userName.trim(),
-          'password': password.trim(),
-        },
-      );
-
-      return response;
-    } catch (e) {
-      throw AppException(ErrorHandler.handle(e));
-    }
+  ) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.login,
+      body: {
+        'userName': userName.trim(),
+        'password': password.trim(),
+      },
+    );
   }
 
-  Future<Response> verifyOtp({
+  Future<Either<Failure, dynamic>> verifyOtp({
     required String sessionId,
     required String otp,
-  }) async {
-    try {
-      final response = await dio.post(
-        '/api/auth/verify-otp/login',
-        data: {
-          'session_id': sessionId,
-          'otp': otp.trim(),
-        },
-      );
-
-      return response;
-    } catch (e) {
-      throw AppException(ErrorHandler.handle(e));
-    }
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.verifyLoginOtp,
+      body: {
+        'session_id': sessionId,
+        'otp': otp.trim(),
+      },
+    );
   }
 }

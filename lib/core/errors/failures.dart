@@ -1,26 +1,32 @@
-import 'package:dio/dio.dart';
+import 'package:equatable/equatable.dart';
 
-class ErrorHandler {
-  static String handle(dynamic error) {
-    if (error is DioException) {
-      final data = error.response?.data;
+/// Base type for every recoverable error that crosses a layer boundary.
+///
+/// All network/error mapping happens once inside `ApiService`; the result is
+/// surfaced on the `Left` side of `Either<Failure, T>` and carries a
+/// ready-to-display Arabic [message]. Presentation layers only read
+/// `failure.message` — they never inspect Dio or status codes.
+abstract class Failure extends Equatable {
+  final String message;
 
-      if (data is Map && data['message'] != null) {
-        return data['message'].toString();
-      }
+  const Failure(this.message);
 
-      if (error.type == DioExceptionType.connectionTimeout ||
-          error.type == DioExceptionType.receiveTimeout) {
-        return 'انتهت مهلة الاتصال بالخادم';
-      }
+  @override
+  List<Object?> get props => [message];
+}
 
-      if (error.type == DioExceptionType.connectionError) {
-        return 'تعذر الاتصال بالخادم';
-      }
+/// Server-side or unexpected response error (4xx/5xx, malformed payload).
+class ServerFailure extends Failure {
+  const ServerFailure(super.message);
+}
 
-      return 'حدث خطأ في الخادم';
-    }
+/// Connectivity / timeout error — the request never reached a usable response.
+class NetworkFailure extends Failure {
+  const NetworkFailure(super.message);
+}
 
-    return 'حدث خطأ غير متوقع';
-  }
+/// Authentication / authorization error (401/403) after the interceptor has
+/// already had its chance to refresh the access token.
+class AuthFailure extends Failure {
+  const AuthFailure(super.message);
 }

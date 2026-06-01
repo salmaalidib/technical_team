@@ -4,8 +4,6 @@ import 'package:technical_team/core/di/injection.dart';
 
 import '../../../../shared/widgets/app_snackbar.dart';
 
-import '../../di/injection.dart';
-
 import '../bloc/otp/otp_bloc.dart';
 import '../bloc/otp/otp_state.dart';
 

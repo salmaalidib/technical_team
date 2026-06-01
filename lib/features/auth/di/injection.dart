@@ -1,6 +1,5 @@
-import 'package:dio/dio.dart';
-
 import '../../../core/di/injection.dart';
+import '../../../core/services/api_service.dart';
 
 import '../data/datasources/auth_remote_data_source.dart';
 import '../data/repositories/auth_repository_impl.dart';
@@ -17,13 +16,16 @@ import '../../../core/storage/secure_storage_service.dart';
 Future<void> setupAuthInjection() async {
   if (!getIt.isRegistered<AuthRemoteDataSource>()) {
     getIt.registerLazySingleton<AuthRemoteDataSource>(
-      () => AuthRemoteDataSource(getIt<Dio>()),
+      () => AuthRemoteDataSource(getIt<ApiService>()),
     );
   }
 
   if (!getIt.isRegistered<AuthRepository>()) {
     getIt.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(getIt<AuthRemoteDataSource>()),
+      () => AuthRepositoryImpl(
+        getIt<AuthRemoteDataSource>(),
+        getIt<SecureStorageService>(),
+      ),
     );
   }
 
@@ -44,9 +46,6 @@ Future<void> setupAuthInjection() async {
   );
 
   getIt.registerFactory<OtpBloc>(
-    () => OtpBloc(
-      getIt<VerifyOtpUseCase>(),
-      getIt<SecureStorageService>(),
-    ),
+    () => OtpBloc(getIt<VerifyOtpUseCase>()),
   );
 }

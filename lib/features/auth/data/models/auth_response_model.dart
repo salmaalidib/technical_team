@@ -1,5 +1,4 @@
 import '../../domain/entities/auth_response.dart';
-import '../../domain/entities/user.dart';
 import 'user_model.dart';
 
 class AuthResponseModel extends AuthResponse {
@@ -8,6 +7,7 @@ class AuthResponseModel extends AuthResponse {
     required super.user,
     required super.roles,
     required super.token,
+    required super.refreshToken,
   });
 
   factory AuthResponseModel.fromJson(
@@ -19,6 +19,7 @@ class AuthResponseModel extends AuthResponse {
     user: UserModel.fromJson(data['user']),
     roles: List<int>.from(data['roles'] ?? []),
     token: data['token'] ?? '',
+    refreshToken: data['refreshToken'] ?? '',
   );
 }
 }

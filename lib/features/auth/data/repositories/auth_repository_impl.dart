@@ -1,41 +1,68 @@
-import 'package:technical_team/features/auth/data/models/auth_response_model.dart';
-import 'package:technical_team/features/auth/domain/entities/auth_response.dart';
+import 'package:dartz/dartz.dart';
 
+import '../../../../core/errors/failures.dart';
+import '../../../../core/storage/secure_storage_service.dart';
+import '../../domain/entities/auth_response.dart';
 import '../../domain/entities/login_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../models/auth_response_model.dart';
 import '../models/login_response_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remote;
+  final SecureStorageService storage;
 
-  AuthRepositoryImpl(this.remote);
+  AuthRepositoryImpl(this.remote, this.storage);
 
   @override
-  Future<LoginResponse> login({
+  Future<Either<Failure, LoginResponse>> login({
     required String userName,
     required String password,
   }) async {
-
-    final response = await remote.login(
-      userName,
-      password,
+    final result = await remote.login(userName, password);
+    return result.fold<Either<Failure, LoginResponse>>(
+      (failure) => Left(failure),
+      (data) {
+        try {
+          return Right(
+            LoginResponseModel.fromJson(data as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة استجابة الخادم.'));
+        }
+      },
     );
-
-    return LoginResponseModel.fromJson(response.data);
   }
 
   @override
-  Future<AuthResponse> verifyOtp({
+  Future<Either<Failure, AuthResponse>> verifyOtp({
     required String sessionId,
     required String otp,
   }) async {
+    final result = await remote.verifyOtp(sessionId: sessionId, otp: otp);
+    return result.fold<Future<Either<Failure, AuthResponse>>>(
+      (failure) async => Left(failure),
+      (data) async {
+        try {
+          final authResponse =
+              AuthResponseModel.fromJson(data as Map<String, dynamic>);
 
-    final response = await remote.verifyOtp(
-      sessionId: sessionId,
-      otp: otp,
+          // Persisting the session is a data-layer concern, so it lives here
+          // (not in the bloc). Any storage failure becomes a Left(Failure),
+          // keeping ALL error handling inside the Either flow.
+          await storage.saveTokens(
+            token: authResponse.token,
+            refreshToken: authResponse.refreshToken,
+          );
+
+          return Right(authResponse);
+        } catch (_) {
+          return const Left(
+            ServerFailure('تعذّر إكمال تسجيل الدخول، يرجى المحاولة لاحقًا.'),
+          );
+        }
+      },
     );
-
-    return AuthResponseModel.fromJson(response.data);
   }
 }

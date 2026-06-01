@@ -12,3 +12,14 @@ PRODUCT_BUNDLE_IDENTIFIER = com.example.technicalTeam
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+
+// Development team for code signing. Required because the Keychain
+// (keychain-access-groups) entitlement used by flutter_secure_storage must be
+// signed with a development certificate. ID for: eyadabukm@gmail.com.
+DEVELOPMENT_TEAM = 822LW4D5HD
+
+// The Flutter template ships CODE_SIGN_IDENTITY = "-" (ad-hoc) at the project
+// level, which can't satisfy the Keychain entitlement. Override it for the
+// Runner target so automatic signing uses the development certificate.
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_IDENTITY[sdk=macosx*] = Apple Development

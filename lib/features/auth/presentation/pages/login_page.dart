@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:technical_team/core/di/injection.dart';
 
-import '../../di/injection.dart';
 import '../bloc/login/login_bloc.dart';
 
 import '../../../../../shared/theme/app_colors.dart';

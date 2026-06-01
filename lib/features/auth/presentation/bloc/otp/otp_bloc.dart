@@ -1,18 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:technical_team/core/storage/secure_storage_service.dart';
 
 import '../../../domain/usecases/verify_otp_usecase.dart';
-import 'package:dio/dio.dart';
 import 'otp_event.dart';
 import 'otp_state.dart';
 
 class OtpBloc extends Bloc<OtpEvent, OtpState> {
-
   final VerifyOtpUseCase useCase;
-  final SecureStorageService storage;
 
-  OtpBloc(this.useCase, this.storage) : super(OtpState()) {
-
+  OtpBloc(this.useCase) : super(OtpState()) {
     on<OtpSubmitted>(_onSubmit);
   }
 
@@ -20,43 +15,24 @@ class OtpBloc extends Bloc<OtpEvent, OtpState> {
     OtpSubmitted event,
     Emitter<OtpState> emit,
   ) async {
-
     emit(state.copyWith(isLoading: true));
 
-    try {
+    // Token persistence now happens inside the repository, so the bloc only
+    // maps the Either result to UI state — no storage, no try/catch.
+    final result = await useCase(
+      sessionId: event.sessionId,
+      otp: event.otp,
+    );
 
-final response = await useCase(
-  sessionId: event.sessionId,
-  otp: event.otp,
-);
-
-await storage.saveToken(response.token);
-
-
-      emit(state.copyWith(
+    result.fold(
+      (failure) => emit(state.copyWith(
+        isLoading: false,
+        error: failure.message,
+      )),
+      (response) => emit(state.copyWith(
         isLoading: false,
         response: response,
-      ));
-
-   } catch (e) {
-
-  print("OTP ERROR: $e");
-
-  String errorMessage = "حدث خطأ غير متوقع";
-
-  if (e is DioException) {
-
-   errorMessage =
-    e.response?.data["message"]?.toString() ??
-    "حدث خطأ أثناء التحقق";
-  }
-
-  emit(
-    state.copyWith(
-      isLoading: false,
-      error: errorMessage,
-    ),
-  );
-}
+      )),
+    );
   }
 }

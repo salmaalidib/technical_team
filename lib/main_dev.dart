@@ -3,7 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:technical_team/core/di/injection.dart';
 
 import 'package:technical_team/features/auth/di/injection.dart';
-import 'package:technical_team/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:technical_team/features/departments/di/injection.dart';
+import 'package:technical_team/features/institutions/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -13,6 +14,8 @@ void main() async {
   await dotenv.load(fileName: "env/dev.env");
   await setupCoreInjection();
   await setupAuthInjection();
+  await setupInstitutionsInjection();
+  await setupDepartmentsInjection();
 
   runApp(const TechnicalTeamApp());
 }

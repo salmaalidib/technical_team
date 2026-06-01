@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:technical_team/core/di/injection.dart';
 import 'package:technical_team/shared/widgets/app_snackbar.dart';
-import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_event.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_state.dart';
-
-import 'package:technical_team/features/auth/presentation/bloc/otp/otp_bloc.dart';
-
-import 'package:technical_team/features/auth/presentation/pages/otp_page.dart';
 import '../../../../../shared/theme/app_colors.dart';
 
 class LoginForm extends StatefulWidget {
@@ -43,30 +37,18 @@ class _LoginFormState extends State<LoginForm> {
             context,
             message: "تم إرسال OTP",
           );
+          // Navigate once via go_router — OtpPage builds its own OtpBloc.
           context.go(
             '/otp',
             extra: state.response!.sessionId,
           );
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BlocProvider(
-                create: (_) => getIt<OtpBloc>(),
-                child: OtpPage(
-                  sessionId: state.response!.sessionId,
-                ),
-              ),
-            ),
-          );
         }
 
         if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.error!),
-              backgroundColor: Colors.red,
-            ),
+          AppSnackBar.show(
+            context,
+            message: state.error!,
+            isError: true,
           );
         }
       },

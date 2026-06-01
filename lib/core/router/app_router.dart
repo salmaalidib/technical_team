@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:technical_team/features/departments/presentation/pages/departments_page.dart';
 
@@ -6,13 +5,20 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/institutions/presentation/pages/institutions_page.dart';
+import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 
 class AppRouter {
   static final router = GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/splash',
     routerNeglect: true,
     routes: [
+      GoRoute(
+        path: '/splash',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SplashPage(),
+        ),
+      ),
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => const NoTransitionPage(

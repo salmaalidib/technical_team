@@ -5,20 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "technical_team",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "technical_team (profile mode)",
+            "name": "technical_team (dev)",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main_dev.dart"
+        },
+        {
+            "name": "technical_team (dev - profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
             "flutterMode": "profile"
         },
         {
-            "name": "technical_team (release mode)",
+            "name": "technical_team (dev - release)",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main_dev.dart",
             "flutterMode": "release"
         }
     ]
