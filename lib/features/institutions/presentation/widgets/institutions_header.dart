@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:technical_team/features/institutions/presentation/widgets/create_institution_dialog.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../bloc/institutions_bloc.dart';
+import 'create_institution_dialog.dart';
 
 class InstitutionsHeader extends StatelessWidget {
   const InstitutionsHeader({super.key});
@@ -67,10 +69,16 @@ class InstitutionsHeader extends StatelessWidget {
           height: 58,
           child: ElevatedButton.icon(
             onPressed: () {
+              // Hand the page's bloc to the dialog so its form can submit
+              // through the same InstitutionsBloc instance.
+              final bloc = context.read<InstitutionsBloc>();
               showDialog(
                 context: context,
                 barrierColor: Colors.black.withOpacity(0.55),
-                builder: (_) => const CreateInstitutionDialog(),
+                builder: (_) => BlocProvider.value(
+                  value: bloc,
+                  child: const CreateInstitutionDialog(),
+                ),
               );
             },
             icon: const Icon(Icons.add_rounded, size: 24),

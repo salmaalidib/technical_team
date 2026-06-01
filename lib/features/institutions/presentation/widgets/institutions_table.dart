@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
-import 'institution_action_button.dart';
+import '../../domain/entities/institution.dart';
+import '../bloc/institutions_bloc.dart';
+import '../bloc/institutions_event.dart';
+import '../bloc/institutions_state.dart';
 
-class InstitutionsTable extends StatelessWidget {
+class InstitutionsTable extends StatefulWidget {
   const InstitutionsTable({super.key});
+
+  @override
+  State<InstitutionsTable> createState() => _InstitutionsTableState();
+}
+
+class _InstitutionsTableState extends State<InstitutionsTable> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Institution> _filter(List<Institution> all) {
+    final q = _query.trim();
+    if (q.isEmpty) return all;
+    return all
+        .where((i) =>
+            i.name.contains(q) || (i.parentName?.contains(q) ?? false))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -29,32 +57,20 @@ class InstitutionsTable extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  _TableSearch(),
-                  _TableHeader(),
-                  _InstitutionRow(
-                    number: '1',
-                    name: 'مديرية التربية الرئيسية',
-                    parent: '-',
-                    location: 'دمشق',
-                  ),
-                  _InstitutionRow(
-                    number: '2',
-                    name: 'مديرية التربية - ريف دمشق',
-                    parent: 'مديرية التربية الرئيسية',
-                    location: 'ريف دمشق',
-                  ),
-                  _InstitutionRow(
-                    number: '6',
-                    name: 'مركز التدريب التربوي',
-                    parent: 'مديرية التربية الرئيسية',
-                    location: 'دمشق',
-                  ),
-                  SizedBox(height: 8),
-                  _TableFooter(),
-                ],
+              child: BlocBuilder<InstitutionsBloc, InstitutionsState>(
+                builder: (context, state) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _TableSearch(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
+                      const _TableHeader(),
+                      _buildBody(context, state),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -62,10 +78,60 @@ class InstitutionsTable extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildBody(BuildContext context, InstitutionsState state) {
+    switch (state.status) {
+      case InstitutionsStatus.initial:
+      case InstitutionsStatus.loading:
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 60),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      case InstitutionsStatus.failure:
+        return _ErrorState(
+          message: state.error ?? 'حدث خطأ غير متوقع',
+          onRetry: () =>
+              context.read<InstitutionsBloc>().add(const LoadInstitutions()),
+        );
+      case InstitutionsStatus.success:
+        final items = _filter(state.institutions);
+        if (items.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 60),
+            child: Center(
+              child: Text(
+                'لا توجد مؤسسات لعرضها',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...List.generate(
+              items.length,
+              (i) => _InstitutionRow(number: '${i + 1}', institution: items[i]),
+            ),
+            const SizedBox(height: 8),
+            _TableFooter(
+              shown: items.length,
+              total: state.institutions.length,
+            ),
+          ],
+        );
+    }
+  }
 }
 
 class _TableSearch extends StatelessWidget {
-  const _TableSearch();
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const _TableSearch({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +140,8 @@ class _TableSearch extends StatelessWidget {
       child: SizedBox(
         height: 52,
         child: TextField(
+          controller: controller,
+          onChanged: onChanged,
           textDirection: TextDirection.rtl,
           textAlign: TextAlign.right,
           decoration: InputDecoration(
@@ -121,7 +189,6 @@ class _TableHeader extends StatelessWidget {
           Expanded(flex: 3, child: Text('اسم المؤسسة', style: _headerStyle)),
           Expanded(flex: 3, child: Text('المؤسسة الأم', style: _headerStyle)),
           Expanded(flex: 2, child: Text('الموقع', style: _headerStyle)),
-          SizedBox(width: 150, child: Text('الإجراءات', style: _headerStyle)),
         ],
       ),
     );
@@ -130,16 +197,9 @@ class _TableHeader extends StatelessWidget {
 
 class _InstitutionRow extends StatelessWidget {
   final String number;
-  final String name;
-  final String parent;
-  final String location;
+  final Institution institution;
 
-  const _InstitutionRow({
-    required this.number,
-    required this.name,
-    required this.parent,
-    required this.location,
-  });
+  const _InstitutionRow({required this.number, required this.institution});
 
   @override
   Widget build(BuildContext context) {
@@ -155,43 +215,19 @@ class _InstitutionRow extends StatelessWidget {
         textDirection: TextDirection.rtl,
         children: [
           SizedBox(width: 70, child: Text(number, style: _cellStyle)),
-          Expanded(flex: 3, child: Text(name, style: _cellStyle)),
+          Expanded(flex: 3, child: Text(institution.name, style: _cellStyle)),
           Expanded(
             flex: 3,
             child: Text(
-              parent,
+              institution.parentName ?? '-',
               style: _cellStyle.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              location,
+              institution.locationName ?? '-',
               style: _cellStyle.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          const SizedBox(
-            width: 150,
-            child: Row(
-              children: [
-                InstitutionActionButton(
-                  icon: Icons.visibility_outlined,
-                  backgroundColor: AppColors.lightPrimary,
-                  iconColor: AppColors.primary,
-                ),
-                SizedBox(width: 8),
-                InstitutionActionButton(
-                  icon: Icons.edit_outlined,
-                  backgroundColor: Color(0xffF3EFE7),
-                  iconColor: AppColors.secondary,
-                ),
-                SizedBox(width: 8),
-                InstitutionActionButton(
-                  icon: Icons.delete_outline,
-                  backgroundColor: Color(0xffFDEAEA),
-                  iconColor: Color(0xff9B2437),
-                ),
-              ],
             ),
           ),
         ],
@@ -200,65 +236,60 @@ class _InstitutionRow extends StatelessWidget {
   }
 }
 
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('إعادة المحاولة'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TableFooter extends StatelessWidget {
-  const _TableFooter();
+  final int shown;
+  final int total;
+
+  const _TableFooter({required this.shown, required this.total});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 74,
       padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Row(
-        children: [
-          const Text(
-            'عرض 1 - 3 من 3',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                splashRadius: 18,
-                icon: const Icon(
-                  Icons.chevron_left,
-                  size: 24,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Container(
-                width: 72,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF0EFE7),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  '1 / 1',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {},
-                splashRadius: 18,
-                icon: const Icon(
-                  Icons.chevron_right,
-                  size: 24,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
+      alignment: Alignment.centerRight,
+      child: Text(
+        'عرض $shown من $total',
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
       ),
     );
   }

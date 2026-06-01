@@ -1,70 +1,145 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
+import '../bloc/institutions_bloc.dart';
+import '../bloc/institutions_event.dart';
+import '../bloc/institutions_state.dart';
 
-class CreateInstitutionDialog extends StatelessWidget {
+class CreateInstitutionDialog extends StatefulWidget {
   const CreateInstitutionDialog({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Dialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: SizedBox(
-          width: 620,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DialogHeader(),
-              const Divider(height: 1, color: AppColors.border),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 28, 28, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: const [
-                    _DialogSubtitle(),
-                    SizedBox(height: 30),
-                    _FieldLabel('اسم المؤسسة *'),
-                    SizedBox(height: 8),
-                    _TextInput(hint: 'أدخل اسم المؤسسة...'),
-                    SizedBox(height: 22),
-                    _FieldLabel('المؤسسة الأم (اختياري)'),
-                    SizedBox(height: 8),
-                    _DropdownInput(
-                      hint: 'اختر الموقع...',
-                      items: [
-                        'ريف دمشق',
-                      ],
-                    ),
-                    SizedBox(height: 22),
-                    _FieldLabel('الموقع *'),
-                    SizedBox(height: 8),
-                    _DropdownInput(
-                      hint: 'اختر الموقع...',
-                      items: [
-                        'ريف دمشق',
-                      ],
-                    ),
-                    SizedBox(height: 28),
-                    Divider(height: 1, color: AppColors.border),
-                    SizedBox(height: 18),
-                    _DialogActions(),
-                  ],
-                ),
-              ),
-            ],
+  State<CreateInstitutionDialog> createState() =>
+      _CreateInstitutionDialogState();
+}
+
+class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
+  final _nameController = TextEditingController();
+  int? _parentId;
+  int? _locationId;
+  bool _nameTouched = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit(BuildContext context) {
+    final name = _nameController.text.trim();
+    setState(() => _nameTouched = true);
+    if (name.isEmpty) return;
+
+    context.read<InstitutionsBloc>().add(
+          CreateInstitutionRequested(
+            name: name,
+            parentId: _parentId,
+            locationId: _locationId,
           ),
-        ),
-      ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<InstitutionsBloc, InstitutionsState>(
+      listenWhen: (p, c) => p.formStatus != c.formStatus,
+      listener: (context, state) {
+        if (state.formStatus == InstitutionFormStatus.success) {
+          AppSnackBar.show(context, message: 'تم إنشاء المؤسسة بنجاح');
+          Navigator.of(context).pop();
+        } else if (state.formStatus == InstitutionFormStatus.failure) {
+          AppSnackBar.show(
+            context,
+            message: state.formError ?? 'تعذّر إنشاء المؤسسة',
+            isError: true,
+          );
+        }
+      },
+      builder: (context, state) {
+        final submitting =
+            state.formStatus == InstitutionFormStatus.submitting;
+
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SizedBox(
+              width: 620,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DialogHeader(onClose: () => Navigator.pop(context)),
+                  const Divider(height: 1, color: AppColors.border),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 28, 28, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _DialogSubtitle(),
+                        const SizedBox(height: 30),
+                        const _FieldLabel('اسم المؤسسة *'),
+                        const SizedBox(height: 8),
+                        _TextInput(
+                          controller: _nameController,
+                          hint: 'أدخل اسم المؤسسة...',
+                          errorText: _nameTouched &&
+                                  _nameController.text.trim().isEmpty
+                              ? 'هذا الحقل مطلوب'
+                              : null,
+                        ),
+                        const SizedBox(height: 22),
+                        const _FieldLabel('المؤسسة الأم (اختياري)'),
+                        const SizedBox(height: 8),
+                        _IdDropdown(
+                          hint: 'اختر المؤسسة الأم...',
+                          value: _parentId,
+                          items: {
+                            for (final i in state.institutions) i.id: i.name,
+                          },
+                          onChanged: (v) => setState(() => _parentId = v),
+                        ),
+                        const SizedBox(height: 22),
+                        const _FieldLabel('الموقع (اختياري)'),
+                        const SizedBox(height: 8),
+                        _IdDropdown(
+                          hint: 'اختر الموقع...',
+                          value: _locationId,
+                          items: {
+                            for (final l in state.locations) l.id: l.name,
+                          },
+                          onChanged: (v) => setState(() => _locationId = v),
+                        ),
+                        const SizedBox(height: 28),
+                        const Divider(height: 1, color: AppColors.border),
+                        const SizedBox(height: 18),
+                        _DialogActions(
+                          submitting: submitting,
+                          onSave: () => _submit(context),
+                          onCancel: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _DialogHeader extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const _DialogHeader({required this.onClose});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -81,7 +156,7 @@ class _DialogHeader extends StatelessWidget {
           ),
           const Spacer(),
           InkWell(
-            onTap: () => Navigator.pop(context),
+            onTap: onClose,
             borderRadius: BorderRadius.circular(8),
             child: Container(
               width: 38,
@@ -111,18 +186,11 @@ class _DialogSubtitle extends StatelessWidget {
     return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.apartment_outlined,
-          color: AppColors.primary,
-          size: 25,
-        ),
+        Icon(Icons.apartment_outlined, color: AppColors.primary, size: 25),
         SizedBox(width: 10),
         Text(
           'قم بإدخال بيانات المؤسسة الجديدة',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
         ),
       ],
     );
@@ -149,131 +217,126 @@ class _FieldLabel extends StatelessWidget {
 }
 
 class _TextInput extends StatelessWidget {
+  final TextEditingController controller;
   final String hint;
+  final String? errorText;
 
-  const _TextInput({required this.hint});
+  const _TextInput({
+    required this.controller,
+    required this.hint,
+    this.errorText,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: TextField(
-        textAlign: TextAlign.right,
-        textDirection: TextDirection.rtl,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.primary),
-          ),
+    return TextField(
+      controller: controller,
+      textAlign: TextAlign.right,
+      textDirection: TextDirection.rtl,
+      decoration: InputDecoration(
+        hintText: hint,
+        errorText: errorText,
+        hintStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 15,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),
     );
   }
 }
 
-class _DropdownInput extends StatefulWidget {
-  final List<String> items;
+/// Dropdown over an `{ id: name }` map that yields the selected int id.
+class _IdDropdown extends StatelessWidget {
   final String hint;
+  final int? value;
+  final Map<int, String> items;
+  final ValueChanged<int?> onChanged;
 
-  const _DropdownInput({
-    required this.items,
+  const _IdDropdown({
     required this.hint,
+    required this.value,
+    required this.items,
+    required this.onChanged,
   });
 
   @override
-  State<_DropdownInput> createState() => _DropdownInputState();
-}
-
-class _DropdownInputState extends State<_DropdownInput> {
-  String? selectedValue;
-
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: DropdownButtonFormField<String>(
-        value: selectedValue,
-        isExpanded: true,
-        icon: const Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: AppColors.textPrimary,
+    return DropdownButtonFormField<int>(
+      value: items.containsKey(value) ? value : null,
+      isExpanded: true,
+      icon: const Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(
-              color: AppColors.border,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(
-              color: AppColors.border,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(
-              color: AppColors.primary,
-            ),
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-        hint: Text(
-          widget.hint,
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary),
         ),
-        items: widget.items.map((item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                item,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
+      ),
+      hint: Text(
+        hint,
+        textAlign: TextAlign.right,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+      ),
+      items: items.entries
+          .map(
+            (e) => DropdownMenuItem<int>(
+              value: e.key,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  e.value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            selectedValue = value;
-          });
-        },
-      ),
+          )
+          .toList(),
+      onChanged: onChanged,
     );
   }
 }
 
 class _DialogActions extends StatelessWidget {
-  const _DialogActions();
+  final bool submitting;
+  final VoidCallback onSave;
+  final VoidCallback onCancel;
+
+  const _DialogActions({
+    required this.submitting,
+    required this.onSave,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +346,7 @@ class _DialogActions extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -292,13 +355,22 @@ class _DialogActions extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'حفظ المؤسسة',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: submitting
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'حفظ المؤسسة',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -307,7 +379,7 @@ class _DialogActions extends StatelessWidget {
           child: SizedBox(
             height: 48,
             child: TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: submitting ? null : onCancel,
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.inputBackground,
                 foregroundColor: AppColors.primary,
@@ -317,10 +389,7 @@ class _DialogActions extends StatelessWidget {
               ),
               child: const Text(
                 'إلغاء',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
           ),
