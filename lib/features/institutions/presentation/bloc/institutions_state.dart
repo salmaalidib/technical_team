@@ -1,37 +1,34 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/enums/form_status.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/institution.dart';
 import '../../domain/entities/location_option.dart';
 
-enum InstitutionsStatus { initial, loading, success, failure }
-
-/// Status of the create-institution form submission.
-enum InstitutionFormStatus { idle, submitting, success, failure }
-
 class InstitutionsState extends Equatable {
-  final InstitutionsStatus status;
+  final RequestStatus status;
   final List<Institution> institutions;
   final List<LocationOption> locations;
   final String? error;
 
-  final InstitutionFormStatus formStatus;
+  final FormStatus formStatus;
   final String? formError;
 
   const InstitutionsState({
-    this.status = InstitutionsStatus.initial,
+    this.status = RequestStatus.initial,
     this.institutions = const [],
     this.locations = const [],
     this.error,
-    this.formStatus = InstitutionFormStatus.idle,
+    this.formStatus = FormStatus.idle,
     this.formError,
   });
 
   InstitutionsState copyWith({
-    InstitutionsStatus? status,
+    RequestStatus? status,
     List<Institution>? institutions,
     List<LocationOption>? locations,
     String? error,
-    InstitutionFormStatus? formStatus,
+    FormStatus? formStatus,
     String? formError,
   }) {
     return InstitutionsState(

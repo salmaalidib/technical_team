@@ -1,21 +1,19 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/enums/form_status.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../../institutions/domain/entities/institution.dart';
 import '../../domain/entities/department.dart';
 import '../../domain/entities/department_overview.dart';
 
-enum DepartmentsStatus { initial, loading, success, failure }
-
-enum DepartmentFormStatus { idle, submitting, success, failure }
-
 class DepartmentsState extends Equatable {
-  final DepartmentsStatus status;
+  final RequestStatus status;
   final List<Department> departments;
   final List<Institution> organizations;
   final String? error;
 
   /// Create-department form submission.
-  final DepartmentFormStatus formStatus;
+  final FormStatus formStatus;
   final String? formError;
 
   /// Per-department overview cache + the ids whose overview is in flight.
@@ -30,11 +28,11 @@ class DepartmentsState extends Equatable {
   final String? actionError;
 
   const DepartmentsState({
-    this.status = DepartmentsStatus.initial,
+    this.status = RequestStatus.initial,
     this.departments = const [],
     this.organizations = const [],
     this.error,
-    this.formStatus = DepartmentFormStatus.idle,
+    this.formStatus = FormStatus.idle,
     this.formError,
     this.overviews = const {},
     this.loadingOverviews = const {},
@@ -43,11 +41,11 @@ class DepartmentsState extends Equatable {
   });
 
   DepartmentsState copyWith({
-    DepartmentsStatus? status,
+    RequestStatus? status,
     List<Department>? departments,
     List<Institution>? organizations,
     String? error,
-    DepartmentFormStatus? formStatus,
+    FormStatus? formStatus,
     String? formError,
     Map<int, DepartmentOverview>? overviews,
     Set<int>? loadingOverviews,

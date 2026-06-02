@@ -43,6 +43,7 @@ dependencies:
   equatable: ^2.0.8
   dartz: ^0.10.1
   logger: ^2.7.0
+  pretty_dio_logger: ^1.4.0
   flutter_svg: ^2.1.0
   responsive_framework: ^1.5.1
   google_fonts: ^6.3.0

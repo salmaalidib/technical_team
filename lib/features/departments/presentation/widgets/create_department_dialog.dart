@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/enums/form_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/departments_bloc.dart';
@@ -45,10 +46,10 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
     return BlocConsumer<DepartmentsBloc, DepartmentsState>(
       listenWhen: (p, c) => p.formStatus != c.formStatus,
       listener: (context, state) {
-        if (state.formStatus == DepartmentFormStatus.success) {
+        if (state.formStatus == FormStatus.success) {
           AppSnackBar.show(context, message: 'تم إنشاء القسم بنجاح');
           Navigator.of(context).pop();
-        } else if (state.formStatus == DepartmentFormStatus.failure) {
+        } else if (state.formStatus == FormStatus.failure) {
           AppSnackBar.show(
             context,
             message: state.formError ?? 'تعذّر إنشاء القسم',
@@ -57,7 +58,7 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
         }
       },
       builder: (context, state) {
-        final submitting = state.formStatus == DepartmentFormStatus.submitting;
+        final submitting = state.formStatus == FormStatus.submitting;
 
         // Parent options = departments inside the chosen organization.
         final parentOptions = {

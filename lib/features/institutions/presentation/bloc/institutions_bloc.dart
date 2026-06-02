@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/enums/form_status.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../domain/usecases/create_institution_usecase.dart';
 import '../../domain/usecases/get_institutions_usecase.dart';
 import '../../domain/usecases/get_locations_usecase.dart';
@@ -25,9 +27,9 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
     Emitter<InstitutionsState> emit,
   ) async {
     emit(state.copyWith(
-      status: InstitutionsStatus.loading,
+      status: RequestStatus.loading,
       error: null,
-      formStatus: InstitutionFormStatus.idle,
+      formStatus: FormStatus.idle,
       formError: null,
     ));
 
@@ -35,7 +37,7 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
 
     await institutionsResult.fold(
       (failure) async => emit(state.copyWith(
-        status: InstitutionsStatus.failure,
+        status: RequestStatus.failure,
         error: failure.message,
       )),
       (institutions) async {
@@ -45,7 +47,7 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
         final locations = locationsResult.getOrElse(() => state.locations);
 
         emit(state.copyWith(
-          status: InstitutionsStatus.success,
+          status: RequestStatus.success,
           institutions: institutions,
           locations: locations,
           error: null,
@@ -59,7 +61,7 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
     Emitter<InstitutionsState> emit,
   ) async {
     emit(state.copyWith(
-      formStatus: InstitutionFormStatus.submitting,
+      formStatus: FormStatus.submitting,
       formError: null,
     ));
 
@@ -71,11 +73,11 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
 
     await result.fold(
       (failure) async => emit(state.copyWith(
-        formStatus: InstitutionFormStatus.failure,
+        formStatus: FormStatus.failure,
         formError: failure.message,
       )),
       (_) async {
-        emit(state.copyWith(formStatus: InstitutionFormStatus.success));
+        emit(state.copyWith(formStatus: FormStatus.success));
         add(const LoadInstitutions());
       },
     );

@@ -11,6 +11,20 @@
             "program": "lib/main_dev.dart"
         },
         {
+            // Web run with a PERSISTENT Chrome profile so flutter_secure_storage
+            // (localStorage) survives between runs — otherwise each `flutter run
+            // -d chrome` opens a fresh temp profile and the saved tokens are
+            // wiped, sending you back to /login on every launch.
+            "name": "technical_team (dev - web persistent)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
+            "deviceId": "chrome",
+            "args": [
+                "--web-browser-flag=--user-data-dir=${workspaceFolder}/.dart_tool/chrome-dev-profile"
+            ]
+        },
+        {
             "name": "technical_team (dev - profile)",
             "request": "launch",
             "type": "dart",

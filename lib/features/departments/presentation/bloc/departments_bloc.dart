@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/enums/form_status.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/department_overview.dart';
 import '../../domain/usecases/create_department_usecase.dart';
 import '../../domain/usecases/get_department_organizations_usecase.dart';
@@ -34,9 +36,9 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
     Emitter<DepartmentsState> emit,
   ) async {
     emit(state.copyWith(
-      status: DepartmentsStatus.loading,
+      status: RequestStatus.loading,
       error: null,
-      formStatus: DepartmentFormStatus.idle,
+      formStatus: FormStatus.idle,
       formError: null,
     ));
 
@@ -44,7 +46,7 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
 
     await departmentsResult.fold(
       (failure) async => emit(state.copyWith(
-        status: DepartmentsStatus.failure,
+        status: RequestStatus.failure,
         error: failure.message,
       )),
       (departments) async {
@@ -53,7 +55,7 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
             organizationsResult.getOrElse(() => state.organizations);
 
         emit(state.copyWith(
-          status: DepartmentsStatus.success,
+          status: RequestStatus.success,
           departments: departments,
           organizations: organizations,
           // A fresh list invalidates the cached overviews.
@@ -94,7 +96,7 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
     Emitter<DepartmentsState> emit,
   ) async {
     emit(state.copyWith(
-      formStatus: DepartmentFormStatus.submitting,
+      formStatus: FormStatus.submitting,
       formError: null,
     ));
 
@@ -106,11 +108,11 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
 
     await result.fold(
       (failure) async => emit(state.copyWith(
-        formStatus: DepartmentFormStatus.failure,
+        formStatus: FormStatus.failure,
         formError: failure.message,
       )),
       (_) async {
-        emit(state.copyWith(formStatus: DepartmentFormStatus.success));
+        emit(state.copyWith(formStatus: FormStatus.success));
         add(const LoadDepartments());
       },
     );

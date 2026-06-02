@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/institution.dart';
 import '../bloc/institutions_bloc.dart';
@@ -81,19 +82,19 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
 
   Widget _buildBody(BuildContext context, InstitutionsState state) {
     switch (state.status) {
-      case InstitutionsStatus.initial:
-      case InstitutionsStatus.loading:
+      case RequestStatus.initial:
+      case RequestStatus.loading:
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 60),
           child: Center(child: CircularProgressIndicator()),
         );
-      case InstitutionsStatus.failure:
+      case RequestStatus.failure:
         return _ErrorState(
           message: state.error ?? 'حدث خطأ غير متوقع',
           onRetry: () =>
               context.read<InstitutionsBloc>().add(const LoadInstitutions()),
         );
-      case InstitutionsStatus.success:
+      case RequestStatus.success:
         final items = _filter(state.institutions);
         if (items.isEmpty) {
           return const Padding(

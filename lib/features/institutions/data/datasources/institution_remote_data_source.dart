@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-
 import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/api_const.dart';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
@@ -56,19 +57,19 @@ class _DepartmentsBody extends StatelessWidget {
           p.status != c.status || p.departments != c.departments,
       builder: (context, state) {
         switch (state.status) {
-          case DepartmentsStatus.initial:
-          case DepartmentsStatus.loading:
+          case RequestStatus.initial:
+          case RequestStatus.loading:
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 80),
               child: Center(child: CircularProgressIndicator()),
             );
-          case DepartmentsStatus.failure:
+          case RequestStatus.failure:
             return _ErrorState(
               message: state.error ?? 'حدث خطأ غير متوقع',
               onRetry: () =>
                   context.read<DepartmentsBloc>().add(const LoadDepartments()),
             );
-          case DepartmentsStatus.success:
+          case RequestStatus.success:
             if (state.departments.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 80),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/enums/form_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/institutions_bloc.dart';
@@ -46,10 +47,10 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
     return BlocConsumer<InstitutionsBloc, InstitutionsState>(
       listenWhen: (p, c) => p.formStatus != c.formStatus,
       listener: (context, state) {
-        if (state.formStatus == InstitutionFormStatus.success) {
+        if (state.formStatus == FormStatus.success) {
           AppSnackBar.show(context, message: 'تم إنشاء المؤسسة بنجاح');
           Navigator.of(context).pop();
-        } else if (state.formStatus == InstitutionFormStatus.failure) {
+        } else if (state.formStatus == FormStatus.failure) {
           AppSnackBar.show(
             context,
             message: state.formError ?? 'تعذّر إنشاء المؤسسة',
@@ -59,7 +60,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
       },
       builder: (context, state) {
         final submitting =
-            state.formStatus == InstitutionFormStatus.submitting;
+            state.formStatus == FormStatus.submitting;
 
         return Directionality(
           textDirection: TextDirection.rtl,
