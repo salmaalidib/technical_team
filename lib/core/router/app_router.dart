@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/institutions/presentation/pages/institutions_page.dart';
+import '../../features/roles/presentation/pages/roles_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 
@@ -61,6 +62,12 @@ class AppRouter {
             path: '/departments',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: DepartmentsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/roles',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: RolesPage(),
             ),
           ),
         ],

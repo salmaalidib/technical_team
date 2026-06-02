@@ -35,6 +35,15 @@ class DepartmentRemoteDataSource {
     );
   }
 
+  /// Leaf departments (no children) of an organization, each with a full-path
+  /// name. Used to populate the department dropdown when assigning roles.
+  Future<Either<Failure, dynamic>> getLeaves(int organizationId) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.departmentLeavesByOrg(organizationId),
+    );
+  }
+
   Future<Either<Failure, dynamic>> createDepartment(
     Map<String, dynamic> body,
   ) {

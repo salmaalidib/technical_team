@@ -5,10 +5,12 @@ import '../../../institutions/data/models/institution_model.dart';
 import '../../../institutions/domain/entities/institution.dart';
 import '../../domain/entities/department.dart';
 import '../../domain/entities/department_overview.dart';
+import '../../domain/entities/leaf_department.dart';
 import '../../domain/repositories/department_repository.dart';
 import '../datasources/department_remote_data_source.dart';
 import '../models/department_model.dart';
 import '../models/department_overview_model.dart';
+import '../models/leaf_department_model.dart';
 
 class DepartmentRepositoryImpl implements DepartmentRepository {
   final DepartmentRemoteDataSource remote;
@@ -50,6 +52,27 @@ class DepartmentRepositoryImpl implements DepartmentRepository {
           return Right(list);
         } catch (_) {
           return const Left(ServerFailure('تعذّر قراءة قائمة المؤسسات.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<LeafDepartment>>> getLeafDepartments(
+    int organizationId,
+  ) async {
+    final result = await remote.getLeaves(organizationId);
+    return result.fold<Either<Failure, List<LeafDepartment>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final list = (_payload(body) as List)
+              .map((e) =>
+                  LeafDepartmentModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return Right(list);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة الأقسام.'));
         }
       },
     );

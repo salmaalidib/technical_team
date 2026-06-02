@@ -138,9 +138,8 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
       )),
       (updated) {
         final departments = state.departments
-            .map((d) => d.id == updated.id
-                ? d.copyWith(isActive: updated.isActive)
-                : d)
+            .map((d) =>
+                d.id == updated.id ? d.copyWith(isActive: updated.isActive) : d)
             .toList();
         // Drop the stale overview for this department.
         final overviews = {...state.overviews}..remove(event.id);

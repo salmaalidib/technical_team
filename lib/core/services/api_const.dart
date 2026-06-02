@@ -18,8 +18,10 @@ class EndPoints {
       'api/auth/verify-otp/login'; // step 2 → token + refreshToken + user + roles
 
   // ===== auth — token lifecycle =====
-  String get refresh => 'api/auth/refresh'; // { refreshToken } → { token, refreshToken }
-  String get logout => 'api/auth/logout'; // { refreshToken } → revokes refresh token
+  String get refresh =>
+      'api/auth/refresh'; // { refreshToken } → { token, refreshToken }
+  String get logout =>
+      'api/auth/logout'; // { refreshToken } → revokes refresh token
 
   // ===== organization (bearer token required) =====
   String get organizations => 'api/organization'; // GET list · POST create
@@ -34,6 +36,11 @@ class EndPoints {
       'api/department/$id/toggle-status'; // PATCH is_active
   String departmentLeavesByOrg(Object orgId) =>
       'api/department/by-organization/$orgId/leaves';
+
+  // ===== role (bearer token required) =====
+  String get roles => 'api/role'; // GET list · POST create
+  String roleToggleStatus(Object id) =>
+      'api/role/$id/toggle-status'; // PATCH is_active
 
   // ===== location (bearer token required) =====
   String get locations => 'api/location'; // GET list

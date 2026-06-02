@@ -8,6 +8,7 @@ import '../domain/usecases/create_department_usecase.dart';
 import '../domain/usecases/get_department_organizations_usecase.dart';
 import '../domain/usecases/get_department_overview_usecase.dart';
 import '../domain/usecases/get_departments_usecase.dart';
+import '../domain/usecases/get_leaf_departments_usecase.dart';
 import '../domain/usecases/toggle_department_status_usecase.dart';
 import '../presentation/bloc/departments_bloc.dart';
 
@@ -39,6 +40,12 @@ Future<void> setupDepartmentsInjection() async {
   if (!getIt.isRegistered<GetDepartmentOverviewUseCase>()) {
     getIt.registerLazySingleton<GetDepartmentOverviewUseCase>(
       () => GetDepartmentOverviewUseCase(getIt<DepartmentRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<GetLeafDepartmentsUseCase>()) {
+    getIt.registerLazySingleton<GetLeafDepartmentsUseCase>(
+      () => GetLeafDepartmentsUseCase(getIt<DepartmentRepository>()),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:technical_team/core/di/injection.dart';
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/departments/di/injection.dart';
 import 'package:technical_team/features/institutions/di/injection.dart';
+import 'package:technical_team/features/roles/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -16,6 +17,7 @@ void main() async {
   await setupAuthInjection();
   await setupInstitutionsInjection();
   await setupDepartmentsInjection();
+  await setupRolesInjection();
 
   runApp(const TechnicalTeamApp());
 }

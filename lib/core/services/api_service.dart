@@ -14,7 +14,8 @@ import '../errors/failures.dart';
 /// every feature behaves identically. Token attach/refresh and the
 /// `401 → /login` redirect are owned by the `AuthInterceptor`; this service
 /// never touches tokens or navigation.
-class ApiService {
+class 
+ApiService {
   final dio.Dio _dio;
 
   ApiService(this._dio);
