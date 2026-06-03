@@ -284,7 +284,7 @@ class _DisabledField extends StatelessWidget {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.inputBackground.withValues(alpha: 0.4),
+        color: AppColors.inputBackground.withOpacity(0.4),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.border),
       ),

@@ -54,7 +54,7 @@ class RolesHeader extends StatelessWidget {
               final bloc = context.read<RolesBloc>();
               showDialog(
                 context: context,
-                barrierColor: Colors.black.withValues(alpha: 0.55),
+                barrierColor: Colors.black.withOpacity(0.55),
                 builder: (_) => BlocProvider.value(
                   value: bloc,
                   child: const CreateRoleDialog(),

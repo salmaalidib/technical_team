@@ -51,7 +51,7 @@ class _FieldsViewState extends State<_FieldsView> {
     final bloc = context.read<FieldsBloc>();
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: Colors.black.withOpacity(0.55),
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: CreateFieldDialog(field: field),
@@ -63,7 +63,7 @@ class _FieldsViewState extends State<_FieldsView> {
     final bloc = context.read<FilesBloc>();
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: Colors.black.withOpacity(0.55),
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: CreateFileDialog(file: file),
