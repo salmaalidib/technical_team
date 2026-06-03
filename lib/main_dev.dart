@@ -4,6 +4,7 @@ import 'package:technical_team/core/di/injection.dart';
 
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/departments/di/injection.dart';
+import 'package:technical_team/features/fields/di/injection.dart';
 import 'package:technical_team/features/institutions/di/injection.dart';
 import 'package:technical_team/features/roles/di/injection.dart';
 import 'core/router/app_router.dart';
@@ -18,6 +19,7 @@ void main() async {
   await setupInstitutionsInjection();
   await setupDepartmentsInjection();
   await setupRolesInjection();
+  await setupFieldsInjection();
 
   runApp(const TechnicalTeamApp());
 }

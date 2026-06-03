@@ -42,6 +42,14 @@ class EndPoints {
   String roleToggleStatus(Object id) =>
       'api/role/$id/toggle-status'; // PATCH is_active
 
+  // ===== requirements: dynamic fields (bearer token required) =====
+  String get fields => 'api/fields'; // GET list · POST create
+  String fieldById(Object id) => 'api/fields/$id'; // PUT update (versioned)
+
+  // ===== requirements: file definitions (bearer token required) =====
+  String get files => 'api/files'; // GET list · POST create
+  String fileById(Object id) => 'api/files/$id'; // PUT update (versioned)
+
   // ===== location (bearer token required) =====
   String get locations => 'api/location'; // GET list
 }
