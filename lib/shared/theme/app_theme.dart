@@ -56,8 +56,7 @@ class AppTheme {
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    fontFamily: GoogleFonts.cairo().fontFamily,
-    textTheme: _cairoTextTheme,
+    fontFamily: 'Cairo',
     scaffoldBackgroundColor: AppColors.background,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
