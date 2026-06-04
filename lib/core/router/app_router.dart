@@ -9,10 +9,10 @@ import '../../features/institutions/presentation/pages/institutions_page.dart';
 import '../../features/roles/presentation/pages/roles_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
-
+import '../../features/employees/presentation/pages/employees_page.dart';
 class AppRouter {
   static final router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/dashboard',
     routerNeglect: true,
     routes: [
       GoRoute(
@@ -75,6 +75,12 @@ class AppRouter {
             path: '/fields',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: FieldsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/employees',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: EmployeesPage(),
             ),
           ),
         ],
