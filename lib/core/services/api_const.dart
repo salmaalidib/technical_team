@@ -41,6 +41,8 @@ class EndPoints {
   String get roles => 'api/role'; // GET list · POST create
   String roleToggleStatus(Object id) =>
       'api/role/$id/toggle-status'; // PATCH is_active
+  String rolesByDepartment(Object departmentId) =>
+      'api/role/by-department/$departmentId'; // GET roles of a leaf department
 
   // ===== requirements: dynamic fields (bearer token required) =====
   String get fields => 'api/fields'; // GET list · POST create

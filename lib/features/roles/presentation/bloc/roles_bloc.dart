@@ -5,6 +5,7 @@ import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../domain/usecases/create_role_usecase.dart';
+import '../../domain/usecases/get_roles_by_department_usecase.dart';
 import '../../domain/usecases/get_roles_usecase.dart';
 import '../../domain/usecases/toggle_role_status_usecase.dart';
 import 'roles_event.dart';
@@ -14,6 +15,7 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   final GetRolesUseCase getRoles;
   final CreateRoleUseCase createRole;
   final ToggleRoleStatusUseCase toggleStatus;
+  final GetRolesByDepartmentUseCase getRolesByDepartment;
 
   /// Reused across features: organizations come from `institutions`, the
   /// department options come from `departments`.
@@ -26,11 +28,13 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
     required this.toggleStatus,
     required this.getOrganizations,
     required this.getLeafDepartments,
+    required this.getRolesByDepartment,
   }) : super(const RolesState()) {
     on<LoadRoles>(_onLoad);
     on<LoadLeafDepartments>(_onLoadLeaves);
     on<CreateRoleRequested>(_onCreate);
     on<ToggleRoleStatus>(_onToggle);
+    on<LoadRolesByDepartment>(_onLoadByDepartment);
   }
 
   Future<void> _onLoad(LoadRoles event, Emitter<RolesState> emit) async {
@@ -144,6 +148,30 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
           togglingIds: toggling,
         ));
       },
+    );
+  }
+
+  Future<void> _onLoadByDepartment(
+    LoadRolesByDepartment event,
+    Emitter<RolesState> emit,
+  ) async {
+    emit(state.copyWith(
+      byDeptStatus: RequestStatus.loading,
+      byDeptId: event.departmentId,
+      rolesByDepartment: const [],
+    ));
+
+    final result = await getRolesByDepartment(event.departmentId);
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        byDeptStatus: RequestStatus.failure,
+        actionError: failure.message,
+      )),
+      (roles) => emit(state.copyWith(
+        byDeptStatus: RequestStatus.success,
+        rolesByDepartment: roles,
+      )),
     );
   }
 }

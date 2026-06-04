@@ -35,4 +35,11 @@ class RoleRemoteDataSource {
       endPoint: _endPoints.roleToggleStatus(id),
     );
   }
+
+  Future<Either<Failure, dynamic>> getRolesByDepartment(int departmentId) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.rolesByDepartment(departmentId),
+    );
+  }
 }

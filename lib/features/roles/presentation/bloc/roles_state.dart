@@ -5,6 +5,7 @@ import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/entities/leaf_department.dart';
 import '../../../institutions/domain/entities/institution.dart';
 import '../../domain/entities/role_assignment.dart';
+import '../../domain/entities/role_by_department.dart';
 
 class RolesState extends Equatable {
   /// Roles list load.
@@ -24,6 +25,11 @@ class RolesState extends Equatable {
   final List<LeafDepartment> leafDepartments;
   final int? leafOrgId;
 
+  /// Roles of a single (leaf) department: `GET /api/role/by-department/{id}`.
+  final RequestStatus byDeptStatus;
+  final List<RoleByDepartment> rolesByDepartment;
+  final int? byDeptId;
+
   /// Ids whose status toggle is in flight.
   final Set<int> togglingIds;
 
@@ -40,6 +46,9 @@ class RolesState extends Equatable {
     this.leafStatus = RequestStatus.initial,
     this.leafDepartments = const [],
     this.leafOrgId,
+    this.byDeptStatus = RequestStatus.initial,
+    this.rolesByDepartment = const [],
+    this.byDeptId,
     this.togglingIds = const {},
     this.actionError,
   });
@@ -54,6 +63,9 @@ class RolesState extends Equatable {
     RequestStatus? leafStatus,
     List<LeafDepartment>? leafDepartments,
     int? leafOrgId,
+    RequestStatus? byDeptStatus,
+    List<RoleByDepartment>? rolesByDepartment,
+    int? byDeptId,
     Set<int>? togglingIds,
     String? actionError,
   }) {
@@ -67,6 +79,9 @@ class RolesState extends Equatable {
       leafStatus: leafStatus ?? this.leafStatus,
       leafDepartments: leafDepartments ?? this.leafDepartments,
       leafOrgId: leafOrgId ?? this.leafOrgId,
+      byDeptStatus: byDeptStatus ?? this.byDeptStatus,
+      rolesByDepartment: rolesByDepartment ?? this.rolesByDepartment,
+      byDeptId: byDeptId ?? this.byDeptId,
       togglingIds: togglingIds ?? this.togglingIds,
       actionError: actionError,
     );
@@ -83,6 +98,9 @@ class RolesState extends Equatable {
         leafStatus,
         leafDepartments,
         leafOrgId,
+        byDeptStatus,
+        rolesByDepartment,
+        byDeptId,
         togglingIds,
         actionError,
       ];

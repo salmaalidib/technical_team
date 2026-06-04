@@ -2,9 +2,11 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/role_assignment.dart';
+import '../../domain/entities/role_by_department.dart';
 import '../../domain/repositories/role_repository.dart';
 import '../datasources/role_remote_data_source.dart';
 import '../models/role_assignment_model.dart';
+import '../models/role_by_department_model.dart';
 
 class RoleRepositoryImpl implements RoleRepository {
   final RoleRemoteDataSource remote;
@@ -75,6 +77,27 @@ class RoleRepositoryImpl implements RoleRepository {
           );
         } catch (_) {
           return const Left(ServerFailure('تعذّر تحديث حالة الدور.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<RoleByDepartment>>> getRolesByDepartment(
+    int departmentId,
+  ) async {
+    final result = await remote.getRolesByDepartment(departmentId);
+    return result.fold<Either<Failure, List<RoleByDepartment>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final list = (_payload(body) as List)
+              .map((e) =>
+                  RoleByDepartmentModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return Right(list);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة أدوار القسم.'));
         }
       },
     );

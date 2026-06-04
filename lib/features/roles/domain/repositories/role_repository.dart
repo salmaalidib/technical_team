@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/role_assignment.dart';
+import '../entities/role_by_department.dart';
 
 /// Role-assignment operations backed by `/api/role`.
 ///
@@ -19,4 +20,9 @@ abstract class RoleRepository {
   });
 
   Future<Either<Failure, RoleAssignment>> toggleStatus(int id);
+
+  /// Roles linked to a single (leaf) department — `{ id, name, code }` rows.
+  Future<Either<Failure, List<RoleByDepartment>>> getRolesByDepartment(
+    int departmentId,
+  );
 }

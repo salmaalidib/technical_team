@@ -49,3 +49,14 @@ class ToggleRoleStatus extends RolesEvent {
   @override
   List<Object?> get props => [id];
 }
+
+/// Loads the roles linked to a single (leaf) department — used when registering
+/// an employee after the department is chosen.
+class LoadRolesByDepartment extends RolesEvent {
+  final int departmentId;
+
+  const LoadRolesByDepartment(this.departmentId);
+
+  @override
+  List<Object?> get props => [departmentId];
+}
