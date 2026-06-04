@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:technical_team/features/employees/presentation/widgets/employee_details_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 
@@ -144,7 +145,7 @@ class EmployeeCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 9),
           Row(
-            children: const [
+            children: [
               Expanded(
                 child: _CardButton(
                   icon: Icons.description_outlined,
@@ -156,6 +157,25 @@ class EmployeeCard extends StatelessWidget {
                 child: _CardButton(
                   icon: Icons.visibility_outlined,
                   label: 'الملف',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierColor: Colors.black.withOpacity(0.55),
+                      builder: (_) => EmployeeDetailsDialog(
+                        firstName: 'أحمد',
+                        fatherName: 'محمد',
+                        motherName: 'فاطمة',
+                        lastName: 'الأحمد',
+                        nationalId: '01010101010',
+                        username: data.username,
+                        email: 'ahmad@edu.sy',
+                        phone: '0944123456',
+                        department: data.department,
+                        section: data.section,
+                        role: data.role,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -277,10 +297,12 @@ class _StatusBadge extends StatelessWidget {
 class _CardButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final VoidCallback? onPressed;
 
   const _CardButton({
     required this.icon,
     required this.label,
+    this.onPressed,
   });
 
   @override
@@ -288,7 +310,7 @@ class _CardButton extends StatelessWidget {
     return SizedBox(
       height: 32,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: AppColors.inputBackground,

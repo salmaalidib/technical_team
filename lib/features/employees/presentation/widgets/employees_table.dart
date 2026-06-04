@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:technical_team/features/employees/presentation/widgets/employee_details_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import 'employee_action_button.dart';
@@ -247,26 +248,45 @@ class _ActionsCell extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       textDirection: TextDirection.rtl,
-      children: const [
+      children: [
         EmployeeActionButton(
           icon: Icons.visibility_outlined,
           backgroundColor: AppColors.lightPrimary,
           iconColor: AppColors.primary,
+          onTap: () {
+            showDialog(
+              context: context,
+              barrierColor: Colors.black.withOpacity(0.55),
+              builder: (_) => const EmployeeDetailsDialog(
+                firstName: 'أحمد',
+                fatherName: 'محمد',
+                motherName: 'فاطمة',
+                lastName: 'الأحمد',
+                nationalId: '01010101010',
+                username: 'ahmad.ahmad',
+                email: 'ahmad@edu.sy',
+                phone: '0944123456',
+                department: 'دائرة التعليم الثانوي',
+                section: 'شعبة المدرسين',
+                role: 'موظف مختص',
+              ),
+            );
+          },
         ),
-        SizedBox(width: 6),
-        EmployeeActionButton(
+        const SizedBox(width: 6),
+        const EmployeeActionButton(
           icon: Icons.edit_outlined,
           backgroundColor: AppColors.inputBackground,
           iconColor: AppColors.secondary,
         ),
-        SizedBox(width: 6),
-        EmployeeActionButton(
+        const SizedBox(width: 6),
+        const EmployeeActionButton(
           icon: Icons.vpn_key_outlined,
           backgroundColor: AppColors.inputBackground,
           iconColor: AppColors.secondary,
         ),
-        SizedBox(width: 6),
-        EmployeeActionButton(
+        const SizedBox(width: 6),
+        const EmployeeActionButton(
           icon: Icons.block_rounded,
           backgroundColor: Color(0xffFDECEC),
           iconColor: AppColors.error,
