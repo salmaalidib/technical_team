@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:technical_team/features/employees/presentation/widgets/create_employee_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 
@@ -64,7 +65,13 @@ class EmployeesHeader extends StatelessWidget {
               width: 240,
               height: 58,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierColor: Colors.black.withOpacity(0.55),
+                    builder: (_) => const CreateEmployeeDialog(),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
