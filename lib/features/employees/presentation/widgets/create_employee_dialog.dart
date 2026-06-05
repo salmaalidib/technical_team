@@ -159,7 +159,20 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           p.formStatus != c.formStatus || p.actionError != c.actionError,
       listener: (context, state) {
         if (state.formStatus == FormStatus.success) {
+          final successMessage =
+              state.createdEmployee?.message ?? 'تم إنشاء حساب الموظف بنجاح';
+
+          final messenger = ScaffoldMessenger.of(context);
+
           Navigator.pop(context);
+
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(successMessage),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
 
         if (state.formStatus == FormStatus.failure) {
