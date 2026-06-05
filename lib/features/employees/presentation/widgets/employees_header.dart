@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:technical_team/features/employees/presentation/widgets/create_employee_dialog.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/employees_bloc.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class EmployeesHeader extends StatelessWidget {
@@ -66,10 +67,15 @@ class EmployeesHeader extends StatelessWidget {
               height: 58,
               child: ElevatedButton(
                 onPressed: () {
+                  final bloc = context.read<EmployeesBloc>();
+
                   showDialog(
                     context: context,
                     barrierColor: Colors.black.withOpacity(0.55),
-                    builder: (_) => const CreateEmployeeDialog(),
+                    builder: (_) => BlocProvider.value(
+                      value: bloc,
+                      child: const CreateEmployeeDialog(),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
