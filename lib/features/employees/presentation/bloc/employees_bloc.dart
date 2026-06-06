@@ -119,6 +119,8 @@ class EmployeesBloc extends Bloc<EmployeesEvent, EmployeesState> {
       email: event.email,
       phoneNumber: event.phoneNumber,
       password: event.password,
+      pin: event.pin,
+      confirmPin: event.confirmPin,
       organizationId: event.organizationId,
       departmentId: event.departmentId,
       roleId: event.roleId,

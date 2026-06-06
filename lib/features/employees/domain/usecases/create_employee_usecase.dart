@@ -19,6 +19,8 @@ class CreateEmployeeUseCase {
     required String email,
     required String phoneNumber,
     required String password,
+    required String pin,
+    required String confirmPin,
     required int organizationId,
     int? departmentId,
     int? roleId,
@@ -38,6 +40,8 @@ class CreateEmployeeUseCase {
       departmentId: departmentId,
       roleId: roleId,
       publicKey: publicKey,
+      pin: pin,
+      confirmPin: confirmPin,
     );
   }
 }

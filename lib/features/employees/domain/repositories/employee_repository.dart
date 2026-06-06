@@ -14,6 +14,8 @@ abstract class EmployeeRepository {
     required String email,
     required String phoneNumber,
     required String password,
+    required String pin,
+    required String confirmPin,
     required int organizationId,
     int? departmentId,
     int? roleId,

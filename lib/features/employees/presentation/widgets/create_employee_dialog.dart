@@ -27,13 +27,28 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   final _phone = TextEditingController();
   final _userName = TextEditingController();
   final _email = TextEditingController();
-  final _password = TextEditingController(text: '123456');
+  final _password = TextEditingController();
+  final _pin = TextEditingController();
   final _publicKey = TextEditingController();
+
+  String? _lastGeneratedPassword;
+  String? _lastGeneratedPin;
 
   int? _organizationId;
   int? _departmentId;
   int? _roleId;
   bool _touched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _generatePasswordAndPin();
+  }
+
+  void _generatePasswordAndPin() {
+    _password.text = getIt<KeyStorageService>().generatePassword();
+    _pin.text = getIt<KeyStorageService>().generatePin();
+  }
 
   @override
   void dispose() {
@@ -46,6 +61,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
     _userName.dispose();
     _email.dispose();
     _password.dispose();
+    _pin.dispose();
     _publicKey.dispose();
     super.dispose();
   }
@@ -55,12 +71,51 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
     return c.text.trim().isEmpty ? 'هذا الحقل مطلوب' : null;
   }
 
+  String? _pinError() {
+    if (!_touched) return null;
+    final value = _pin.text.trim();
+
+    if (value.isEmpty) return 'هذا الحقل مطلوب';
+    if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+      return 'يجب أن يكون PIN من 6 أرقام';
+    }
+
+    return null;
+  }
+
   void _showDialogMessage(String message) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('تنبيه'),
         content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCredentialsDialog({
+    required String message,
+    required String password,
+    required String pin,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('تم إنشاء الموظف بنجاح'),
+        content: SelectableText(
+          '$message\n\n'
+          'كلمة المرور المؤقتة:\n$password\n\n'
+          'رمز PIN:\n$pin\n\n'
+          'يجب تسليم كلمة المرور والـ PIN للموظف وحفظهما جيداً.',
+          textDirection: TextDirection.rtl,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -89,14 +144,22 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         _userName.text.trim().isEmpty ||
         _email.text.trim().isEmpty ||
         _password.text.trim().isEmpty ||
+        _pin.text.trim().isEmpty ||
+        !RegExp(r'^\d{6}$').hasMatch(_pin.text.trim()) ||
         _organizationId == null ||
         (hasDepartments && _departmentId == null) ||
         (hasRoles && _roleId == null)) {
-      _showDialogMessage('املئي كل الحقول المطلوبة أولاً');
+      _showDialogMessage('املأ كل الحقول المطلوبة أولاً');
       return;
     }
 
     try {
+      final generatedPassword = _password.text.trim();
+      final generatedPin = _pin.text.trim();
+
+      _lastGeneratedPassword = generatedPassword;
+      _lastGeneratedPin = generatedPin;
+
       debugPrint('GENERATING KEYS...');
       final keys = await getIt<KeyGenerationService>().generateKeys();
 
@@ -116,6 +179,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         userName: _userName.text.trim(),
         privateKey: keys.privateKey,
         publicKey: keys.publicKey,
+        pin: generatedPin,
       );
 
       _publicKey.text = keys.publicKey;
@@ -134,7 +198,9 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
               userName: _userName.text,
               email: _email.text,
               phoneNumber: _phone.text,
-              password: _password.text,
+              password: generatedPassword,
+              pin: generatedPin,
+              confirmPin: generatedPin,
               organizationId: _organizationId!,
               departmentId: _departmentId,
               roleId: _roleId,
@@ -162,17 +228,19 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           final successMessage =
               state.createdEmployee?.message ?? 'تم إنشاء حساب الموظف بنجاح';
 
-          final messenger = ScaffoldMessenger.of(context);
+          final password = _lastGeneratedPassword ?? '';
+          final pin = _lastGeneratedPin ?? '';
 
           Navigator.pop(context);
 
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(successMessage),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (!mounted) return;
+            _showCredentialsDialog(
+              message: successMessage,
+              password: password,
+              pin: pin,
+            );
+          });
         }
 
         if (state.formStatus == FormStatus.failure) {
@@ -189,8 +257,10 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         final hasRoles = state.roles.isNotEmpty;
 
         return Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -310,18 +380,37 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                           ),
                           const SizedBox(height: 18),
                           _TwoFieldsRow(
-                            first: _AppTextField(
+                            first: _GeneratedTextField(
                               controller: _password,
-                              label: 'كلمة المرور *',
-                              hint: '123456',
+                              label: 'كلمة المرور المؤقتة *',
+                              hint: 'يتم توليدها تلقائياً',
                               errorText: _required(_password),
+                              onGenerate: () {
+                                setState(() {
+                                  _password.text = getIt<KeyStorageService>()
+                                      .generatePassword();
+                                });
+                              },
                             ),
-                            second: _AppTextField(
-                              controller: _publicKey,
-                              label: 'Public Key',
-                              hint: 'يتم توليده تلقائياً عند الإنشاء',
-                              readOnly: true,
+                            second: _GeneratedTextField(
+                              controller: _pin,
+                              label: 'رمز PIN *',
+                              hint: '6 أرقام',
+                              errorText: _pinError(),
+                              onGenerate: () {
+                                setState(() {
+                                  _pin.text =
+                                      getIt<KeyStorageService>().generatePin();
+                                });
+                              },
                             ),
+                          ),
+                          const SizedBox(height: 18),
+                          _AppTextField(
+                            controller: _publicKey,
+                            label: 'Public Key',
+                            hint: 'يتم توليده تلقائياً عند الإنشاء',
+                            readOnly: true,
                           ),
                           const SizedBox(height: 26),
                           const Divider(height: 1, color: AppColors.border),
@@ -352,6 +441,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                                       _departmentId = null;
                                       _roleId = null;
                                     });
+
                                     if (v != null) {
                                       context
                                           .read<EmployeesBloc>()
@@ -386,6 +476,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                                       _departmentId = v;
                                       _roleId = null;
                                     });
+
                                     if (v != null) {
                                       context
                                           .read<EmployeesBloc>()
@@ -577,6 +668,57 @@ class _AppTextField extends StatelessWidget {
             hintText: hint,
             errorText: errorText,
             hintTextDirection: TextDirection.rtl,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GeneratedTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final VoidCallback onGenerate;
+  final String? errorText;
+
+  const _GeneratedTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.onGenerate,
+    this.errorText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.right,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.left,
+          decoration: InputDecoration(
+            hintText: hint,
+            errorText: errorText,
+            suffixIcon: IconButton(
+              tooltip: 'توليد جديد',
+              onPressed: onGenerate,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),

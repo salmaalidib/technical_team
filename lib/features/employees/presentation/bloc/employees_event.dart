@@ -39,6 +39,8 @@ class CreateEmployeeRequested extends EmployeesEvent {
   final String email;
   final String phoneNumber;
   final String password;
+  final String pin;
+  final String confirmPin;
   final int organizationId;
   final int? departmentId;
   final int? roleId;
@@ -54,6 +56,8 @@ class CreateEmployeeRequested extends EmployeesEvent {
     required this.email,
     required this.phoneNumber,
     required this.password,
+    required this.pin,
+    required this.confirmPin,
     required this.organizationId,
     this.departmentId,
     this.roleId,
@@ -71,6 +75,8 @@ class CreateEmployeeRequested extends EmployeesEvent {
         email,
         phoneNumber,
         password,
+        pin,
+        confirmPin,
         organizationId,
         departmentId,
         roleId,
