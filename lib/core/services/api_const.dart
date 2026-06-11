@@ -44,13 +44,13 @@ class EndPoints {
   String rolesByDepartment(Object departmentId) =>
       'api/role/by-department/$departmentId'; // GET roles of a leaf department
 
-  // ===== requirements: dynamic fields (bearer token required) =====
-  String get fields => 'api/fields'; // GET list · POST create
-  String fieldById(Object id) => 'api/fields/$id'; // PUT update (versioned)
-
-  // ===== requirements: file definitions (bearer token required) =====
-  String get files => 'api/files'; // GET list · POST create
-  String fileById(Object id) => 'api/files/$id'; // PUT update (versioned)
+  // ===== requirements: dynamic field widgets (bearer token required) =====
+  String get textFields => 'api/text-fields'; // GET list · POST create
+  String get radioGroups => 'api/radio-groups'; // GET list · POST create
+  String get textDropdowns => 'api/text-dropdowns'; // GET list · POST create
+  String get checkLists => 'api/check-lists'; // GET list · POST create
+  String get datePickers => 'api/date-pickers'; // GET list · POST create
+  String get filePickers => 'api/file-pickers'; // GET list · POST create
 
   // ===== location (bearer token required) =====
   String get locations => 'api/location'; // GET list

@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
-
 import '../enums/api_method.dart';
 import '../errors/failures.dart';
 

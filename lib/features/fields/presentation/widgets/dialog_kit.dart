@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInputFormatter;
 
 import '../../../../shared/theme/app_colors.dart';
 
@@ -71,6 +72,8 @@ class DialogTextInput extends StatelessWidget {
   final String hint;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
 
   const DialogTextInput({
     super.key,
@@ -78,6 +81,8 @@ class DialogTextInput extends StatelessWidget {
     required this.hint,
     this.errorText,
     this.onChanged,
+    this.keyboardType,
+    this.inputFormatters,
   });
 
   @override
@@ -87,6 +92,8 @@ class DialogTextInput extends StatelessWidget {
       textAlign: TextAlign.right,
       textDirection: TextDirection.rtl,
       onChanged: onChanged,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hint,
         errorText: errorText,

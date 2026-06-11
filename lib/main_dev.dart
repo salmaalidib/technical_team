@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:technical_team/core/di/injection.dart';
+import 'package:technical_team/core/error/pointer_hit_test_guard.dart';
 
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/departments/di/injection.dart';
@@ -12,6 +13,7 @@ import 'shared/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installPointerHitTestErrorGuard();
 
   await dotenv.load(fileName: "env/dev.env");
   await setupCoreInjection();

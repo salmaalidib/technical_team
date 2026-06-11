@@ -1,81 +1,74 @@
 import '../../../core/di/injection.dart';
 import '../../../core/services/api_service.dart';
-
-import '../data/datasources/field_remote_data_source.dart';
-import '../data/datasources/file_remote_data_source.dart';
-import '../data/repositories/field_repository_impl.dart';
-import '../data/repositories/file_repository_impl.dart';
-import '../domain/repositories/field_repository.dart';
-import '../domain/repositories/file_repository.dart';
-import '../domain/usecases/get_fields_usecase.dart';
-import '../domain/usecases/get_files_usecase.dart';
-import '../domain/usecases/save_field_usecase.dart';
-import '../domain/usecases/save_file_usecase.dart';
+import '../data/datasources/fields_remote_datasource.dart';
+import '../data/repositories/fields_repository_impl.dart';
+import '../domain/repositories/fields_repository.dart';
+import '../domain/usecases/create_check_list_usecase.dart';
+import '../domain/usecases/create_date_picker_usecase.dart';
+import '../domain/usecases/create_file_picker_usecase.dart';
+import '../domain/usecases/create_radio_group_usecase.dart';
+import '../domain/usecases/create_text_dropdown_usecase.dart';
+import '../domain/usecases/create_text_field_usecase.dart';
+import '../domain/usecases/get_check_lists_usecase.dart';
+import '../domain/usecases/get_date_pickers_usecase.dart';
+import '../domain/usecases/get_file_pickers_usecase.dart';
+import '../domain/usecases/get_radio_groups_usecase.dart';
+import '../domain/usecases/get_text_dropdowns_usecase.dart';
+import '../domain/usecases/get_text_fields_usecase.dart';
 import '../presentation/bloc/fields_bloc.dart';
-import '../presentation/bloc/files_bloc.dart';
+
+/// Registers [T] as a lazy singleton only if it isn't already registered, so
+/// calling [setupFieldsInjection] more than once is a no-op.
+void _registerOnce<T extends Object>(T Function() factory) {
+  if (!getIt.isRegistered<T>()) {
+    getIt.registerLazySingleton<T>(factory);
+  }
+}
 
 Future<void> setupFieldsInjection() async {
-  // ===== dynamic fields =====
-  if (!getIt.isRegistered<FieldRemoteDataSource>()) {
-    getIt.registerLazySingleton<FieldRemoteDataSource>(
-      () => FieldRemoteDataSource(getIt<ApiService>()),
-    );
-  }
-
-  if (!getIt.isRegistered<FieldRepository>()) {
-    getIt.registerLazySingleton<FieldRepository>(
-      () => FieldRepositoryImpl(getIt<FieldRemoteDataSource>()),
-    );
-  }
-
-  if (!getIt.isRegistered<GetFieldsUseCase>()) {
-    getIt.registerLazySingleton<GetFieldsUseCase>(
-      () => GetFieldsUseCase(getIt<FieldRepository>()),
-    );
-  }
-
-  if (!getIt.isRegistered<SaveFieldUseCase>()) {
-    getIt.registerLazySingleton<SaveFieldUseCase>(
-      () => SaveFieldUseCase(getIt<FieldRepository>()),
-    );
-  }
-
-  getIt.registerFactory<FieldsBloc>(
-    () => FieldsBloc(
-      getFields: getIt<GetFieldsUseCase>(),
-      saveField: getIt<SaveFieldUseCase>(),
-    ),
+  _registerOnce<FieldsRemoteDataSource>(
+    () => FieldsRemoteDataSource(getIt<ApiService>()),
+  );
+  _registerOnce<FieldsRepository>(
+    () => FieldsRepositoryImpl(getIt<FieldsRemoteDataSource>()),
   );
 
-  // ===== file definitions =====
-  if (!getIt.isRegistered<FileRemoteDataSource>()) {
-    getIt.registerLazySingleton<FileRemoteDataSource>(
-      () => FileRemoteDataSource(getIt<ApiService>()),
+  FieldsRepository repo() => getIt<FieldsRepository>();
+
+  // ── get usecases ──────────────────────────────────────────────────────────
+  _registerOnce<GetTextFieldsUseCase>(() => GetTextFieldsUseCase(repo()));
+  _registerOnce<GetRadioGroupsUseCase>(() => GetRadioGroupsUseCase(repo()));
+  _registerOnce<GetTextDropdownsUseCase>(() => GetTextDropdownsUseCase(repo()));
+  _registerOnce<GetCheckListsUseCase>(() => GetCheckListsUseCase(repo()));
+  _registerOnce<GetDatePickersUseCase>(() => GetDatePickersUseCase(repo()));
+  _registerOnce<GetFilePickersUseCase>(() => GetFilePickersUseCase(repo()));
+
+  // ── create usecases ───────────────────────────────────────────────────────
+  _registerOnce<CreateTextFieldUseCase>(() => CreateTextFieldUseCase(repo()));
+  _registerOnce<CreateRadioGroupUseCase>(() => CreateRadioGroupUseCase(repo()));
+  _registerOnce<CreateTextDropdownUseCase>(
+      () => CreateTextDropdownUseCase(repo()));
+  _registerOnce<CreateCheckListUseCase>(() => CreateCheckListUseCase(repo()));
+  _registerOnce<CreateDatePickerUseCase>(() => CreateDatePickerUseCase(repo()));
+  _registerOnce<CreateFilePickerUseCase>(() => CreateFilePickerUseCase(repo()));
+
+  // ── bloc ─────────────────────────────────────────────────────────────────
+  if (!getIt.isRegistered<FieldsBloc>()) {
+    getIt.registerFactory<FieldsBloc>(
+      () => FieldsBloc(
+        getTextFields: getIt<GetTextFieldsUseCase>(),
+        getRadioGroups: getIt<GetRadioGroupsUseCase>(),
+        getTextDropdowns: getIt<GetTextDropdownsUseCase>(),
+        getCheckLists: getIt<GetCheckListsUseCase>(),
+        getDatePickers: getIt<GetDatePickersUseCase>(),
+        getFilePickers: getIt<GetFilePickersUseCase>(),
+        createTextField: getIt<CreateTextFieldUseCase>(),
+        createRadioGroup: getIt<CreateRadioGroupUseCase>(),
+        createTextDropdown: getIt<CreateTextDropdownUseCase>(),
+        createCheckList: getIt<CreateCheckListUseCase>(),
+        createDatePicker: getIt<CreateDatePickerUseCase>(),
+        createFilePicker: getIt<CreateFilePickerUseCase>(),
+      ),
     );
   }
-
-  if (!getIt.isRegistered<FileRepository>()) {
-    getIt.registerLazySingleton<FileRepository>(
-      () => FileRepositoryImpl(getIt<FileRemoteDataSource>()),
-    );
-  }
-
-  if (!getIt.isRegistered<GetFilesUseCase>()) {
-    getIt.registerLazySingleton<GetFilesUseCase>(
-      () => GetFilesUseCase(getIt<FileRepository>()),
-    );
-  }
-
-  if (!getIt.isRegistered<SaveFileUseCase>()) {
-    getIt.registerLazySingleton<SaveFileUseCase>(
-      () => SaveFileUseCase(getIt<FileRepository>()),
-    );
-  }
-
-  getIt.registerFactory<FilesBloc>(
-    () => FilesBloc(
-      getFiles: getIt<GetFilesUseCase>(),
-      saveFile: getIt<SaveFileUseCase>(),
-    ),
-  );
 }

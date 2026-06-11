@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/field_type.dart';
+
 abstract class FieldsEvent extends Equatable {
   const FieldsEvent();
 
@@ -7,24 +9,25 @@ abstract class FieldsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadFields extends FieldsEvent {
-  const LoadFields();
+class LoadAllFields extends FieldsEvent {
+  const LoadAllFields();
 }
 
-/// Creates a field when [id] is null, otherwise updates it.
-class SaveFieldRequested extends FieldsEvent {
-  final int? id;
-  final String name;
-  final String type;
-  final List<String>? listValues;
+class SelectFieldType extends FieldsEvent {
+  final FieldType type;
 
-  const SaveFieldRequested({
-    this.id,
-    required this.name,
-    required this.type,
-    this.listValues,
-  });
+  const SelectFieldType(this.type);
 
   @override
-  List<Object?> get props => [id, name, type, listValues];
+  List<Object?> get props => [type];
+}
+
+class CreateFieldRequested extends FieldsEvent {
+  final FieldType type;
+  final Map<String, dynamic> body;
+
+  const CreateFieldRequested({required this.type, required this.body});
+
+  @override
+  List<Object?> get props => [type, body];
 }
