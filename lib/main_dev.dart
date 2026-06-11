@@ -9,6 +9,7 @@ import 'package:technical_team/features/employees/di/injection.dart';
 import 'package:technical_team/features/fields/di/injection.dart';
 import 'package:technical_team/features/institutions/di/injection.dart';
 import 'package:technical_team/features/roles/di/injection.dart';
+import 'package:technical_team/features/type_processes/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -22,6 +23,7 @@ void main() async {
   await setupInstitutionsInjection();
   await setupDepartmentsInjection();
   await setupRolesInjection();
+  await setupTypeProcessesInjection();
   await setupFieldsInjection();
   await setupEmployeesInjection();
 

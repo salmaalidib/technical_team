@@ -7,6 +7,7 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/fields/presentation/pages/fields_page.dart';
 import '../../features/institutions/presentation/pages/institutions_page.dart';
 import '../../features/roles/presentation/pages/roles_page.dart';
+import '../../features/type_processes/presentation/pages/type_processes_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
@@ -69,6 +70,12 @@ class AppRouter {
             path: '/roles',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: RolesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/type-processes',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TypeProcessesPage(),
             ),
           ),
           GoRoute(

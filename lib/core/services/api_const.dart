@@ -44,6 +44,11 @@ class EndPoints {
   String rolesByDepartment(Object departmentId) =>
       'api/role/by-department/$departmentId'; // GET roles of a leaf department
 
+  // ===== typeProcess (bearer token required) =====
+  String get typeProcesses => 'api/typeProcess'; // GET list · POST create
+  String typeProcessById(Object id) =>
+      'api/typeProcess/$id'; // PUT update is_active
+
   // ===== requirements: dynamic field widgets (bearer token required) =====
   String get textFields => 'api/text-fields'; // GET list · POST create
   String get radioGroups => 'api/radio-groups'; // GET list · POST create
