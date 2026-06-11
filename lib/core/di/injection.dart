@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-
+import '../services/key_generation_service.dart';
 import '../network/dio_client.dart';
+import '../services/key_storage_service.dart';
 import '../services/api_service.dart';
 import '../storage/secure_storage_service.dart';
 
@@ -27,4 +28,18 @@ Future<void> setupCoreInjection() async {
       () => ApiService(getIt<Dio>()),
     );
   }
+
+  if (!getIt.isRegistered<KeyGenerationService>()) {
+    getIt.registerLazySingleton<KeyGenerationService>(
+      () => KeyGenerationService(),
+    );
+  }
+
+  if (!getIt.isRegistered<KeyStorageService>()) {
+  getIt.registerLazySingleton<KeyStorageService>(
+    () => KeyStorageService(),
+  );
 }
+}
+
+ 

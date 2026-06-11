@@ -54,6 +54,9 @@ class EndPoints {
 
   // ===== location (bearer token required) =====
   String get locations => 'api/location'; // GET list
+
+  // ===== employee registration =====
+String get registerEmployee => 'api/auth/register/employee/';
 }
 
 /// Base API configuration. The base url is read from the loaded environment
