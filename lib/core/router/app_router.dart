@@ -11,9 +11,14 @@ import '../../features/type_processes/presentation/pages/type_processes_page.dar
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
+import '../../features/templates/presentation/pages/temp_page.dart' as templates;
+import '../../features/transactions/presentation/pages/tran_page.dart'
+    as transactions;
+import '../../features/settings/presentation/pages/sett_page.dart' as settings;
+
 class AppRouter {
   static final router = GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/splash',
     routerNeglect: true,
     routes: [
       GoRoute(
@@ -88,6 +93,24 @@ class AppRouter {
             path: '/employees',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: EmployeesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/templates',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: templates.DashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: transactions.DashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: settings.DashboardPage(),
             ),
           ),
         ],

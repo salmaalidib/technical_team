@@ -10,12 +10,14 @@ class LoginResponseModel extends LoginResponse {
   factory LoginResponseModel.fromJson(
     Map<String, dynamic> json,
   ) {
-
-    final data = json['data'];
+    // Tolerate the unified envelope `{ data: { session_id, message } }` as well
+    // as a flat `{ session_id, message }` body, and never crash on a missing
+    // field — a null session_id surfaces as an empty string the caller can check.
+    final data = json['data'] is Map ? json['data'] as Map : json;
 
     return LoginResponseModel(
-      sessionId: data['session_id'],
-      message: data['message'],
+      sessionId: (data['session_id'] ?? '').toString(),
+      message: (data['message'] ?? '').toString(),
     );
   }
 }
