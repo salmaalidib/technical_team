@@ -81,7 +81,7 @@ class FieldTypeCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.03),
+              color: Colors.black.withOpacity(isSelected ? 0.06 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

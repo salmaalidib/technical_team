@@ -83,7 +83,7 @@ class _TextFieldFormState extends State<TextFieldForm> {
         const DialogLabel('نوع المدخل *'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: _inputType,
+          value: _inputType,
           decoration: dialogDropdownDecoration(),
           items: _inputTypes
               .map((t) => DropdownMenuItem(value: t, child: Text(t)))
