@@ -32,7 +32,7 @@ class _FieldsView extends StatelessWidget {
     final bloc = context.read<FieldsBloc>();
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor:Colors.black.withOpacity(0.55),
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: CreateFieldDialog(type: type),
