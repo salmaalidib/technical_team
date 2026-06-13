@@ -59,7 +59,7 @@ class TypeProcessesBloc
       formError: null,
     ));
 
-    final result = await createTypeProcess(name: event.name);
+    final result = await createTypeProcess(name: event.name, code: event.code);
 
     await result.fold(
       (failure) async => emit(state.copyWith(

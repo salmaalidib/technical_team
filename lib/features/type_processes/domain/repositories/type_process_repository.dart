@@ -5,13 +5,14 @@ import '../entities/type_process.dart';
 
 /// Process-type operations backed by `/api/typeProcess`.
 ///
-/// The backend supports only three operations: list, create (name) and
+/// The backend supports only three operations: list, create (name + code) and
 /// toggle the active flag.
 abstract class TypeProcessRepository {
   Future<Either<Failure, List<TypeProcess>>> getTypeProcesses();
 
   Future<Either<Failure, TypeProcess>> createTypeProcess({
     required String name,
+    required String code,
   });
 
   /// `PUT /api/typeProcess/{id}` with `{ is_active }`.

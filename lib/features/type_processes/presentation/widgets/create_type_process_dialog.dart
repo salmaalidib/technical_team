@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/form_status.dart';
@@ -18,11 +19,15 @@ class CreateTypeProcessDialog extends StatefulWidget {
 
 class _CreateTypeProcessDialogState extends State<CreateTypeProcessDialog> {
   final _nameController = TextEditingController();
+  final _codeController = TextEditingController();
   bool _touched = false;
+
+  static final _codePattern = RegExp(r'^[A-Z0-9_]{2,20}$');
 
   @override
   void dispose() {
     _nameController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
@@ -34,12 +39,24 @@ class _CreateTypeProcessDialogState extends State<CreateTypeProcessDialog> {
     return null;
   }
 
+  String? get _codeError {
+    final code = _codeController.text.trim().toUpperCase();
+    if (code.isEmpty) return 'هذا الحقل مطلوب';
+    if (!_codePattern.hasMatch(code)) {
+      return 'حروف إنجليزية كبيرة أو أرقام أو _ فقط (2-20)';
+    }
+    return null;
+  }
+
   void _submit(BuildContext context) {
     setState(() => _touched = true);
-    if (_nameError != null) return;
+    if (_nameError != null || _codeError != null) return;
 
     context.read<TypeProcessesBloc>().add(
-          CreateTypeProcessRequested(name: _nameController.text.trim()),
+          CreateTypeProcessRequested(
+            name: _nameController.text.trim(),
+            code: _codeController.text.trim().toUpperCase(),
+          ),
         );
   }
 
@@ -92,6 +109,22 @@ class _CreateTypeProcessDialogState extends State<CreateTypeProcessDialog> {
                             controller: _nameController,
                             hint: 'مثال: معاملة مدنية',
                             errorText: _touched ? _nameError : null,
+                          ),
+                          const SizedBox(height: 20),
+                          const _Label('الرمز (code) *'),
+                          const SizedBox(height: 8),
+                          _TextInput(
+                            controller: _codeController,
+                            hint: 'مثال: CIVIL_TX',
+                            errorText: _touched ? _codeError : null,
+                            textDirection: TextDirection.ltr,
+                            textAlign: TextAlign.left,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp('[A-Za-z0-9_]')),
+                              LengthLimitingTextInputFormatter(20),
+                              _UpperCaseFormatter(),
+                            ],
                           ),
                           const SizedBox(height: 26),
                           const Divider(height: 1, color: AppColors.border),
@@ -178,19 +211,26 @@ class _TextInput extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final String? errorText;
+  final TextDirection textDirection;
+  final TextAlign textAlign;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _TextInput({
     required this.controller,
     required this.hint,
     this.errorText,
+    this.textDirection = TextDirection.rtl,
+    this.textAlign = TextAlign.right,
+    this.inputFormatters,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      textAlign: TextAlign.right,
-      textDirection: TextDirection.rtl,
+      textAlign: textAlign,
+      textDirection: textDirection,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hint,
         errorText: errorText,
@@ -212,6 +252,18 @@ class _TextInput extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Forces the `code` field to uppercase as the user types so it matches the
+/// backend pattern `^[A-Z0-9_]{2,20}$`.
+class _UpperCaseFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return newValue.copyWith(text: newValue.text.toUpperCase());
   }
 }
 

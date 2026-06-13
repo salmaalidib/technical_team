@@ -106,6 +106,27 @@ class _TopRow extends StatelessWidget {
                   ],
                 ),
               ),
+              if (typeProcess.code.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.inputBackground,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    typeProcess.code,
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

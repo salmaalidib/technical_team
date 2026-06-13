@@ -4,6 +4,7 @@ class TypeProcessModel extends TypeProcess {
   const TypeProcessModel({
     required super.id,
     required super.name,
+    super.code,
     super.isActive,
     super.createdAt,
     super.updatedAt,
@@ -13,6 +14,7 @@ class TypeProcessModel extends TypeProcess {
     return TypeProcessModel(
       id: json['id'] as int,
       name: (json['name'] ?? '') as String,
+      code: (json['code'] ?? '') as String,
       isActive: (json['is_active'] ?? true) as bool,
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),

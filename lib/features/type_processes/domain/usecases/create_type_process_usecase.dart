@@ -9,7 +9,10 @@ class CreateTypeProcessUseCase {
 
   CreateTypeProcessUseCase(this.repository);
 
-  Future<Either<Failure, TypeProcess>> call({required String name}) {
-    return repository.createTypeProcess(name: name);
+  Future<Either<Failure, TypeProcess>> call({
+    required String name,
+    required String code,
+  }) {
+    return repository.createTypeProcess(name: name, code: code);
   }
 }

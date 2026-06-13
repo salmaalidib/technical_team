@@ -14,11 +14,12 @@ class LoadTypeProcesses extends TypeProcessesEvent {
 
 class CreateTypeProcessRequested extends TypeProcessesEvent {
   final String name;
+  final String code;
 
-  const CreateTypeProcessRequested({required this.name});
+  const CreateTypeProcessRequested({required this.name, required this.code});
 
   @override
-  List<Object?> get props => [name];
+  List<Object?> get props => [name, code];
 }
 
 /// Flips the active flag of a single process type via `PUT /api/typeProcess/{id}`.

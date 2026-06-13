@@ -36,9 +36,11 @@ class TypeProcessRepositoryImpl implements TypeProcessRepository {
   @override
   Future<Either<Failure, TypeProcess>> createTypeProcess({
     required String name,
+    required String code,
   }) async {
     final result = await remote.createTypeProcess({
       'name': name.trim(),
+      'code': code.trim().toUpperCase(),
     });
     return result.fold<Either<Failure, TypeProcess>>(
       (failure) => Left(failure),
