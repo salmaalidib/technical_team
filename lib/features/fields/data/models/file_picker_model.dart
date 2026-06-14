@@ -9,6 +9,7 @@ class FilePickerModel extends FilePickerEntity {
     required super.maxSizeMb,
     required super.allowedExtensions,
     required super.allowMultiple,
+    super.typeDocId,
   });
 
   factory FilePickerModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +24,7 @@ class FilePickerModel extends FilePickerEntity {
       maxSizeMb: (json['max_size_mb'] ?? 1) as int,
       allowedExtensions: extensions,
       allowMultiple: (json['allow_multiple'] ?? false) as bool,
+      typeDocId: json['type_doc_id'] as int?,
     );
   }
 }

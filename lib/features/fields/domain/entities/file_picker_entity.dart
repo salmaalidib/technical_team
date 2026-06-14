@@ -9,6 +9,9 @@ class FilePickerEntity extends Equatable {
   final List<String> allowedExtensions;
   final bool allowMultiple;
 
+  /// Foreign key to the document type (`type_docs.id`) this picker belongs to.
+  final int? typeDocId;
+
   const FilePickerEntity({
     required this.id,
     required this.idWidget,
@@ -17,6 +20,7 @@ class FilePickerEntity extends Equatable {
     required this.maxSizeMb,
     required this.allowedExtensions,
     required this.allowMultiple,
+    this.typeDocId,
   });
 
   @override
@@ -28,5 +32,6 @@ class FilePickerEntity extends Equatable {
         maxSizeMb,
         allowedExtensions,
         allowMultiple,
+        typeDocId,
       ];
 }

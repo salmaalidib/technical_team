@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/form_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_id_dropdown.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
@@ -96,7 +97,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
                         const SizedBox(height: 22),
                         const _FieldLabel('المؤسسة الأم (اختياري)'),
                         const SizedBox(height: 8),
-                        _IdDropdown(
+                        AppIdDropdown(
                           hint: 'اختر المؤسسة الأم...',
                           value: _parentId,
                           items: {
@@ -107,7 +108,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
                         const SizedBox(height: 22),
                         const _FieldLabel('الموقع (اختياري)'),
                         const SizedBox(height: 8),
-                        _IdDropdown(
+                        AppIdDropdown(
                           hint: 'اختر الموقع...',
                           value: _locationId,
                           items: {
@@ -255,75 +256,6 @@ class _TextInput extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),
-    );
-  }
-}
-
-/// Dropdown over an `{ id: name }` map that yields the selected int id.
-class _IdDropdown extends StatelessWidget {
-  final String hint;
-  final int? value;
-  final Map<int, String> items;
-  final ValueChanged<int?> onChanged;
-
-  const _IdDropdown({
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<int>(
-      value: items.containsKey(value) ? value : null,
-      isExpanded: true,
-      icon: const Icon(
-        Icons.keyboard_arrow_down_rounded,
-        color: AppColors.textPrimary,
-      ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-      ),
-      hint: Text(
-        hint,
-        textAlign: TextAlign.right,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-      ),
-      items: items.entries
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.key,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  e.value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: onChanged,
     );
   }
 }

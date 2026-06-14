@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../type_docs/presentation/bloc/type_docs_bloc.dart';
+import '../../../type_docs/presentation/bloc/type_docs_event.dart';
 import '../../domain/entities/field_type.dart';
 import '../bloc/fields_bloc.dart';
 import '../bloc/fields_state.dart';
@@ -29,7 +32,7 @@ class CreateFieldDialog extends StatelessWidget {
       listener: (context, state) {
         if (state.createStatus == FormStatus.success) {
           AppSnackBar.show(context, message: 'تم الإنشاء بنجاح');
-          Navigator.of(context).pop();
+          if (context.mounted) Navigator.of(context).pop();
         } else if (state.createStatus == FormStatus.failure) {
           AppSnackBar.show(
             context,
@@ -69,7 +72,13 @@ class _FormBody extends StatelessWidget {
       FieldType.textDropdown => OptionsForm(type: type, meta: meta),
       FieldType.checkList => CheckListForm(meta: meta),
       FieldType.datePicker => DatePickerForm(meta: meta),
-      FieldType.filePicker => FilePickerForm(meta: meta),
+      // The file-picker form needs the active document types for its required
+      // `type_doc_id` dropdown, so give it its own TypeDocsBloc.
+      FieldType.filePicker => BlocProvider(
+          lazy: false,
+          create: (_) => getIt<TypeDocsBloc>()..add(const LoadTypeDocs()),
+          child: FilePickerForm(meta: meta),
+        ),
     };
   }
 }

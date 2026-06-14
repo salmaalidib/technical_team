@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../type_docs/presentation/widgets/type_doc_selector.dart';
 import '../../domain/entities/field_type.dart';
 import '../bloc/fields_bloc.dart';
 import '../bloc/fields_event.dart';
@@ -26,6 +27,7 @@ class _FilePickerFormState extends State<FilePickerForm> {
   bool _allowMultiple = false;
   bool _touched = false;
   final List<String> _extensions = [];
+  int? _typeDocId;
 
   @override
   void dispose() {
@@ -56,7 +58,8 @@ class _FilePickerFormState extends State<FilePickerForm> {
 
   void _submit(BuildContext ctx) {
     setState(() => _touched = true);
-    if (_label.text.trim().isEmpty ||
+    if (_typeDocId == null ||
+        _label.text.trim().isEmpty ||
         _extensions.isEmpty ||
         _sizeError != null) {
       return;
@@ -69,6 +72,7 @@ class _FilePickerFormState extends State<FilePickerForm> {
             'max_size_mb': int.parse(_maxSizeMb.text),
             'allowed_extensions': _extensions,
             'allow_multiple': _allowMultiple,
+            'type_doc_id': _typeDocId,
           },
         ));
   }
@@ -79,6 +83,15 @@ class _FilePickerFormState extends State<FilePickerForm> {
       title: 'إنشاء ${widget.meta.label}',
       onSubmit: _submit,
       children: [
+        const DialogLabel('نوع المستند *'),
+        const SizedBox(height: 8),
+        TypeDocSelector(
+          value: _typeDocId,
+          onChanged: (v) => setState(() => _typeDocId = v),
+          errorText:
+              _touched && _typeDocId == null ? 'هذا الحقل مطلوب' : null,
+        ),
+        const SizedBox(height: 20),
         LabeledDialogInput(
           label: 'التسمية *',
           controller: _label,
