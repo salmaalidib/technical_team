@@ -11,7 +11,8 @@ import '../../features/type_processes/presentation/pages/type_processes_page.dar
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
-import '../../features/process_builder/presentation/pages/process_builder_page.dart';
+import '../../features/process_builder/presentation/pages/process_types_page.dart';
+import '../../features/process_builder/presentation/pages/process_by_type_page.dart';
 import '../../features/process_builder/presentation/pages/process_details_page.dart';
 import '../../features/process_builder/presentation/widgets/create_process_wizard.dart';
 import '../../features/templates/presentation/pages/templates_page.dart';
@@ -105,21 +106,42 @@ class AppRouter {
           GoRoute(
             path: '/transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProcessBuilderPage(),
+              child: ProcessTypesPage(),
             ),
           ),
           GoRoute(
             path: '/transactions/create',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CreateProcessPage(),
-            ),
+            pageBuilder: (context, state) {
+              final extra = state.extra;
+              final typeId = extra is Map ? extra['typeId'] as int? : null;
+              final typeName = extra is Map ? extra['typeName'] as String? : null;
+              return NoTransitionPage(
+                child: CreateProcessPage(typeId: typeId, typeName: typeName),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/transactions/type/:typeId',
+            pageBuilder: (context, state) {
+              final typeId =
+                  int.tryParse(state.pathParameters['typeId'] ?? '');
+              if (typeId == null) {
+                return const NoTransitionPage(child: ProcessTypesPage());
+              }
+              return NoTransitionPage(
+                child: ProcessByTypePage(
+                  typeId: typeId,
+                  typeName: state.extra as String?,
+                ),
+              );
+            },
           ),
           GoRoute(
             path: '/transactions/:id',
             pageBuilder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '');
               if (id == null) {
-                return const NoTransitionPage(child: ProcessBuilderPage());
+                return const NoTransitionPage(child: ProcessTypesPage());
               }
               return NoTransitionPage(
                 child: ProcessDetailsPage(id: id),

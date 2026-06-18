@@ -99,11 +99,6 @@ class AppSidebar extends StatelessWidget {
                   route: '/roles',
                 ),
                 _SidebarItem(
-                  icon: Icons.category_outlined,
-                  title: 'أنواع العمليات',
-                  route: '/type-processes',
-                ),
-                _SidebarItem(
                   icon: Icons.storage_outlined,
                   title: 'الحقول والملفات',
                   route: '/fields',
