@@ -11,9 +11,10 @@ import '../../features/type_processes/presentation/pages/type_processes_page.dar
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
-import '../../features/templates/presentation/pages/temp_page.dart' as templates;
-import '../../features/transactions/presentation/pages/tran_page.dart'
-    as transactions;
+import '../../features/process_builder/presentation/pages/process_builder_page.dart';
+import '../../features/process_builder/presentation/pages/process_details_page.dart';
+import '../../features/process_builder/presentation/widgets/create_process_wizard.dart';
+import '../../features/templates/presentation/pages/templates_page.dart';
 import '../../features/settings/presentation/pages/sett_page.dart' as settings;
 
 class AppRouter {
@@ -98,14 +99,32 @@ class AppRouter {
           GoRoute(
             path: '/templates',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: templates.DashboardPage(),
+              child: TemplatesPage(),
             ),
           ),
           GoRoute(
             path: '/transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: transactions.DashboardPage(),
+              child: ProcessBuilderPage(),
             ),
+          ),
+          GoRoute(
+            path: '/transactions/create',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CreateProcessPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/transactions/:id',
+            pageBuilder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (id == null) {
+                return const NoTransitionPage(child: ProcessBuilderPage());
+              }
+              return NoTransitionPage(
+                child: ProcessDetailsPage(id: id),
+              );
+            },
           ),
           GoRoute(
             path: '/settings',

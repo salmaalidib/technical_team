@@ -10,6 +10,9 @@ import 'package:technical_team/features/fields/di/injection.dart';
 import 'package:technical_team/features/institutions/di/injection.dart';
 import 'package:technical_team/features/roles/di/injection.dart';
 import 'package:technical_team/features/type_processes/di/injection.dart';
+import 'package:technical_team/features/type_docs/di/injection.dart';
+import 'package:technical_team/features/templates/di/injection.dart';
+import 'package:technical_team/features/process_builder/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -24,8 +27,11 @@ void main() async {
   await setupDepartmentsInjection();
   await setupRolesInjection();
   await setupTypeProcessesInjection();
+  await setupTypeDocsInjection();
+  await setupTemplatesInjection();
   await setupFieldsInjection();
   await setupEmployeesInjection();
+  await setupProcessBuilderInjection();
 
   runApp(const TechnicalTeamApp());
 }

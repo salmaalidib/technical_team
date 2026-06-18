@@ -49,6 +49,33 @@ class EndPoints {
   String typeProcessById(Object id) =>
       'api/typeProcess/$id'; // PUT update is_active
 
+  // ===== process definitions / builder (المسؤول التقني) =====
+  String get processDefinitionCreate =>
+      'api/process_definitions/create'; // POST multipart (BPMN + meta)
+  String get processDefinitionReviewQueue =>
+      'api/process_definitions/admin/review-queue'; // GET unapproved/inactive (paginated)
+  String processDefinitionsByType(Object typeId) =>
+      'api/process_definitions/admin/type/$typeId'; // GET all by type (0 = all), paginated
+  String processDefinitionDetails(Object id) =>
+      'api/process_definitions/$id/details'; // GET details + validation
+  String processDefinitionReview(Object id) =>
+      'api/process_definitions/$id/review'; // POST APPROVE/REJECT (يتم في مكان آخر)
+
+  // ===== stage config (المسؤول التقني) =====
+  String get stageConfigCreate =>
+      'api/stage_config/create'; // POST bulk stage configs
+
+  // ===== typeDoc — document types (bearer token required) =====
+  String get typeDocs => 'api/typeDoc'; // GET list · POST create
+  String typeDocById(Object id) =>
+      'api/typeDoc/$id'; // PUT update (name / is_active)
+
+  // ===== document templates (المسؤول التقني) =====
+  String get documentTemplates =>
+      'api/document-templates'; // GET active list · POST create (multipart)
+  String documentTemplateById(Object id) =>
+      'api/document-templates/$id'; // GET one · PUT update (multipart, versioned)
+
   // ===== requirements: dynamic field widgets (bearer token required) =====
   String get textFields => 'api/text-fields'; // GET list · POST create
   String get radioGroups => 'api/radio-groups'; // GET list · POST create
