@@ -5,7 +5,9 @@ import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../../roles/domain/usecases/get_roles_by_department_usecase.dart';
+import '../../../templates/domain/usecases/get_templates_usecase.dart';
 import '../../../type_processes/domain/usecases/get_type_processes_usecase.dart';
+import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/usecases/configure_stages_usecase.dart';
@@ -21,6 +23,7 @@ class ProcessBuilderBloc
   final GetInstitutionsUseCase getOrganizations;
   final GetLeafDepartmentsUseCase getLeafDepartments;
   final GetRolesByDepartmentUseCase getRolesByDepartment;
+  final GetTemplatesUseCase getTemplates;
 
   ProcessBuilderBloc({
     required this.createProcess,
@@ -29,6 +32,7 @@ class ProcessBuilderBloc
     required this.getOrganizations,
     required this.getLeafDepartments,
     required this.getRolesByDepartment,
+    required this.getTemplates,
   }) : super(const ProcessBuilderState()) {
     on<InitWizard>(_onInit);
     on<StepRequested>(_onStep);
@@ -50,7 +54,15 @@ class ProcessBuilderBloc
     on<StageRoleChanged>(_onStageRole);
     on<StageWidgetToggled>(_onStageWidget);
     on<StageSignatureToggled>(_onStageSignature);
+    on<StageTemplateToggled>(_onStageTemplate);
     on<StageActionToggled>(_onStageAction);
+    on<StageNotificationMessageChanged>(_onNotificationMessage);
+    on<StageNotificationTitleChanged>(_onNotificationTitle);
+    on<StageNotificationRecipientChanged>(_onNotificationRecipient);
+    on<StageNotificationOrgChanged>(_onNotificationOrg);
+    on<StageNotificationDeptChanged>(_onNotificationDept);
+    on<StageNotificationRoleChanged>(_onNotificationRole);
+    on<StageGeneratePdfTemplateChanged>(_onGeneratePdfTemplate);
     on<SubmitStageConfigs>(_onSubmitStageConfigs);
   }
 
@@ -63,11 +75,14 @@ class ProcessBuilderBloc
 
     final orgsResult = await getOrganizations();
     final typesResult = await getTypeProcesses();
+    // Templates feed the USER_TASK template picker and the GENERATE_PDF action.
+    final templatesResult = await getTemplates();
 
     emit(state.copyWith(
       bootStatus: RequestStatus.success,
       organizations: orgsResult.getOrElse(() => const []),
       typeProcesses: typesResult.getOrElse(() => const []),
+      templates: templatesResult.getOrElse(() => const []),
       // Preselect the type the wizard was opened for (null = شكوى / unset).
       typeTransId: event.typeId,
     ));
@@ -179,12 +194,19 @@ class ProcessBuilderBloc
 
     if (draft == null) return;
 
-    // Re-fetch the cascade for whatever this stage already had selected.
-    if (draft.organizationId != null) {
-      await _fetchLeaves(draft.organizationId!, event.stageId, emit);
-    }
-    if (draft.departmentId != null) {
-      await _fetchRoles(draft.departmentId!, event.stageId, emit);
+    // Re-fetch the cascade for whatever this stage already had selected. A
+    // USER_TASK uses its own assignment; a SERVICE_TASK with an employee-
+    // recipient notification uses the notification cascade instead.
+    if (draft.stage.isUserTask) {
+      if (draft.organizationId != null) {
+        await _fetchLeaves(draft.organizationId!, event.stageId, emit);
+      }
+      if (draft.departmentId != null) {
+        await _fetchRoles(draft.departmentId!, event.stageId, emit);
+      }
+    } else if (draft.hasNotification &&
+        draft.notification.recipient == NotificationRecipient.employee) {
+      await _restoreNotificationCascade(event.stageId, emit);
     }
   }
 
@@ -258,10 +280,25 @@ class ProcessBuilderBloc
         (d) => d.copyWith(requiresSignature: event.value));
   }
 
-  void _onStageAction(
-    StageActionToggled event,
+  void _onStageTemplate(
+    StageTemplateToggled event,
     Emitter<ProcessBuilderState> emit,
   ) {
+    // Templates link to USER_TASK config_json.template only.
+    final target = state.drafts[event.stageId];
+    if (target == null || !target.stage.isUserTask) return;
+
+    _updateDraft(event.stageId, emit, (d) {
+      final ids = [...d.templateIds]..remove(event.templateId);
+      if (event.selected) ids.add(event.templateId);
+      return d.copyWith(templateIds: ids);
+    });
+  }
+
+  Future<void> _onStageAction(
+    StageActionToggled event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
     // Actions belong to SERVICE_TASK only — the backend rejects them on a
     // USER_TASK config_json. Guard at the source.
     final target = state.drafts[event.stageId];
@@ -271,8 +308,176 @@ class ProcessBuilderBloc
       final actions = [...d.actions];
       actions.remove(event.action);
       if (event.selected) actions.add(event.action);
-      return d.copyWith(actions: actions);
+      // Unselecting GENERATE_PDF drops its template so a stale id never ships.
+      final clearPdf = event.action == 'GENERATE_PDF' && !event.selected;
+      return d.copyWith(
+        actions: actions,
+        clearGeneratePdfTemplate: clearPdf,
+      );
     });
+
+    // Turning on SEND_NOTIFICATION with an employee recipient already chosen
+    // (e.g. re-toggled) should restore its cascade. Default recipient is
+    // citizen, so nothing to fetch on a fresh toggle.
+    if (event.action == 'SEND_NOTIFICATION' && event.selected) {
+      final n = state.drafts[event.stageId]?.notification;
+      if (n != null && n.recipient == NotificationRecipient.employee) {
+        await _restoreNotificationCascade(event.stageId, emit);
+      }
+    }
+  }
+
+  // ── SEND_NOTIFICATION config ────────────────────────────────────────────
+  void _onNotificationMessage(
+    StageNotificationMessageChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(event.stageId, emit,
+        (d) => d.copyWith(notification: d.notification.copyWith(
+              message: event.message,
+            )));
+  }
+
+  void _onNotificationTitle(
+    StageNotificationTitleChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(event.stageId, emit,
+        (d) => d.copyWith(notification: d.notification.copyWith(
+              title: event.title,
+            )));
+  }
+
+  Future<void> _onNotificationRecipient(
+    StageNotificationRecipientChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    _updateDraft(event.stageId, emit,
+        (d) => d.copyWith(notification: d.notification.copyWith(
+              recipient: event.recipient,
+            )));
+
+    // Switching to citizen drops the role cascade; switching to employee shows
+    // an empty cascade ready for selection.
+    emit(state.copyWith(
+      leafStatus: RequestStatus.initial,
+      leafDepartments: const [],
+      rolesStatus: RequestStatus.initial,
+      rolesByDepartment: const [],
+    ));
+
+    if (event.recipient == NotificationRecipient.employee) {
+      await _restoreNotificationCascade(event.stageId, emit);
+    }
+  }
+
+  Future<void> _onNotificationOrg(
+    StageNotificationOrgChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    _updateDraft(
+      event.stageId,
+      emit,
+      (d) => d.copyWith(
+        notification: d.notification.copyWith(
+          organizationId: event.organizationId,
+          clearDepartment: true,
+          clearRole: true,
+        ),
+      ),
+    );
+    emit(state.copyWith(
+      leafStatus: RequestStatus.initial,
+      leafDepartments: const [],
+      rolesStatus: RequestStatus.initial,
+      rolesByDepartment: const [],
+    ));
+    if (event.organizationId != null) {
+      await _fetchLeaves(
+        event.organizationId!,
+        event.stageId,
+        emit,
+        organizationOf: (d) => d.notification.organizationId,
+      );
+    }
+  }
+
+  Future<void> _onNotificationDept(
+    StageNotificationDeptChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    _updateDraft(
+      event.stageId,
+      emit,
+      (d) => d.copyWith(
+        notification: d.notification.copyWith(
+          departmentId: event.departmentId,
+          clearRole: true,
+        ),
+      ),
+    );
+    emit(state.copyWith(
+      rolesStatus: RequestStatus.initial,
+      rolesByDepartment: const [],
+    ));
+    if (event.departmentId != null) {
+      await _fetchRoles(
+        event.departmentId!,
+        event.stageId,
+        emit,
+        departmentOf: (d) => d.notification.departmentId,
+      );
+    }
+  }
+
+  void _onNotificationRole(
+    StageNotificationRoleChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(event.stageId, emit,
+        (d) => d.copyWith(notification: d.notification.copyWith(
+              roleId: event.roleId,
+            )));
+  }
+
+  void _onGeneratePdfTemplate(
+    StageGeneratePdfTemplateChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(
+      event.stageId,
+      emit,
+      (d) => d.copyWith(
+        generatePdfTemplateId: event.templateId,
+        clearGeneratePdfTemplate: event.templateId == null,
+      ),
+    );
+  }
+
+  /// Re-fetch the cascade for whatever the notification recipient already had
+  /// selected (used on recipient switch / card expand).
+  Future<void> _restoreNotificationCascade(
+    int stageId,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    final n = state.drafts[stageId]?.notification;
+    if (n == null) return;
+    if (n.organizationId != null) {
+      await _fetchLeaves(
+        n.organizationId!,
+        stageId,
+        emit,
+        organizationOf: (d) => d.notification.organizationId,
+      );
+    }
+    if (n.departmentId != null) {
+      await _fetchRoles(
+        n.departmentId!,
+        stageId,
+        emit,
+        departmentOf: (d) => d.notification.departmentId,
+      );
+    }
   }
 
   // ── final submit: stage_config only ─────────────────────────────────────
@@ -281,10 +486,27 @@ class ProcessBuilderBloc
     Emitter<ProcessBuilderState> emit,
   ) async {
     if (!state.allStagesReady) {
-      emit(state.copyWith(
-        actionError:
-            'يجب تحديد التعيين (مؤسسة/قسم/دور) لكل مهمة مستخدم قبل الحفظ.',
-      ));
+      // Pinpoint why: an incomplete SERVICE_TASK action, or a USER_TASK
+      // missing its assignment.
+      final notifIncomplete = state.drafts.values.any(
+        (d) => d.stage.isServiceTask && d.hasNotification && !d.isComplete,
+      );
+      final pdfIncomplete = state.drafts.values.any(
+        (d) =>
+            d.stage.isServiceTask &&
+            d.hasGeneratePdf &&
+            d.generatePdfTemplateId == null,
+      );
+      final String message;
+      if (pdfIncomplete) {
+        message = 'اختر القالب لإجراء «توليد PDF» قبل الحفظ.';
+      } else if (notifIncomplete) {
+        message =
+            'أكمل إعداد الإشعار (النص والمُستلِم — أو المؤسسة/القسم/الدور للموظف) قبل الحفظ.';
+      } else {
+        message = 'يجب تحديد التعيين (مؤسسة/قسم/دور) لكل مهمة مستخدم قبل الحفظ.';
+      }
+      emit(state.copyWith(actionError: message));
       return;
     }
 
@@ -320,8 +542,13 @@ class ProcessBuilderBloc
   Future<void> _fetchLeaves(
     int organizationId,
     int stageId,
-    Emitter<ProcessBuilderState> emit,
-  ) async {
+    Emitter<ProcessBuilderState> emit, {
+    // Where the selected org lives on the draft. USER_TASK uses the draft's own
+    // assignment; SEND_NOTIFICATION uses the notification config. The staleness
+    // check reads from here so the two cascades don't cross-cancel.
+    int? Function(StageConfigDraft d)? organizationOf,
+  }) async {
+    final readOrg = organizationOf ?? (d) => d.organizationId;
     emit(state.copyWith(
       leafStatus: RequestStatus.loading,
       leafDepartments: const [],
@@ -330,8 +557,10 @@ class ProcessBuilderBloc
 
     // Drop a stale result: the user switched stages or changed the org while
     // this request was in flight.
+    final current = state.drafts[stageId];
     if (state.expandedStageId != stageId ||
-        state.drafts[stageId]?.organizationId != organizationId) {
+        current == null ||
+        readOrg(current) != organizationId) {
       return;
     }
 
@@ -350,8 +579,10 @@ class ProcessBuilderBloc
   Future<void> _fetchRoles(
     int departmentId,
     int stageId,
-    Emitter<ProcessBuilderState> emit,
-  ) async {
+    Emitter<ProcessBuilderState> emit, {
+    int? Function(StageConfigDraft d)? departmentOf,
+  }) async {
+    final readDept = departmentOf ?? (d) => d.departmentId;
     emit(state.copyWith(
       rolesStatus: RequestStatus.loading,
       rolesByDepartment: const [],
@@ -359,8 +590,10 @@ class ProcessBuilderBloc
     final result = await getRolesByDepartment(departmentId);
 
     // Drop a stale result (stage switched or dept changed mid-flight).
+    final current = state.drafts[stageId];
     if (state.expandedStageId != stageId ||
-        state.drafts[stageId]?.departmentId != departmentId) {
+        current == null ||
+        readDept(current) != departmentId) {
       return;
     }
 

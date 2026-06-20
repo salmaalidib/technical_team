@@ -4,6 +4,7 @@ import '../../../core/services/api_service.dart';
 import '../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../roles/domain/usecases/get_roles_by_department_usecase.dart';
+import '../../templates/domain/usecases/get_templates_usecase.dart';
 import '../../type_processes/domain/usecases/get_type_processes_usecase.dart';
 import '../data/datasources/process_builder_remote_data_source.dart';
 import '../data/repositories/process_builder_repository_impl.dart';
@@ -72,6 +73,7 @@ Future<void> setupProcessBuilderInjection() async {
       getOrganizations: getIt<GetInstitutionsUseCase>(),
       getLeafDepartments: getIt<GetLeafDepartmentsUseCase>(),
       getRolesByDepartment: getIt<GetRolesByDepartmentUseCase>(),
+      getTemplates: getIt<GetTemplatesUseCase>(),
     ),
   );
 

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'notification_action_config.dart';
 import 'process_stage.dart';
 import 'widget_config.dart';
 
@@ -7,7 +8,8 @@ import 'widget_config.dart';
 /// backend `stages[]` entry on submit.
 ///
 /// USER_TASK → form (widgets) + assignment (org/dept/role) [+ signature].
-/// SERVICE_TASK → optional [actions] (GENERATE_PDF / SEND_EMAIL / SEND_NOTIFICATION).
+/// SERVICE_TASK → optional [actions] (GENERATE_PDF / SEND_NOTIFICATION; the
+/// backend does not support SEND_EMAIL).
 class StageConfigDraft extends Equatable {
   final ProcessStage stage;
 
@@ -21,8 +23,22 @@ class StageConfigDraft extends Equatable {
 
   final bool requiresSignature;
 
+  /// Linked document templates (USER_TASK only). Serializes to
+  /// `config_json.template = [{ template_id }]`; the citizen fills these in at
+  /// run-time, creating the `document_instance` a later GENERATE_PDF consumes.
+  final List<int> templateIds;
+
   /// Selected automatic actions (SERVICE_TASK only).
   final List<String> actions;
+
+  /// Config for the SEND_NOTIFICATION action (message + recipient). Only
+  /// meaningful while `actions` contains `SEND_NOTIFICATION`.
+  final NotificationActionConfig notification;
+
+  /// The template the GENERATE_PDF action renders (SERVICE_TASK only). Must be
+  /// one of the templates linked to an earlier USER_TASK stage, else the
+  /// run-time generation finds no `document_instance`.
+  final int? generatePdfTemplateId;
 
   const StageConfigDraft({
     required this.stage,
@@ -31,18 +47,36 @@ class StageConfigDraft extends Equatable {
     this.roleId,
     this.widgets = const [],
     this.requiresSignature = false,
+    this.templateIds = const [],
     this.actions = const [],
+    this.notification = const NotificationActionConfig(),
+    this.generatePdfTemplateId,
   });
 
+  /// Whether SEND_NOTIFICATION is selected on this stage.
+  bool get hasNotification => actions.contains('SEND_NOTIFICATION');
+
+  /// Whether GENERATE_PDF is selected on this stage.
+  bool get hasGeneratePdf => actions.contains('GENERATE_PDF');
+
   /// A USER_TASK is ready when an org/dept/role assignment is fully chosen
-  /// (the backend rejects a USER_TASK with no assignments).
+  /// (the backend rejects a USER_TASK with no assignments). A SERVICE_TASK is
+  /// ready unless an enabled action is missing required config: a
+  /// SEND_NOTIFICATION with no message/recipient, or a GENERATE_PDF with no
+  /// template (both rejected by the backend).
   bool get isComplete {
     if (stage.isUserTask) {
       return organizationId != null &&
           departmentId != null &&
           roleId != null;
     }
-    return true; // SERVICE_TASK needs nothing mandatory
+    if (hasNotification && !notification.isComplete) {
+      return false;
+    }
+    if (hasGeneratePdf && generatePdfTemplateId == null) {
+      return false;
+    }
+    return true;
   }
 
   StageConfigDraft copyWith({
@@ -53,7 +87,11 @@ class StageConfigDraft extends Equatable {
     bool clearRole = false,
     List<WidgetConfig>? widgets,
     bool? requiresSignature,
+    List<int>? templateIds,
     List<String>? actions,
+    NotificationActionConfig? notification,
+    int? generatePdfTemplateId,
+    bool clearGeneratePdfTemplate = false,
   }) {
     return StageConfigDraft(
       stage: stage,
@@ -62,7 +100,12 @@ class StageConfigDraft extends Equatable {
       roleId: clearRole ? null : (roleId ?? this.roleId),
       widgets: widgets ?? this.widgets,
       requiresSignature: requiresSignature ?? this.requiresSignature,
+      templateIds: templateIds ?? this.templateIds,
       actions: actions ?? this.actions,
+      notification: notification ?? this.notification,
+      generatePdfTemplateId: clearGeneratePdfTemplate
+          ? null
+          : (generatePdfTemplateId ?? this.generatePdfTemplateId),
     );
   }
 
@@ -74,7 +117,10 @@ class StageConfigDraft extends Equatable {
       'widgets': stage.isUserTask
           ? widgets.map((w) => w.toJson()).toList()
           : <Map<String, dynamic>>[],
-      'template': <Map<String, dynamic>>[], // ربط القوالب — مؤجّل
+      // USER_TASK links templates ({ template_id }); SERVICE_TASK has none.
+      'template': stage.isUserTask
+          ? templateIds.map((id) => {'template_id': id}).toList()
+          : <Map<String, dynamic>>[],
     };
 
     if (stage.isUserTask) {
@@ -82,8 +128,9 @@ class StageConfigDraft extends Equatable {
     }
 
     if (stage.isServiceTask && actions.isNotEmpty) {
-      configJson['actions'] =
-          actions.map((name) => {'name': name, 'payload': {}}).toList();
+      configJson['actions'] = actions
+          .map((name) => {'name': name, 'payload': _payloadFor(name)})
+          .toList();
     }
 
     final entry = <String, dynamic>{
@@ -104,6 +151,21 @@ class StageConfigDraft extends Equatable {
     return entry;
   }
 
+  /// The `payload` for a given action name. SEND_NOTIFICATION carries the
+  /// message + recipient; GENERATE_PDF carries the template_id. Any other name
+  /// falls back to an empty payload.
+  Map<String, dynamic> _payloadFor(String name) {
+    if (name == 'SEND_NOTIFICATION') {
+      return notification.toPayloadJson();
+    }
+    if (name == 'GENERATE_PDF') {
+      return generatePdfTemplateId == null
+          ? <String, dynamic>{}
+          : {'template_id': generatePdfTemplateId};
+    }
+    return <String, dynamic>{};
+  }
+
   @override
   List<Object?> get props => [
         stage,
@@ -112,6 +174,9 @@ class StageConfigDraft extends Equatable {
         roleId,
         widgets,
         requiresSignature,
+        templateIds,
         actions,
+        notification,
+        generatePdfTemplateId,
       ];
 }

@@ -5,6 +5,7 @@ import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/entities/leaf_department.dart';
 import '../../../institutions/domain/entities/institution.dart';
 import '../../../roles/domain/entities/role_by_department.dart';
+import '../../../templates/domain/entities/doc_template.dart';
 import '../../../type_processes/domain/entities/type_process.dart';
 import '../../domain/entities/created_process.dart';
 import '../../domain/entities/stage_config_draft.dart';
@@ -18,6 +19,9 @@ class ProcessBuilderState extends Equatable {
   final RequestStatus bootStatus;
   final List<Institution> organizations;
   final List<TypeProcess> typeProcesses;
+
+  /// Document templates (for the USER_TASK template picker + GENERATE_PDF).
+  final List<DocTemplate> templates;
 
   // ── step 1 ──────────────────────────────────────────────────────────────
   final String name;
@@ -62,6 +66,7 @@ class ProcessBuilderState extends Equatable {
     this.bootStatus = RequestStatus.initial,
     this.organizations = const [],
     this.typeProcesses = const [],
+    this.templates = const [],
     this.name = '',
     this.isComplaint = false,
     this.typeTransId,
@@ -93,11 +98,23 @@ class ProcessBuilderState extends Equatable {
   /// All USER_TASK stages must have a complete assignment before submit.
   bool get allStagesReady => drafts.values.every((d) => d.isComplete);
 
+  /// Template ids linked to any USER_TASK stage. A GENERATE_PDF action may only
+  /// target one of these — otherwise no `document_instance` exists at run-time
+  /// and generation fails. Returned as the [DocTemplate]s for display.
+  List<DocTemplate> get linkedTemplates {
+    final linkedIds = <int>{
+      for (final d in drafts.values)
+        if (d.stage.isUserTask) ...d.templateIds,
+    };
+    return templates.where((t) => linkedIds.contains(t.id)).toList();
+  }
+
   ProcessBuilderState copyWith({
     int? currentStep,
     RequestStatus? bootStatus,
     List<Institution>? organizations,
     List<TypeProcess>? typeProcesses,
+    List<DocTemplate>? templates,
     String? name,
     bool? isComplaint,
     int? typeTransId,
@@ -128,6 +145,7 @@ class ProcessBuilderState extends Equatable {
       bootStatus: bootStatus ?? this.bootStatus,
       organizations: organizations ?? this.organizations,
       typeProcesses: typeProcesses ?? this.typeProcesses,
+      templates: templates ?? this.templates,
       name: name ?? this.name,
       isComplaint: isComplaint ?? this.isComplaint,
       typeTransId: clearType ? null : (typeTransId ?? this.typeTransId),
@@ -159,6 +177,7 @@ class ProcessBuilderState extends Equatable {
         bootStatus,
         organizations,
         typeProcesses,
+        templates,
         name,
         isComplaint,
         typeTransId,

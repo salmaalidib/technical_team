@@ -8,6 +8,7 @@ import '../../../fields/presentation/bloc/fields_bloc.dart';
 import '../../../fields/presentation/bloc/fields_state.dart';
 import '../../../fields/presentation/widgets/create_field_dialog.dart';
 import '../../data/mappers/widget_config_mapper.dart';
+import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/entities/widget_config.dart';
@@ -94,7 +95,7 @@ class _StageCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
               child: stage.isUserTask
                   ? _UserTaskEditor(state: state, draft: draft!)
-                  : _ServiceTaskEditor(draft: draft!),
+                  : _ServiceTaskEditor(state: state, draft: draft!),
             ),
           ],
         ],
@@ -241,6 +242,19 @@ class _UserTaskEditor extends StatelessWidget {
         _DynamicFieldsEditor(draft: draft),
         const SizedBox(height: 20),
 
+        // linked document templates — feed run-time PDF generation
+        const WizardLabel('قوالب الوثائق'),
+        const SizedBox(height: 6),
+        const Text(
+          'القوالب المرتبطة بهذه المرحلة — تُملأ بياناتها وقت التنفيذ، '
+          'ويمكن توليدها PDF في مرحلة نظام لاحقة.',
+          textAlign: TextAlign.right,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        _TemplatePicker(state: state, draft: draft),
+        const SizedBox(height: 20),
+
         // digital signature
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -271,6 +285,166 @@ class _UserTaskEditor extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Multi-select for linking document templates to a USER_TASK stage. Mirrors
+/// the dynamic-fields picker: a popup checkbox list + chips for the selected.
+class _TemplatePicker extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _TemplatePicker({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final all = state.templates;
+    final selectedIds = draft.templateIds.toSet();
+    final selected =
+        all.where((t) => selectedIds.contains(t.id)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PopupMenuButton<void>(
+          tooltip: 'اختر القوالب',
+          enabled: all.isNotEmpty,
+          position: PopupMenuPosition.under,
+          constraints: const BoxConstraints(minWidth: 260, maxWidth: 360),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          itemBuilder: (context) {
+            final localSelected = {...selectedIds};
+            return [
+              PopupMenuItem<void>(
+                enabled: false,
+                padding: EdgeInsets.zero,
+                child: StatefulBuilder(
+                  builder: (context, setLocal) {
+                    if (all.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'لا توجد قوالب — أنشئ قوالب من صفحة القوالب',
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 13),
+                        ),
+                      );
+                    }
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 320),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final t in all)
+                              InkWell(
+                                onTap: () {
+                                  final nowSelected =
+                                      !localSelected.contains(t.id);
+                                  if (nowSelected) {
+                                    localSelected.add(t.id);
+                                  } else {
+                                    localSelected.remove(t.id);
+                                  }
+                                  bloc.add(StageTemplateToggled(
+                                      draft.stage.id, t.id, nowSelected));
+                                  setLocal(() {});
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  child: Row(
+                                    textDirection: TextDirection.rtl,
+                                    children: [
+                                      Checkbox(
+                                        value: localSelected.contains(t.id),
+                                        activeColor: AppColors.primary,
+                                        visualDensity: VisualDensity.compact,
+                                        onChanged: (v) {
+                                          final sel = v ?? false;
+                                          if (sel) {
+                                            localSelected.add(t.id);
+                                          } else {
+                                            localSelected.remove(t.id);
+                                          }
+                                          bloc.add(StageTemplateToggled(
+                                              draft.stage.id, t.id, sel));
+                                          setLocal(() {});
+                                        },
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          t.name,
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ];
+          },
+          child: Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: Text(
+                    all.isEmpty
+                        ? 'لا توجد قوالب'
+                        : (selected.isEmpty
+                            ? 'اختر القوالب...'
+                            : '${selected.length} قالب محدد'),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: selected.isEmpty
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight:
+                          selected.isEmpty ? FontWeight.normal : FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textPrimary),
+              ],
+            ),
+          ),
+        ),
+        if (selected.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            textDirection: TextDirection.rtl,
+            children: [
+              for (final t in selected)
+                _SelectedChip(
+                  label: t.name,
+                  onRemove: () => bloc.add(
+                      StageTemplateToggled(draft.stage.id, t.id, false)),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -681,12 +855,14 @@ class _SelectedChip extends StatelessWidget {
 
 // ════════════════════════ SERVICE TASK editor ════════════════════════
 class _ServiceTaskEditor extends StatelessWidget {
+  final ProcessBuilderState state;
   final StageConfigDraft draft;
-  const _ServiceTaskEditor({required this.draft});
+  const _ServiceTaskEditor({required this.state, required this.draft});
 
+  // SEND_EMAIL is not supported by the backend (only SEND_NOTIFICATION and
+  // GENERATE_PDF are accepted), so it is not offered here.
   static const _actions = {
     'GENERATE_PDF': 'توليد مستند PDF',
-    'SEND_EMAIL': 'إرسال بريد إلكتروني',
     'SEND_NOTIFICATION': 'إرسال إشعار',
   };
 
@@ -706,14 +882,312 @@ class _ServiceTaskEditor extends StatelessWidget {
         const SizedBox(height: 14),
         const WizardLabel('الإجراءات التلقائية'),
         const SizedBox(height: 8),
-        for (final entry in _actions.entries)
+        for (final entry in _actions.entries) ...[
           _CheckRow(
             label: entry.value,
             checked: selected.contains(entry.key),
             onChanged: (v) =>
                 bloc.add(StageActionToggled(draft.stage.id, entry.key, v)),
           ),
+          // SEND_NOTIFICATION needs a message + recipient; show its inline
+          // config right under its checkbox when selected.
+          if (entry.key == 'SEND_NOTIFICATION' &&
+              selected.contains('SEND_NOTIFICATION'))
+            _NotificationConfigEditor(state: state, draft: draft),
+          // GENERATE_PDF needs a template (linked in an earlier USER_TASK).
+          if (entry.key == 'GENERATE_PDF' &&
+              selected.contains('GENERATE_PDF'))
+            _GeneratePdfConfigEditor(state: state, draft: draft),
+        ],
       ],
+    );
+  }
+}
+
+/// Inline editor for the GENERATE_PDF payload: which linked template to render.
+/// Only templates linked to an earlier USER_TASK stage are offered, so a
+/// `document_instance` is guaranteed to exist at run-time.
+class _GeneratePdfConfigEditor extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _GeneratePdfConfigEditor({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final stageId = draft.stage.id;
+    final linked = state.linkedTemplates;
+    // Guard: if the chosen template was unlinked upstream, drop the stale value.
+    final currentValue = linked.any((t) => t.id == draft.generatePdfTemplateId)
+        ? draft.generatePdfTemplateId
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _MiniLabel('القالب المُولَّد *'),
+          const SizedBox(height: 6),
+          if (linked.isEmpty)
+            const _Hint(
+                'اربط قالباً في مرحلة مستخدم سابقة أولاً، ثم اختره هنا.')
+          else
+            WizardDropdown<int>(
+              hint: 'اختر القالب...',
+              value: currentValue,
+              items: {for (final t in linked) t.id: t.name},
+              onChanged: (v) =>
+                  bloc.add(StageGeneratePdfTemplateChanged(stageId, v)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Inline editor for the SEND_NOTIFICATION payload: message + optional title +
+/// recipient (citizen → AUTH, employee → org/dept/role cascade).
+class _NotificationConfigEditor extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _NotificationConfigEditor({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final stageId = draft.stage.id;
+    final n = draft.notification;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _MiniLabel('نص الإشعار *'),
+          const SizedBox(height: 6),
+          TextFormField(
+            initialValue: n.message,
+            textAlign: TextAlign.right,
+            maxLines: 3,
+            minLines: 2,
+            maxLength: 2000,
+            decoration: _fieldDecoration('اكتب نص الإشعار...'),
+            onChanged: (v) =>
+                bloc.add(StageNotificationMessageChanged(stageId, v)),
+          ),
+          const SizedBox(height: 4),
+          const _MiniLabel('عنوان الإشعار (اختياري)'),
+          const SizedBox(height: 6),
+          TextFormField(
+            initialValue: n.title,
+            textAlign: TextAlign.right,
+            maxLength: 255,
+            decoration: _fieldDecoration('عنوان الإشعار...'),
+            onChanged: (v) =>
+                bloc.add(StageNotificationTitleChanged(stageId, v)),
+          ),
+          const SizedBox(height: 8),
+          const _MiniLabel('المُستلِم *'),
+          const SizedBox(height: 6),
+          _RecipientToggle(
+            recipient: n.recipient,
+            onChanged: (r) =>
+                bloc.add(StageNotificationRecipientChanged(stageId, r)),
+          ),
+          if (n.recipient == NotificationRecipient.employee) ...[
+            const SizedBox(height: 12),
+            const _MiniLabel('المؤسسة'),
+            const SizedBox(height: 6),
+            WizardDropdown<int>(
+              hint: 'اختر المؤسسة...',
+              value: n.organizationId,
+              items: {for (final o in state.organizations) o.id: o.name},
+              onChanged: (v) =>
+                  bloc.add(StageNotificationOrgChanged(stageId, v)),
+            ),
+            const SizedBox(height: 12),
+            const _MiniLabel('القسم / الدائرة'),
+            const SizedBox(height: 6),
+            _NotificationDeptDropdown(state: state, draft: draft),
+            const SizedBox(height: 12),
+            const _MiniLabel('الدور'),
+            const SizedBox(height: 6),
+            _NotificationRoleDropdown(state: state, draft: draft),
+          ] else ...[
+            const SizedBox(height: 8),
+            const Text(
+              'سيُرسَل الإشعار إلى صاحب المعاملة (المواطن).',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static InputDecoration _fieldDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintTextDirection: TextDirection.rtl,
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        counterText: '',
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+        ),
+      );
+}
+
+class _RecipientToggle extends StatelessWidget {
+  final NotificationRecipient recipient;
+  final ValueChanged<NotificationRecipient> onChanged;
+  const _RecipientToggle({required this.recipient, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        Expanded(
+          child: _RecipientChip(
+            label: 'صاحب المعاملة (مواطن)',
+            selected: recipient == NotificationRecipient.citizen,
+            onTap: () => onChanged(NotificationRecipient.citizen),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _RecipientChip(
+            label: 'موظف (دور محدد)',
+            selected: recipient == NotificationRecipient.employee,
+            onTap: () => onChanged(NotificationRecipient.employee),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecipientChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _RecipientChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Department dropdown for the notification employee cascade. Reads/writes the
+/// notification config and dispatches the notification cascade events.
+class _NotificationDeptDropdown extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _NotificationDeptDropdown({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final n = draft.notification;
+    if (n.organizationId == null) {
+      return const _Hint('اختر المؤسسة أولاً');
+    }
+    if (state.leafStatus == RequestStatus.loading) {
+      return const _Hint('جاري تحميل الأقسام...', spinner: true);
+    }
+    if (state.leafStatus == RequestStatus.success &&
+        state.leafDepartments.isEmpty) {
+      return const _Hint('لا توجد أقسام لهذه المؤسسة');
+    }
+    return WizardDropdown<int>(
+      hint: 'اختر القسم...',
+      value: n.departmentId,
+      items: {for (final d in state.leafDepartments) d.id: d.name},
+      onChanged: (v) =>
+          bloc.add(StageNotificationDeptChanged(draft.stage.id, v)),
+    );
+  }
+}
+
+class _NotificationRoleDropdown extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _NotificationRoleDropdown({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final n = draft.notification;
+    if (n.departmentId == null) {
+      return const _Hint('اختر القسم أولاً');
+    }
+    if (state.rolesStatus == RequestStatus.loading) {
+      return const _Hint('جاري تحميل الأدوار...', spinner: true);
+    }
+    if (state.rolesStatus == RequestStatus.success &&
+        state.rolesByDepartment.isEmpty) {
+      return const _Hint('لا توجد أدوار لهذا القسم');
+    }
+    return WizardDropdown<int>(
+      hint: 'اختر الدور...',
+      value: n.roleId,
+      items: {for (final r in state.rolesByDepartment) r.id: r.name},
+      onChanged: (v) =>
+          bloc.add(StageNotificationRoleChanged(draft.stage.id, v)),
     );
   }
 }

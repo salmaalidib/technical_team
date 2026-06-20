@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/widget_config.dart';
 
 abstract class ProcessBuilderEvent extends Equatable {
@@ -143,6 +144,16 @@ class StageSignatureToggled extends ProcessBuilderEvent {
   List<Object?> get props => [stageId, value];
 }
 
+/// Links/unlinks a document template to a USER_TASK stage (config_json.template).
+class StageTemplateToggled extends ProcessBuilderEvent {
+  final int stageId;
+  final int templateId;
+  final bool selected;
+  const StageTemplateToggled(this.stageId, this.templateId, this.selected);
+  @override
+  List<Object?> get props => [stageId, templateId, selected];
+}
+
 class StageActionToggled extends ProcessBuilderEvent {
   final int stageId;
   final String action;
@@ -150,6 +161,67 @@ class StageActionToggled extends ProcessBuilderEvent {
   const StageActionToggled(this.stageId, this.action, this.selected);
   @override
   List<Object?> get props => [stageId, action, selected];
+}
+
+// ── SEND_NOTIFICATION config (SERVICE_TASK) ─────────────────────────────────
+class StageNotificationMessageChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final String message;
+  const StageNotificationMessageChanged(this.stageId, this.message);
+  @override
+  List<Object?> get props => [stageId, message];
+}
+
+class StageNotificationTitleChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final String title;
+  const StageNotificationTitleChanged(this.stageId, this.title);
+  @override
+  List<Object?> get props => [stageId, title];
+}
+
+class StageNotificationRecipientChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final NotificationRecipient recipient;
+  const StageNotificationRecipientChanged(this.stageId, this.recipient);
+  @override
+  List<Object?> get props => [stageId, recipient];
+}
+
+/// Org/dept/role cascade for an employee-recipient notification. Reuses the
+/// shared cascade state (the SERVICE_TASK card has no USER_TASK assignment).
+class StageNotificationOrgChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final int? organizationId;
+  const StageNotificationOrgChanged(this.stageId, this.organizationId);
+  @override
+  List<Object?> get props => [stageId, organizationId];
+}
+
+class StageNotificationDeptChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final int? departmentId;
+  const StageNotificationDeptChanged(this.stageId, this.departmentId);
+  @override
+  List<Object?> get props => [stageId, departmentId];
+}
+
+class StageNotificationRoleChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final int? roleId;
+  const StageNotificationRoleChanged(this.stageId, this.roleId);
+  @override
+  List<Object?> get props => [stageId, roleId];
+}
+
+// ── GENERATE_PDF config (SERVICE_TASK) ──────────────────────────────────────
+/// Picks which linked template the GENERATE_PDF action renders.
+class StageGeneratePdfTemplateChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final int? templateId;
+  const StageGeneratePdfTemplateChanged(this.stageId, this.templateId);
+  @override
+  List<Object?> get props => [stageId, templateId];
 }
 
 /// Final action: `POST /api/stage_config/create` only (no review/approve).
