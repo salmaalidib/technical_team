@@ -135,12 +135,14 @@ class AppRouter {
           ),
           GoRoute(
             path: '/transactions/type/:typeId',
+            // A non-numeric typeId is a malformed link: redirect to the types
+            // grid instead of rendering a page under a wrong URL.
+            redirect: (context, state) =>
+                int.tryParse(state.pathParameters['typeId'] ?? '') == null
+                    ? '/transactions'
+                    : null,
             pageBuilder: (context, state) {
-              final typeId =
-                  int.tryParse(state.pathParameters['typeId'] ?? '');
-              if (typeId == null) {
-                return const NoTransitionPage(child: ProcessTypesPage());
-              }
+              final typeId = int.parse(state.pathParameters['typeId']!);
               return NoTransitionPage(
                 child: ProcessByTypePage(
                   typeId: typeId,
@@ -149,13 +151,20 @@ class AppRouter {
               );
             },
           ),
+          // NOTE: keep this dynamic ':id' route LAST among the /transactions/*
+          // branches. go_router matches in declaration order and stops on the
+          // first hit, so any static child added after this (e.g.
+          // /transactions/archive) would be swallowed as an ':id'.
           GoRoute(
             path: '/transactions/:id',
+            // A non-numeric id is a malformed link: redirect to the types grid
+            // instead of rendering details under a wrong URL.
+            redirect: (context, state) =>
+                int.tryParse(state.pathParameters['id'] ?? '') == null
+                    ? '/transactions'
+                    : null,
             pageBuilder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              if (id == null) {
-                return const NoTransitionPage(child: ProcessTypesPage());
-              }
+              final id = int.parse(state.pathParameters['id']!);
               return NoTransitionPage(
                 child: ProcessDetailsPage(id: id),
               );

@@ -78,7 +78,8 @@ class _WizardView extends StatefulWidget {
 class _WizardViewState extends State<_WizardView> {
   bool _showStep1Errors = false;
 
-  void _close(BuildContext context) => context.go('/transactions');
+  void _close(BuildContext context) =>
+      context.canPop() ? context.pop() : context.go('/transactions');
 
   bool _step1Valid(ProcessBuilderState s) {
     final typeOk = s.isComplaint || s.typeTransId != null;

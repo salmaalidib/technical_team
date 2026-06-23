@@ -156,10 +156,10 @@ class ProcessListView extends StatelessWidget {
 }
 
 void _openDetails(BuildContext context, int id) =>
-    context.go('/transactions/$id');
+    context.push('/transactions/$id');
 
 /// Opens the wizard in complete-mode (step 4) for an existing process.
-void _openComplete(BuildContext context, int id) => context.go(
+void _openComplete(BuildContext context, int id) => context.push(
       '/transactions/create',
       extra: {'existingProcessId': id},
     );

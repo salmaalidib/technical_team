@@ -242,7 +242,7 @@ class _TypeTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () =>
-            context.go('/transactions/type/${type.id}', extra: type.name),
+            context.push('/transactions/type/${type.id}', extra: type.name),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

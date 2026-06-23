@@ -37,7 +37,7 @@ class _ProcessByTypeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
 
-    void openCreate() => context.go(
+    void openCreate() => context.push(
           '/transactions/create',
           extra: {'typeId': typeId, 'typeName': typeName},
         );
@@ -82,7 +82,9 @@ class _Header extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
-              onTap: () => context.go('/transactions'),
+              onTap: () => context.canPop()
+                  ? context.pop()
+                  : context.go('/transactions'),
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 width: 42,
