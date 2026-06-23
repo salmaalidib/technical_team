@@ -11,9 +11,11 @@ import '../data/repositories/process_builder_repository_impl.dart';
 import '../domain/repositories/process_builder_repository.dart';
 import '../domain/usecases/configure_stages_usecase.dart';
 import '../domain/usecases/create_process_definition_usecase.dart';
+import '../domain/usecases/get_missing_stage_config_usecase.dart';
 import '../domain/usecases/get_process_details_usecase.dart';
 import '../domain/usecases/get_processes_by_type_usecase.dart';
 import '../domain/usecases/get_review_queue_usecase.dart';
+import '../domain/usecases/review_process_usecase.dart';
 import '../presentation/bloc/process_builder_bloc.dart';
 import '../presentation/bloc/process_list_bloc.dart';
 
@@ -65,6 +67,18 @@ Future<void> setupProcessBuilderInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetMissingStageConfigUseCase>()) {
+    getIt.registerLazySingleton<GetMissingStageConfigUseCase>(
+      () => GetMissingStageConfigUseCase(getIt<ProcessBuilderRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<ReviewProcessUseCase>()) {
+    getIt.registerLazySingleton<ReviewProcessUseCase>(
+      () => ReviewProcessUseCase(getIt<ProcessBuilderRepository>()),
+    );
+  }
+
   getIt.registerFactory<ProcessBuilderBloc>(
     () => ProcessBuilderBloc(
       createProcess: getIt<CreateProcessDefinitionUseCase>(),
@@ -74,6 +88,7 @@ Future<void> setupProcessBuilderInjection() async {
       getLeafDepartments: getIt<GetLeafDepartmentsUseCase>(),
       getRolesByDepartment: getIt<GetRolesByDepartmentUseCase>(),
       getTemplates: getIt<GetTemplatesUseCase>(),
+      getProcessDetails: getIt<GetProcessDetailsUseCase>(),
     ),
   );
 
@@ -82,6 +97,8 @@ Future<void> setupProcessBuilderInjection() async {
       getProcessesByType: getIt<GetProcessesByTypeUseCase>(),
       getReviewQueue: getIt<GetReviewQueueUseCase>(),
       getProcessDetails: getIt<GetProcessDetailsUseCase>(),
+      getMissingStageConfig: getIt<GetMissingStageConfigUseCase>(),
+      reviewProcess: getIt<ReviewProcessUseCase>(),
     ),
   );
 }

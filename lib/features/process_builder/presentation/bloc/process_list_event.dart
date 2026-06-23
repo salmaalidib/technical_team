@@ -27,6 +27,21 @@ class LoadReviewQueue extends ProcessListEvent {
   const LoadReviewQueue();
 }
 
+/// Loads the "missing stage config" tab (`admin/missing-stage-config`).
+class LoadMissingStageConfig extends ProcessListEvent {
+  const LoadMissingStageConfig();
+}
+
+/// Approves (publishes) or rejects a process (`{id}/review`). On success the
+/// review queue reloads so the decided item drops off.
+class ReviewProcessRequested extends ProcessListEvent {
+  final int id;
+  final bool approve;
+  const ReviewProcessRequested(this.id, {required this.approve});
+  @override
+  List<Object?> get props => [id, approve];
+}
+
 /// Loads the full details of a single process (`{id}/details`).
 class LoadProcessDetails extends ProcessListEvent {
   final int id;

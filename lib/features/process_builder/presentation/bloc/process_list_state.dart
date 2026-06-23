@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/admin_process_item.dart';
+import '../../domain/entities/missing_config_item.dart';
 import '../../domain/entities/process_details.dart';
 import '../../domain/entities/review_queue_item.dart';
 
@@ -11,10 +12,21 @@ class ProcessListState extends Equatable {
   final List<AdminProcessItem> allProcesses;
   final String? allError;
 
-  /// "Review queue" tab.
+  /// "Review queue" tab (completed processes awaiting approval).
   final RequestStatus reviewStatus;
   final List<ReviewQueueItem> reviewQueue;
   final String? reviewError;
+
+  /// "Missing stage config" tab (incomplete processes).
+  final RequestStatus missingStatus;
+  final List<MissingConfigItem> missingItems;
+  final String? missingError;
+
+  /// Approve/reject action (`{id}/review`).
+  final RequestStatus reviewActionStatus;
+  final int? reviewActionId; // the process currently being approved/rejected
+  final String? reviewActionError; // one-shot
+  final String? reviewActionSuccess; // one-shot
 
   /// Single-process details load.
   final RequestStatus detailsStatus;
@@ -28,6 +40,13 @@ class ProcessListState extends Equatable {
     this.reviewStatus = RequestStatus.initial,
     this.reviewQueue = const [],
     this.reviewError,
+    this.missingStatus = RequestStatus.initial,
+    this.missingItems = const [],
+    this.missingError,
+    this.reviewActionStatus = RequestStatus.initial,
+    this.reviewActionId,
+    this.reviewActionError,
+    this.reviewActionSuccess,
     this.detailsStatus = RequestStatus.initial,
     this.details,
     this.detailsError,
@@ -40,6 +59,13 @@ class ProcessListState extends Equatable {
     RequestStatus? reviewStatus,
     List<ReviewQueueItem>? reviewQueue,
     String? reviewError,
+    RequestStatus? missingStatus,
+    List<MissingConfigItem>? missingItems,
+    String? missingError,
+    RequestStatus? reviewActionStatus,
+    int? reviewActionId,
+    String? reviewActionError,
+    String? reviewActionSuccess,
     RequestStatus? detailsStatus,
     ProcessDetails? details,
     String? detailsError,
@@ -51,6 +77,13 @@ class ProcessListState extends Equatable {
       reviewStatus: reviewStatus ?? this.reviewStatus,
       reviewQueue: reviewQueue ?? this.reviewQueue,
       reviewError: reviewError,
+      missingStatus: missingStatus ?? this.missingStatus,
+      missingItems: missingItems ?? this.missingItems,
+      missingError: missingError,
+      reviewActionStatus: reviewActionStatus ?? this.reviewActionStatus,
+      reviewActionId: reviewActionId,
+      reviewActionError: reviewActionError,
+      reviewActionSuccess: reviewActionSuccess,
       detailsStatus: detailsStatus ?? this.detailsStatus,
       details: details ?? this.details,
       detailsError: detailsError,
@@ -65,6 +98,13 @@ class ProcessListState extends Equatable {
         reviewStatus,
         reviewQueue,
         reviewError,
+        missingStatus,
+        missingItems,
+        missingError,
+        reviewActionStatus,
+        reviewActionId,
+        reviewActionError,
+        reviewActionSuccess,
         detailsStatus,
         details,
         detailsError,

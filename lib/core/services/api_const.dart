@@ -54,12 +54,14 @@ class EndPoints {
       'api/process_definitions/create'; // POST multipart (BPMN + meta)
   String get processDefinitionReviewQueue =>
       'api/process_definitions/admin/review-queue'; // GET unapproved/inactive (paginated)
+  String get processDefinitionMissingStageConfig =>
+      'api/process_definitions/admin/missing-stage-config'; // GET processes with stages missing config
   String processDefinitionsByType(Object typeId) =>
       'api/process_definitions/admin/type/$typeId'; // GET all by type (0 = all), paginated
   String processDefinitionDetails(Object id) =>
       'api/process_definitions/$id/details'; // GET details + validation
   String processDefinitionReview(Object id) =>
-      'api/process_definitions/$id/review'; // POST APPROVE/REJECT (يتم في مكان آخر)
+      'api/process_definitions/$id/review'; // POST { decision: APPROVE | REJECT }
 
   // ===== stage config (المسؤول التقني) =====
   String get stageConfigCreate =>

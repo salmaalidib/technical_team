@@ -7,11 +7,14 @@ import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../../roles/domain/usecases/get_roles_by_department_usecase.dart';
 import '../../../templates/domain/usecases/get_templates_usecase.dart';
 import '../../../type_processes/domain/usecases/get_type_processes_usecase.dart';
+import '../../domain/entities/created_process.dart';
 import '../../domain/entities/notification_action_config.dart';
+import '../../domain/entities/process_details.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/usecases/configure_stages_usecase.dart';
 import '../../domain/usecases/create_process_definition_usecase.dart';
+import '../../domain/usecases/get_process_details_usecase.dart';
 import 'process_builder_event.dart';
 import 'process_builder_state.dart';
 
@@ -24,6 +27,7 @@ class ProcessBuilderBloc
   final GetLeafDepartmentsUseCase getLeafDepartments;
   final GetRolesByDepartmentUseCase getRolesByDepartment;
   final GetTemplatesUseCase getTemplates;
+  final GetProcessDetailsUseCase getProcessDetails;
 
   ProcessBuilderBloc({
     required this.createProcess,
@@ -33,8 +37,10 @@ class ProcessBuilderBloc
     required this.getLeafDepartments,
     required this.getRolesByDepartment,
     required this.getTemplates,
+    required this.getProcessDetails,
   }) : super(const ProcessBuilderState()) {
     on<InitWizard>(_onInit);
+    on<LoadExistingForStageConfig>(_onLoadExisting);
     on<StepRequested>(_onStep);
     on<NameChanged>((e, emit) => emit(state.copyWith(name: e.name)));
     on<ComplaintChanged>(_onComplaintChanged);
@@ -87,6 +93,98 @@ class ProcessBuilderBloc
       typeTransId: event.typeId,
     ));
   }
+
+  // ── complete-mode: load an existing process straight into step 4 ─────────
+  Future<void> _onLoadExisting(
+    LoadExistingForStageConfig event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    emit(state.copyWith(
+      bootStatus: RequestStatus.loading,
+      completeMode: true,
+      currentStep: 4,
+    ));
+
+    // Cascade dropdowns + the template picker need orgs/templates loaded too.
+    final orgsResult = await getOrganizations();
+    final templatesResult = await getTemplates();
+    final detailsResult = await getProcessDetails(event.processId);
+
+    detailsResult.fold(
+      (failure) => emit(state.copyWith(
+        bootStatus: RequestStatus.failure,
+        createError: failure.message,
+      )),
+      (details) {
+        final stages =
+            details.stages.map(_toProcessStage).toList(growable: false);
+
+        final drafts = <int, StageConfigDraft>{
+          for (final s in details.stages) s.id: _draftFromDetailStage(s),
+        };
+
+        // Expand the first stage still needing configuration.
+        final firstMissing = details.stages.firstWhere(
+          (s) => !s.hasConfig,
+          orElse: () => details.stages.isNotEmpty
+              ? details.stages.first
+              : _placeholderDetail(),
+        );
+
+        emit(state.copyWith(
+          bootStatus: RequestStatus.success,
+          organizations: orgsResult.getOrElse(() => const []),
+          templates: templatesResult.getOrElse(() => const []),
+          createdProcess: CreatedProcess(
+            id: details.process.id,
+            name: details.process.name,
+            code: details.process.code,
+            status: details.process.status,
+            stages: stages,
+          ),
+          drafts: drafts,
+          currentStep: 4,
+          expandedStageId: details.stages.isEmpty ? null : firstMissing.id,
+          clearExpanded: details.stages.isEmpty,
+        ));
+      },
+    );
+  }
+
+  static ProcessStage _toProcessStage(ProcessDetailStage s) => ProcessStage(
+        id: s.id,
+        name: s.name,
+        code: s.code ?? '',
+        type: s.type ?? 'SERVICE_TASK',
+        authType: s.authType ?? 'NOAUTH',
+      );
+
+  /// Builds a draft for an existing stage. Already-configured stages are locked
+  /// (read-only, not re-submitted); their linked template ids are recovered
+  /// from the saved config so a later GENERATE_PDF can still reference them.
+  static StageConfigDraft _draftFromDetailStage(ProcessDetailStage s) {
+    final base = StageConfigDraft(stage: _toProcessStage(s));
+    if (!s.hasConfig) return base;
+
+    final templateIds = _templateIdsFromConfig(s.config);
+    return base.copyWith(locked: true, templateIds: templateIds);
+  }
+
+  static List<int> _templateIdsFromConfig(Map<String, dynamic>? config) {
+    final raw = config?['template'];
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => e is Map ? (e['template_id'] as num?)?.toInt() : null)
+        .whereType<int>()
+        .toList();
+  }
+
+  static ProcessDetailStage _placeholderDetail() => const ProcessDetailStage(
+        id: -1,
+        name: '',
+        hasConfig: false,
+        hasAssignments: false,
+      );
 
   void _onStep(StepRequested event, Emitter<ProcessBuilderState> emit) {
     emit(state.copyWith(currentStep: event.step));
@@ -192,7 +290,8 @@ class ProcessBuilderBloc
       rolesByDepartment: const [],
     ));
 
-    if (draft == null) return;
+    // Locked stages are read-only (no cascades to restore).
+    if (draft == null || draft.locked) return;
 
     // Re-fetch the cascade for whatever this stage already had selected. A
     // USER_TASK uses its own assignment; a SERVICE_TASK with an employee-
@@ -493,6 +592,7 @@ class ProcessBuilderBloc
       );
       final pdfIncomplete = state.drafts.values.any(
         (d) =>
+            !d.locked &&
             d.stage.isServiceTask &&
             d.hasGeneratePdf &&
             d.generatePdfTemplateId == null,
@@ -510,10 +610,20 @@ class ProcessBuilderBloc
       return;
     }
 
+    // Locked stages already have a saved config — re-sending them is a 409.
+    // Submit only the stages that still need configuration.
+    final pending = state.drafts.values.where((d) => !d.locked).toList();
+
+    if (pending.isEmpty) {
+      emit(state.copyWith(
+        actionError: 'لا توجد مراحل ناقصة لحفظها — كل المراحل مُهيأة مسبقاً.',
+      ));
+      return;
+    }
+
     emit(state.copyWith(submitStatus: FormStatus.submitting, submitError: null));
 
-    final stages =
-        state.drafts.values.map((d) => d.toRequestJson()).toList();
+    final stages = pending.map((d) => d.toRequestJson()).toList();
 
     final result = await configureStages(stages);
 

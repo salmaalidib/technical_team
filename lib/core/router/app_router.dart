@@ -14,6 +14,7 @@ import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/process_builder/presentation/pages/process_types_page.dart';
 import '../../features/process_builder/presentation/pages/process_by_type_page.dart';
 import '../../features/process_builder/presentation/pages/process_details_page.dart';
+import '../../features/process_builder/presentation/pages/admin_review_page.dart';
 import '../../features/process_builder/presentation/widgets/create_process_wizard.dart';
 import '../../features/templates/presentation/pages/templates_page.dart';
 import '../../features/settings/presentation/pages/sett_page.dart' as settings;
@@ -110,13 +111,25 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: '/transactions/admin',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: AdminReviewPage(),
+            ),
+          ),
+          GoRoute(
             path: '/transactions/create',
             pageBuilder: (context, state) {
               final extra = state.extra;
               final typeId = extra is Map ? extra['typeId'] as int? : null;
               final typeName = extra is Map ? extra['typeName'] as String? : null;
+              final existingProcessId =
+                  extra is Map ? extra['existingProcessId'] as int? : null;
               return NoTransitionPage(
-                child: CreateProcessPage(typeId: typeId, typeName: typeName),
+                child: CreateProcessPage(
+                  typeId: typeId,
+                  typeName: typeName,
+                  existingProcessId: existingProcessId,
+                ),
               );
             },
           ),

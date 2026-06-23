@@ -29,6 +29,15 @@ class StepRequested extends ProcessBuilderEvent {
   List<Object?> get props => [step];
 }
 
+/// Complete-mode entry: loads an existing process's stages (`{id}/details`),
+/// rebuilds the drafts (already-configured stages locked), and jumps to step 4.
+class LoadExistingForStageConfig extends ProcessBuilderEvent {
+  final int processId;
+  const LoadExistingForStageConfig(this.processId);
+  @override
+  List<Object?> get props => [processId];
+}
+
 // ── step 1: basic info ───────────────────────────────────────────────────────
 class NameChanged extends ProcessBuilderEvent {
   final String name;

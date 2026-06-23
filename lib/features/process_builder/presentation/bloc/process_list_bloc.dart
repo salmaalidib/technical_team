@@ -1,27 +1,36 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/request_status.dart';
+import '../../domain/usecases/get_missing_stage_config_usecase.dart';
 import '../../domain/usecases/get_process_details_usecase.dart';
 import '../../domain/usecases/get_processes_by_type_usecase.dart';
 import '../../domain/usecases/get_review_queue_usecase.dart';
+import '../../domain/usecases/review_process_usecase.dart';
 import 'process_list_event.dart';
 import 'process_list_state.dart';
 
-/// Read side of the process builder: the two listing tabs and the details view.
-/// Kept separate from [ProcessBuilderBloc] (which owns the create wizard).
+/// Read side of the process builder: the listing tabs, the details view, and
+/// the approve/reject action. Kept separate from [ProcessBuilderBloc] (which
+/// owns the create wizard).
 class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
   final GetProcessesByTypeUseCase getProcessesByType;
   final GetReviewQueueUseCase getReviewQueue;
   final GetProcessDetailsUseCase getProcessDetails;
+  final GetMissingStageConfigUseCase getMissingStageConfig;
+  final ReviewProcessUseCase reviewProcess;
 
   ProcessListBloc({
     required this.getProcessesByType,
     required this.getReviewQueue,
     required this.getProcessDetails,
+    required this.getMissingStageConfig,
+    required this.reviewProcess,
   }) : super(const ProcessListState()) {
     on<LoadAllProcesses>(_onLoadAll);
     on<LoadProcessesByType>(_onLoadByType);
     on<LoadReviewQueue>(_onLoadReview);
+    on<LoadMissingStageConfig>(_onLoadMissing);
+    on<ReviewProcessRequested>(_onReviewProcess);
     on<LoadProcessDetails>(_onLoadDetails);
   }
 
@@ -77,6 +86,68 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
         reviewQueue: items,
         reviewError: null,
       )),
+    );
+  }
+
+  Future<void> _onLoadMissing(
+    LoadMissingStageConfig event,
+    Emitter<ProcessListState> emit,
+  ) async {
+    emit(state.copyWith(
+      missingStatus: RequestStatus.loading,
+      missingError: null,
+    ));
+
+    final result = await getMissingStageConfig();
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        missingStatus: RequestStatus.failure,
+        missingError: failure.message,
+      )),
+      (items) => emit(state.copyWith(
+        missingStatus: RequestStatus.success,
+        missingItems: items,
+        missingError: null,
+      )),
+    );
+  }
+
+  Future<void> _onReviewProcess(
+    ReviewProcessRequested event,
+    Emitter<ProcessListState> emit,
+  ) async {
+    // Guard against a second decision while one is in flight.
+    if (state.reviewActionStatus == RequestStatus.loading) return;
+
+    emit(state.copyWith(
+      reviewActionStatus: RequestStatus.loading,
+      reviewActionId: event.id,
+      reviewActionError: null,
+      reviewActionSuccess: null,
+    ));
+
+    final result = await reviewProcess(
+      id: event.id,
+      decision: event.approve ? ReviewDecision.approve : ReviewDecision.reject,
+    );
+
+    await result.fold(
+      (failure) async => emit(state.copyWith(
+        reviewActionStatus: RequestStatus.failure,
+        reviewActionError: failure.message,
+      )),
+      (_) async {
+        emit(state.copyWith(
+          reviewActionStatus: RequestStatus.success,
+          reviewActionSuccess: event.approve
+              ? 'تمت الموافقة على المعاملة ونشرها'
+              : 'تم رفض المعاملة',
+          // Optimistically drop the decided item from the review queue.
+          reviewQueue:
+              state.reviewQueue.where((p) => p.id != event.id).toList(),
+        ));
+      },
     );
   }
 

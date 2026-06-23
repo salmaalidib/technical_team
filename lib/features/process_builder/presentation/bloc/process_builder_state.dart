@@ -41,6 +41,10 @@ class ProcessBuilderState extends Equatable {
   final String? createError;
   final CreatedProcess? createdProcess;
 
+  /// True when the wizard was opened to COMPLETE an existing process (step 4
+  /// only): some stages may be locked, and submit sends only the missing ones.
+  final bool completeMode;
+
   // ── step 4 ──────────────────────────────────────────────────────────────
   final Map<int, StageConfigDraft> drafts;
 
@@ -79,6 +83,7 @@ class ProcessBuilderState extends Equatable {
     this.createStatus = RequestStatus.initial,
     this.createError,
     this.createdProcess,
+    this.completeMode = false,
     this.drafts = const {},
     this.expandedStageId,
     this.leafStatus = RequestStatus.initial,
@@ -129,6 +134,7 @@ class ProcessBuilderState extends Equatable {
     RequestStatus? createStatus,
     String? createError,
     CreatedProcess? createdProcess,
+    bool? completeMode,
     Map<int, StageConfigDraft>? drafts,
     int? expandedStageId,
     bool clearExpanded = false,
@@ -158,6 +164,7 @@ class ProcessBuilderState extends Equatable {
       createStatus: createStatus ?? this.createStatus,
       createError: createError,
       createdProcess: createdProcess ?? this.createdProcess,
+      completeMode: completeMode ?? this.completeMode,
       drafts: drafts ?? this.drafts,
       expandedStageId:
           clearExpanded ? null : (expandedStageId ?? this.expandedStageId),
@@ -190,6 +197,7 @@ class ProcessBuilderState extends Equatable {
         createStatus,
         createError,
         createdProcess,
+        completeMode,
         drafts,
         expandedStageId,
         leafStatus,

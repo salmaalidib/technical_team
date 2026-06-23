@@ -57,6 +57,31 @@ class ProcessBuilderRemoteDataSource {
     );
   }
 
+  /// `GET /api/process_definitions/admin/missing-stage-config` — processes with
+  /// stages still missing their config.
+  Future<Either<Failure, dynamic>> getMissingStageConfig({
+    required int page,
+    required int limit,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _ep.processDefinitionMissingStageConfig,
+      queryParameters: {'page': page, 'limit': limit},
+    );
+  }
+
+  /// `POST /api/process_definitions/{id}/review` — `{ decision: APPROVE | REJECT }`.
+  Future<Either<Failure, dynamic>> reviewProcess({
+    required int id,
+    required String decision,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _ep.processDefinitionReview(id),
+      body: {'decision': decision},
+    );
+  }
+
   /// `GET /api/process_definitions/admin/type/{id}` — all processes of a type
   /// (`typeId` `0` = every type).
   Future<Either<Failure, dynamic>> getProcessesByType({

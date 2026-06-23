@@ -33,15 +33,31 @@ class CreateProcessPage extends StatelessWidget {
   final int? typeId;
   final String? typeName;
 
-  const CreateProcessPage({super.key, this.typeId, this.typeName});
+  /// When set, the wizard opens in COMPLETE mode for an existing process:
+  /// it loads its stages and jumps straight to step 4 (no create flow).
+  final int? existingProcessId;
+
+  const CreateProcessPage({
+    super.key,
+    this.typeId,
+    this.typeName,
+    this.existingProcessId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              getIt<ProcessBuilderBloc>()..add(InitWizard(typeId: typeId)),
+          create: (_) {
+            final bloc = getIt<ProcessBuilderBloc>();
+            if (existingProcessId != null) {
+              bloc.add(LoadExistingForStageConfig(existingProcessId!));
+            } else {
+              bloc.add(InitWizard(typeId: typeId));
+            }
+            return bloc;
+          },
         ),
         BlocProvider(
           create: (_) => getIt<FieldsBloc>()..add(const LoadAllFields()),
@@ -131,15 +147,22 @@ class _WizardViewState extends State<_WizardView> {
           color: const Color(0xffF0EFE7),
           child: Column(
             children: [
-              _Header(onClose: () => _close(context)),
-              Container(
-                color: AppColors.surface,
-                padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
-                child: WizardStepper(
-                  currentStep: state.currentStep,
-                  titles: _stepTitles,
-                ),
+              _Header(
+                onClose: () => _close(context),
+                completeMode: state.completeMode,
               ),
+              // The step indicator is for the create flow; complete-mode opens
+              // straight at step 4 and has nothing to step through.
+              if (!state.completeMode) ...[
+                Container(
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
+                  child: WizardStepper(
+                    currentStep: state.currentStep,
+                    titles: _stepTitles,
+                  ),
+                ),
+              ],
               const Divider(height: 1, color: AppColors.border),
               Expanded(
                 child: _Body(state: state, showErrors: _showStep1Errors),
@@ -171,8 +194,24 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.bootStatus == RequestStatus.loading && state.currentStep == 1) {
+    if (state.bootStatus == RequestStatus.loading &&
+        (state.currentStep == 1 || state.completeMode)) {
       return const Center(child: CircularProgressIndicator());
+    }
+    // Complete-mode load failed (couldn't fetch the existing process).
+    if (state.completeMode &&
+        state.bootStatus == RequestStatus.failure) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            state.createError ?? 'تعذّر تحميل المعاملة.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w600, color: Colors.redAccent),
+          ),
+        ),
+      );
     }
     if (state.createStatus == RequestStatus.loading) {
       return const Center(
@@ -213,7 +252,8 @@ class _Body extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final VoidCallback onClose;
-  const _Header({required this.onClose});
+  final bool completeMode;
+  const _Header({required this.onClose, this.completeMode = false});
 
   @override
   Widget build(BuildContext context) {
@@ -237,9 +277,9 @@ class _Header extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const Text(
-            'إنشاء معاملة جديدة',
-            style: TextStyle(
+          Text(
+            completeMode ? 'إكمال تهيئة المعاملة' : 'إنشاء معاملة جديدة',
+            style: const TextStyle(
               color: AppColors.primary,
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -271,7 +311,9 @@ class _Footer extends StatelessWidget {
     final creating = state.createStatus == RequestStatus.loading;
     final busy = submitting || creating;
 
-    final primaryLabel = isLast ? '✓  حفظ واعتماد وتفعيل' : 'التالي';
+    final primaryLabel = isLast
+        ? (state.completeMode ? '✓  حفظ المراحل الناقصة' : '✓  حفظ واعتماد وتفعيل')
+        : 'التالي';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -327,7 +369,8 @@ class _Footer extends StatelessWidget {
               ),
             ),
           ),
-          if (state.currentStep > 1) ...[
+          // No "previous" in complete-mode: it opens directly at step 4.
+          if (state.currentStep > 1 && !state.completeMode) ...[
             const SizedBox(width: 12),
             SizedBox(
               height: 50,

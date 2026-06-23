@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/admin_process_item.dart';
 import '../entities/created_process.dart';
+import '../entities/missing_config_item.dart';
 import '../entities/process_details.dart';
 import '../entities/review_queue_item.dart';
 
@@ -37,6 +38,19 @@ abstract class ProcessBuilderRepository {
   Future<Either<Failure, List<ReviewQueueItem>>> getReviewQueue({
     int page = 1,
     int limit = 100,
+  });
+
+  /// `GET /api/process_definitions/admin/missing-stage-config` — processes with
+  /// stages still missing their config.
+  Future<Either<Failure, List<MissingConfigItem>>> getMissingStageConfig({
+    int page = 1,
+    int limit = 100,
+  });
+
+  /// `POST /api/process_definitions/{id}/review` — approve or reject a process.
+  Future<Either<Failure, void>> reviewProcess({
+    required int id,
+    required String decision, // APPROVE | REJECT
   });
 
   /// `GET /api/process_definitions/admin/type/{id}` (`typeId` `0` = all types).

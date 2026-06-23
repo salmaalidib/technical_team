@@ -40,6 +40,11 @@ class StageConfigDraft extends Equatable {
   /// run-time generation finds no `document_instance`.
   final int? generatePdfTemplateId;
 
+  /// True when this stage already has a saved `stage_config` (complete-mode:
+  /// the wizard opened an existing process). Locked stages are read-only and
+  /// are NOT re-submitted — the backend rejects re-creating an existing config.
+  final bool locked;
+
   const StageConfigDraft({
     required this.stage,
     this.organizationId,
@@ -51,6 +56,7 @@ class StageConfigDraft extends Equatable {
     this.actions = const [],
     this.notification = const NotificationActionConfig(),
     this.generatePdfTemplateId,
+    this.locked = false,
   });
 
   /// Whether SEND_NOTIFICATION is selected on this stage.
@@ -65,6 +71,8 @@ class StageConfigDraft extends Equatable {
   /// SEND_NOTIFICATION with no message/recipient, or a GENERATE_PDF with no
   /// template (both rejected by the backend).
   bool get isComplete {
+    // Already-saved stages are complete by definition (and not re-submitted).
+    if (locked) return true;
     if (stage.isUserTask) {
       return organizationId != null &&
           departmentId != null &&
@@ -92,6 +100,7 @@ class StageConfigDraft extends Equatable {
     NotificationActionConfig? notification,
     int? generatePdfTemplateId,
     bool clearGeneratePdfTemplate = false,
+    bool? locked,
   }) {
     return StageConfigDraft(
       stage: stage,
@@ -106,6 +115,7 @@ class StageConfigDraft extends Equatable {
       generatePdfTemplateId: clearGeneratePdfTemplate
           ? null
           : (generatePdfTemplateId ?? this.generatePdfTemplateId),
+      locked: locked ?? this.locked,
     );
   }
 
@@ -178,5 +188,6 @@ class StageConfigDraft extends Equatable {
         actions,
         notification,
         generatePdfTemplateId,
+        locked,
       ];
 }

@@ -3,12 +3,14 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/admin_process_item.dart';
 import '../../domain/entities/created_process.dart';
+import '../../domain/entities/missing_config_item.dart';
 import '../../domain/entities/process_details.dart';
 import '../../domain/entities/review_queue_item.dart';
 import '../../domain/repositories/process_builder_repository.dart';
 import '../datasources/process_builder_remote_data_source.dart';
 import '../models/admin_process_item_model.dart';
 import '../models/created_process_model.dart';
+import '../models/missing_config_item_model.dart';
 import '../models/process_details_model.dart';
 import '../models/review_queue_item_model.dart';
 
@@ -112,6 +114,47 @@ class ProcessBuilderRepositoryImpl implements ProcessBuilderRepository {
           return const Left(ServerFailure('تعذّر قراءة قائمة المراجعة.'));
         }
       },
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<MissingConfigItem>>> getMissingStageConfig({
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final result = await remote.getMissingStageConfig(page: page, limit: limit);
+
+    return result.fold<Either<Failure, List<MissingConfigItem>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            _items(_payload(body))
+                .map<MissingConfigItem>(
+                  (e) => MissingConfigItemModel.fromJson(
+                    e as Map<String, dynamic>,
+                  ),
+                )
+                .toList(),
+          );
+        } catch (_) {
+          return const Left(
+              ServerFailure('تعذّر قراءة قائمة العمليات غير المكتملة.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> reviewProcess({
+    required int id,
+    required String decision,
+  }) async {
+    final result = await remote.reviewProcess(id: id, decision: decision);
+
+    return result.fold<Either<Failure, void>>(
+      (failure) => Left(failure),
+      (_) => const Right(null),
     );
   }
 

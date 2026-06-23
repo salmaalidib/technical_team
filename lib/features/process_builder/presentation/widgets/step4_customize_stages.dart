@@ -93,9 +93,11 @@ class _StageCard extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
-              child: stage.isUserTask
-                  ? _UserTaskEditor(state: state, draft: draft!)
-                  : _ServiceTaskEditor(state: state, draft: draft!),
+              child: draft!.locked
+                  ? const _LockedStageNotice()
+                  : (stage.isUserTask
+                      ? _UserTaskEditor(state: state, draft: draft!)
+                      : _ServiceTaskEditor(state: state, draft: draft!)),
             ),
           ],
         ],
@@ -116,6 +118,11 @@ class _CardHeader extends StatelessWidget {
   });
 
   String get _subtitle {
+    if (draft?.locked == true) {
+      return stage.isUserTask
+          ? 'مهمة مستخدم · مُهيّأة مسبقاً'
+          : 'مهمة نظام · مُهيّأة مسبقاً';
+    }
     if (stage.isUserTask) {
       final ready = draft?.isComplete ?? false;
       return ready ? 'مهمة مستخدم · مُهيّأة' : 'مهمة مستخدم · غير مُهيّأة';
@@ -189,11 +196,54 @@ class _CardHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (draft?.locked == true) ...[
+            const Icon(Icons.lock_outline_rounded,
+                size: 18, color: AppColors.secondary),
+            const SizedBox(width: 6),
+          ],
           Icon(
             expanded
                 ? Icons.keyboard_arrow_up_rounded
                 : Icons.keyboard_arrow_down_rounded,
             color: AppColors.textSecondary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Read-only panel shown for a stage that already has a saved `stage_config`
+/// (complete-mode). It is not editable and is not re-submitted.
+class _LockedStageNotice extends StatelessWidget {
+  const _LockedStageNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          const Icon(Icons.check_circle_outline_rounded,
+              color: AppColors.secondary, size: 22),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'هذه المرحلة مُهيّأة مسبقاً ولا يمكن تعديلها من هنا. '
+              'احفظ لإكمال المراحل الناقصة فقط.',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),

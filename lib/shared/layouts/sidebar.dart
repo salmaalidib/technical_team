@@ -114,6 +114,11 @@ class AppSidebar extends StatelessWidget {
                   route: '/transactions',
                 ),
                 _SidebarItem(
+                  icon: Icons.fact_check_outlined,
+                  title: 'اعتماد المعاملات',
+                  route: '/transactions/admin',
+                ),
+                _SidebarItem(
                   icon: Icons.group_outlined,
                   title: 'الموظفين',
                   route: '/employees',
