@@ -5,6 +5,8 @@ import '../entities/doc_template.dart';
 import '../entities/form_config.dart';
 import '../repositories/doc_template_repository.dart';
 
+/// Step 2 of authoring: set `config_json` on a template. The backend archives
+/// the previous version and returns the new (latest) one.
 class UpdateTemplateUseCase {
   final DocTemplateRepository repository;
 
@@ -12,19 +14,8 @@ class UpdateTemplateUseCase {
 
   Future<Either<Failure, DocTemplate>> call({
     required int id,
-    String? name,
-    int? typeDocId,
-    FormConfig? config,
-    List<int>? fileBytes,
-    String? fileName,
+    required FormConfig config,
   }) {
-    return repository.updateTemplate(
-      id: id,
-      name: name,
-      typeDocId: typeDocId,
-      config: config,
-      fileBytes: fileBytes,
-      fileName: fileName,
-    );
+    return repository.updateConfig(id: id, config: config);
   }
 }

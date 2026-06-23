@@ -1,65 +1,58 @@
-import '../../../process_builder/domain/entities/widget_config.dart';
-import '../../domain/entities/form_config.dart';
-
-/// Field-level validation results for the template form. The dynamic fields are
-/// picked from the shared field library (already valid per the backend schema),
-/// so widget-level checks reduce to "at least one field" and "no duplicate id".
-class TemplateFormErrors {
+/// Field-level validation for the two-step template wizard.
+///
+/// * Step 1 (create): name, document type, uploaded file.
+/// * Step 2 (config): form_id, form_name, and — since the backend fills each
+///   PDF field by `widget.data.id` — every supported extracted PDF field must
+///   be linked to a library field before saving.
+class Step1Errors {
   final String? name;
   final String? typeDoc;
   final String? file;
-  final String? formId;
-  final String? formName;
 
-  /// A blocking widget-level problem shown as a snackbar (not tied to one
-  /// field): no fields selected, or a duplicate widget id across the form.
-  final String? widgets;
+  const Step1Errors({this.name, this.typeDoc, this.file});
 
-  const TemplateFormErrors({
-    this.name,
-    this.typeDoc,
-    this.file,
-    this.formId,
-    this.formName,
-    this.widgets,
-  });
+  bool get isValid => name == null && typeDoc == null && file == null;
 
-  bool get isValid =>
-      name == null &&
-      typeDoc == null &&
-      file == null &&
-      formId == null &&
-      formName == null &&
-      widgets == null;
-
-  String? get firstMessage =>
-      name ?? typeDoc ?? file ?? formId ?? formName ?? widgets;
+  String? get firstMessage => name ?? typeDoc ?? file;
 }
 
-TemplateFormErrors validateTemplateForm({
+Step1Errors validateStep1({
   required String name,
   required int? typeDocId,
   required bool hasFile,
-  required FormConfig config,
 }) {
-  return TemplateFormErrors(
+  return Step1Errors(
     name: name.isEmpty ? 'اسم القالب مطلوب' : null,
     typeDoc: typeDocId == null ? 'نوع الوثيقة مطلوب' : null,
     file: hasFile ? null : 'ملف القالب مطلوب',
-    formId: config.formId.isEmpty ? 'معرّف النموذج مطلوب' : null,
-    formName: config.formName.isEmpty ? 'اسم النموذج مطلوب' : null,
-    widgets: _validateWidgets(config.widgets),
   );
 }
 
-String? _validateWidgets(List<WidgetConfig> widgets) {
-  if (widgets.isEmpty) return 'أضف حقلاً ديناميكياً واحداً على الأقل للنموذج';
+class Step2Errors {
+  final String? formId;
+  final String? formName;
 
-  final seenIds = <String>{};
-  for (final w in widgets) {
-    if (!seenIds.add(w.widgetId)) {
-      return 'حقل مكرّر في النموذج: ${w.label}';
-    }
-  }
-  return null;
+  /// Blocking widget-level problem shown as a snackbar: an unlinked PDF field.
+  final String? links;
+
+  const Step2Errors({this.formId, this.formName, this.links});
+
+  bool get isValid => formId == null && formName == null && links == null;
+
+  String? get firstMessage => formId ?? formName ?? links;
+}
+
+Step2Errors validateStep2({
+  required String formId,
+  required String formName,
+  required int supportedFieldCount,
+  required int linkedCount,
+}) {
+  return Step2Errors(
+    formId: formId.isEmpty ? 'معرّف النموذج مطلوب' : null,
+    formName: formName.isEmpty ? 'اسم النموذج مطلوب' : null,
+    links: linkedCount < supportedFieldCount
+        ? 'يجب ربط جميع حقول الـ PDF بحقل من المكتبة قبل الحفظ'
+        : null,
+  );
 }

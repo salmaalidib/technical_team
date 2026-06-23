@@ -76,7 +76,9 @@ class EndPoints {
   String get documentTemplates =>
       'api/document-templates'; // GET active list · POST create (multipart)
   String documentTemplateById(Object id) =>
-      'api/document-templates/$id'; // GET one · PUT update (multipart, versioned)
+      'api/document-templates/$id'; // GET one · PUT update config_json (JSON, versioned)
+  String documentTemplateFields(Object id) =>
+      'api/document-templates/$id/fields'; // GET extracted AcroForm fields of a saved template
 
   // ===== requirements: dynamic field widgets (bearer token required) =====
   String get textFields => 'api/text-fields'; // GET list · POST create

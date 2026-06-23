@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/doc_template.dart';
+import '../../domain/entities/extracted_field.dart';
 
 class TemplatesState extends Equatable {
   /// List load.
@@ -10,20 +11,38 @@ class TemplatesState extends Equatable {
   final List<DocTemplate> templates;
   final String? error;
 
-  /// Create / update submission (kept separate from the list load).
-  final FormStatus formStatus;
-  final String? formError;
+  /// Step 1 — create (file + meta). On success [createdTemplate] holds the new
+  /// row so the wizard can advance to step 2 with its id.
+  final FormStatus createStatus;
+  final String? createError;
+  final DocTemplate? createdTemplate;
 
-  /// Set after a successful create/update so the form page can pop and the list
-  /// can refresh. Reset by [ResetTemplateForm].
+  /// Extracted PDF fields for the current template (loaded between the steps).
+  final RequestStatus extractStatus;
+  final List<ExtractedField> extractedFields;
+  final String? extractError;
+
+  /// Step 2 — config save (PUT). Kept separate from create so the wizard can
+  /// tell "row created" apart from "config saved".
+  final FormStatus configStatus;
+  final String? configError;
+
+  /// Set after a successful config save so the form page can pop and the list
+  /// reflects the latest version. Reset by [ResetTemplateForm].
   final int? lastSavedId;
 
   const TemplatesState({
     this.status = RequestStatus.initial,
     this.templates = const [],
     this.error,
-    this.formStatus = FormStatus.idle,
-    this.formError,
+    this.createStatus = FormStatus.idle,
+    this.createError,
+    this.createdTemplate,
+    this.extractStatus = RequestStatus.initial,
+    this.extractedFields = const [],
+    this.extractError,
+    this.configStatus = FormStatus.idle,
+    this.configError,
     this.lastSavedId,
   });
 
@@ -31,18 +50,36 @@ class TemplatesState extends Equatable {
     RequestStatus? status,
     List<DocTemplate>? templates,
     String? error,
-    FormStatus? formStatus,
-    String? formError,
+    FormStatus? createStatus,
+    String? createError,
+    DocTemplate? createdTemplate,
+    RequestStatus? extractStatus,
+    List<ExtractedField>? extractedFields,
+    String? extractError,
+    FormStatus? configStatus,
+    String? configError,
     int? lastSavedId,
-    bool clearLastSaved = false,
+    bool clearWizard = false,
   }) {
     return TemplatesState(
       status: status ?? this.status,
       templates: templates ?? this.templates,
       error: error,
-      formStatus: formStatus ?? this.formStatus,
-      formError: formError,
-      lastSavedId: clearLastSaved ? null : (lastSavedId ?? this.lastSavedId),
+      createStatus:
+          clearWizard ? FormStatus.idle : (createStatus ?? this.createStatus),
+      createError: clearWizard ? null : createError,
+      createdTemplate:
+          clearWizard ? null : (createdTemplate ?? this.createdTemplate),
+      extractStatus: clearWizard
+          ? RequestStatus.initial
+          : (extractStatus ?? this.extractStatus),
+      extractedFields:
+          clearWizard ? const [] : (extractedFields ?? this.extractedFields),
+      extractError: clearWizard ? null : extractError,
+      configStatus:
+          clearWizard ? FormStatus.idle : (configStatus ?? this.configStatus),
+      configError: clearWizard ? null : configError,
+      lastSavedId: clearWizard ? null : (lastSavedId ?? this.lastSavedId),
     );
   }
 
@@ -51,8 +88,14 @@ class TemplatesState extends Equatable {
         status,
         templates,
         error,
-        formStatus,
-        formError,
+        createStatus,
+        createError,
+        createdTemplate,
+        extractStatus,
+        extractedFields,
+        extractError,
+        configStatus,
+        configError,
         lastSavedId,
       ];
 }

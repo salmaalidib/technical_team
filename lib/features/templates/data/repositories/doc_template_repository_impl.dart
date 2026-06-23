@@ -1,13 +1,13 @@
-import 'dart:convert';
-
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/doc_template.dart';
+import '../../domain/entities/extracted_field.dart';
 import '../../domain/entities/form_config.dart';
 import '../../domain/repositories/doc_template_repository.dart';
 import '../datasources/doc_template_remote_data_source.dart';
 import '../models/doc_template_model.dart';
+import '../models/extracted_field_model.dart';
 
 class DocTemplateRepositoryImpl implements DocTemplateRepository {
   final DocTemplateRemoteDataSource remote;
@@ -39,34 +39,19 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
   @override
   Future<Either<Failure, DocTemplate>> getTemplate(int id) async {
     final result = await remote.getTemplate(id);
-    return result.fold<Either<Failure, DocTemplate>>(
-      (failure) => Left(failure),
-      (body) {
-        try {
-          return Right(
-            DocTemplateModel.fromJson(_payload(body) as Map<String, dynamic>),
-          );
-        } catch (_) {
-          return const Left(ServerFailure('تعذّر قراءة بيانات القالب.'));
-        }
-      },
-    );
+    return _readTemplate(result, 'تعذّر قراءة بيانات القالب.');
   }
 
   @override
   Future<Either<Failure, DocTemplate>> createTemplate({
     required String name,
     required int typeDocId,
-    required FormConfig config,
     required List<int> fileBytes,
     required String fileName,
   }) async {
     final result = await remote.createTemplate(
-      fields: {
-        'name': name.trim(),
-        'type_doc_id': typeDocId,
-        'config_json': jsonEncode(config.toJson()),
-      },
+      name: name.trim(),
+      typeDocId: typeDocId,
       fileBytes: fileBytes,
       fileName: fileName,
     );
@@ -75,26 +60,31 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
   }
 
   @override
-  Future<Either<Failure, DocTemplate>> updateTemplate({
-    required int id,
-    String? name,
-    int? typeDocId,
-    FormConfig? config,
-    List<int>? fileBytes,
-    String? fileName,
-  }) async {
-    final result = await remote.updateTemplate(
-      id: id,
-      fields: {
-        if (name != null) 'name': name.trim(),
-        if (typeDocId != null) 'type_doc_id': typeDocId,
-        if (config != null) 'config_json': jsonEncode(config.toJson()),
+  Future<Either<Failure, List<ExtractedField>>> extractFields(int id) async {
+    final result = await remote.extractFields(id);
+    return result.fold<Either<Failure, List<ExtractedField>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(ExtractedFieldModel.listFromData(_payload(body)));
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة حقول القالب.'));
+        }
       },
-      fileBytes: fileBytes,
-      fileName: fileName,
+    );
+  }
+
+  @override
+  Future<Either<Failure, DocTemplate>> updateConfig({
+    required int id,
+    required FormConfig config,
+  }) async {
+    final result = await remote.updateConfig(
+      id: id,
+      configJson: config.toJson(),
     );
 
-    return _readTemplate(result, 'تعذّر قراءة استجابة تعديل القالب.');
+    return _readTemplate(result, 'تعذّر قراءة استجابة حفظ إعدادات القالب.');
   }
 
   Either<Failure, DocTemplate> _readTemplate(

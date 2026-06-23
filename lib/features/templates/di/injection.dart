@@ -5,6 +5,7 @@ import '../data/datasources/doc_template_remote_data_source.dart';
 import '../data/repositories/doc_template_repository_impl.dart';
 import '../domain/repositories/doc_template_repository.dart';
 import '../domain/usecases/create_template_usecase.dart';
+import '../domain/usecases/extract_template_fields_usecase.dart';
 import '../domain/usecases/get_template_usecase.dart';
 import '../domain/usecases/get_templates_usecase.dart';
 import '../domain/usecases/update_template_usecase.dart';
@@ -50,11 +51,18 @@ Future<void> setupTemplatesInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<ExtractTemplateFieldsUseCase>()) {
+    getIt.registerLazySingleton<ExtractTemplateFieldsUseCase>(
+      () => ExtractTemplateFieldsUseCase(getIt<DocTemplateRepository>()),
+    );
+  }
+
   getIt.registerFactory<TemplatesBloc>(
     () => TemplatesBloc(
       getTemplates: getIt<GetTemplatesUseCase>(),
       createTemplate: getIt<CreateTemplateUseCase>(),
       updateTemplate: getIt<UpdateTemplateUseCase>(),
+      extractFields: getIt<ExtractTemplateFieldsUseCase>(),
     ),
   );
 }

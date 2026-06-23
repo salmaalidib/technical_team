@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../fields/presentation/bloc/fields_bloc.dart';
@@ -12,18 +13,24 @@ import '../../../type_docs/presentation/bloc/type_docs_bloc.dart';
 import '../../../type_docs/presentation/bloc/type_docs_event.dart';
 import '../../../type_docs/presentation/widgets/type_doc_selector.dart';
 import '../../domain/entities/doc_template.dart';
+import '../../domain/entities/extracted_field.dart';
 import '../../domain/entities/form_config.dart';
 import '../bloc/templates_bloc.dart';
 import '../bloc/templates_event.dart';
 import '../bloc/templates_state.dart';
-import '../widgets/dynamic_fields_picker.dart';
+import '../widgets/extracted_fields_picker.dart';
 import '../widgets/form_inputs.dart';
 import '../widgets/template_file_upload.dart';
 import 'template_validation.dart';
 
-/// Create / edit a document template. Receives the live [TemplatesBloc] from
-/// the list page (so the list refreshes in place) and provides a fresh
-/// [TypeDocsBloc] for the type pickers.
+/// Create / edit a document template as a **two-step wizard** that mirrors the
+/// backend API:
+///   * Step 1 — create the row (`POST`: file + name + type_doc_id).
+///   * Step 2 — load the PDF's extracted fields (`GET /{id}/fields`), link each
+///     to a library field, then save `config_json` (`PUT /{id}`).
+///
+/// On edit the form opens straight on step 2 for the existing template (its
+/// name / type / file are not editable via the backend `PUT`).
 class TemplateFormPage extends StatelessWidget {
   final TemplatesBloc templatesBloc;
   final DocTemplate? template; // null = create
@@ -70,11 +77,14 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
   int? _typeDocId;
   PickedFile? _pickedFile;
 
-  /// Dynamic fields linked from the shared library — same model as a stage's
-  /// widgets. Keyed by [WidgetConfig.widgetId] for de-dup on toggle.
-  late List<WidgetConfig> _widgets;
+  /// Wizard position: 1 = basic info (create), 2 = config (link + save).
+  late int _step;
 
-  TemplateFormErrors _errors = const TemplateFormErrors();
+  /// The template id once it exists (created in step 1, or the edited one).
+  int? _templateId;
+
+  /// PDF-field-id → linked widget (`data.id` forced to the PDF field id).
+  final Map<String, WidgetConfig?> _links = {};
 
   bool get _isEdit => widget.template != null;
 
@@ -87,7 +97,21 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     _formIdCtrl = TextEditingController(text: cfg?.formId ?? '');
     _formNameCtrl = TextEditingController(text: cfg?.formName ?? '');
     _typeDocId = t?.typeDocId;
-    _widgets = List<WidgetConfig>.from(cfg?.widgets ?? const []);
+
+    if (_isEdit) {
+      // Edit: jump straight to step 2 for the existing template.
+      _step = 2;
+      _templateId = t!.id;
+      // Pre-seed links from the saved config so already-mapped fields show up.
+      for (final w in cfg?.widgets ?? const <WidgetConfig>[]) {
+        final pdfId = (w.data['id'] ?? '') as String;
+        if (pdfId.isNotEmpty) _links[pdfId] = w;
+      }
+      // Load the template's extracted PDF fields.
+      context.read<TemplatesBloc>().add(ExtractFieldsRequested(t.id));
+    } else {
+      _step = 1;
+    }
   }
 
   @override
@@ -104,58 +128,66 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     return path.split('/').last;
   }
 
-  /// Links / unlinks a library field, mirroring the stage editor's toggle.
-  void _toggleWidget(WidgetConfig widget, bool selected) {
-    setState(() {
-      final next = [..._widgets]
-        ..removeWhere((w) => w.widgetId == widget.widgetId);
-      if (selected) next.add(widget);
-      _widgets = next;
-    });
-  }
-
-  void _submit() {
-    final config = FormConfig(
-      formId: _formIdCtrl.text.trim(),
-      formName: _formNameCtrl.text.trim(),
-      widgets: _widgets,
-      pdfRaw: widget.template?.config?.pdfRaw,
-    );
-
-    final errors = validateTemplateForm(
+  // ───────────────────────── step 1: create ─────────────────────────
+  void _submitStep1() {
+    final errors = validateStep1(
       name: _nameCtrl.text.trim(),
       typeDocId: _typeDocId,
-      hasFile: _pickedFile != null || (_isEdit && _existingFileName != null),
-      config: config,
+      hasFile: _pickedFile != null,
     );
-
-    setState(() => _errors = errors);
-
     if (!errors.isValid) {
       AppSnackBar.show(context,
           message: errors.firstMessage ?? 'يرجى تصحيح الأخطاء', isError: true);
       return;
     }
 
-    final bloc = context.read<TemplatesBloc>();
-    if (_isEdit) {
-      bloc.add(UpdateTemplateRequested(
-        id: widget.template!.id,
-        name: _nameCtrl.text.trim(),
-        typeDocId: _typeDocId!,
-        config: config,
-        fileBytes: _pickedFile?.bytes,
-        fileName: _pickedFile?.name,
-      ));
-    } else {
-      bloc.add(CreateTemplateRequested(
-        name: _nameCtrl.text.trim(),
-        typeDocId: _typeDocId!,
-        config: config,
-        fileBytes: _pickedFile!.bytes,
-        fileName: _pickedFile!.name,
-      ));
+    context.read<TemplatesBloc>().add(CreateTemplateRequested(
+          name: _nameCtrl.text.trim(),
+          typeDocId: _typeDocId!,
+          fileBytes: _pickedFile!.bytes,
+          fileName: _pickedFile!.name,
+        ));
+  }
+
+  // ───────────────────────── step 2: save config ─────────────────────────
+  void _submitStep2(List<ExtractedField> extractedFields) {
+    final supported = ExtractedFieldsPicker.supportedFields(extractedFields);
+    final linkedWidgets =
+        _links.values.whereType<WidgetConfig>().toList(growable: false);
+
+    final errors = validateStep2(
+      formId: _formIdCtrl.text.trim(),
+      formName: _formNameCtrl.text.trim(),
+      supportedFieldCount: supported.length,
+      linkedCount: linkedWidgets.length,
+    );
+    if (!errors.isValid) {
+      AppSnackBar.show(context,
+          message: errors.firstMessage ?? 'يرجى تصحيح الأخطاء', isError: true);
+      return;
     }
+
+    final config = FormConfig(
+      formId: _formIdCtrl.text.trim(),
+      formName: _formNameCtrl.text.trim(),
+      widgets: linkedWidgets,
+      pdfRaw: widget.template?.config?.pdfRaw,
+    );
+
+    context.read<TemplatesBloc>().add(UpdateTemplateConfigRequested(
+          id: _templateId!,
+          config: config,
+        ));
+  }
+
+  void _onLink(ExtractedField pdfField, WidgetConfig? widget) {
+    setState(() {
+      if (widget == null) {
+        _links.remove(pdfField.id);
+      } else {
+        _links[pdfField.id] = widget;
+      }
+    });
   }
 
   @override
@@ -164,147 +196,80 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
 
     return BlocConsumer<TemplatesBloc, TemplatesState>(
       listenWhen: (p, c) =>
-          p.formStatus != c.formStatus &&
-          (c.formStatus == FormStatus.success ||
-              c.formStatus == FormStatus.failure),
+          p.createStatus != c.createStatus ||
+          p.configStatus != c.configStatus,
       listener: (context, state) {
-        if (state.formStatus == FormStatus.success) {
+        // Step 1 finished.
+        if (state.createStatus == FormStatus.success && _step == 1) {
+          setState(() {
+            _step = 2;
+            _templateId = state.createdTemplate?.id;
+          });
           AppSnackBar.show(context,
-              message: _isEdit ? 'تم تعديل القالب بنجاح' : 'تم إنشاء القالب بنجاح');
+              message: 'تم إنشاء القالب — أكمل ربط الحقول');
+        } else if (state.createStatus == FormStatus.failure && _step == 1) {
+          AppSnackBar.show(context,
+              message: state.createError ?? 'تعذّر إنشاء القالب',
+              isError: true);
+        }
+
+        // Step 2 finished.
+        if (state.configStatus == FormStatus.success) {
+          AppSnackBar.show(context,
+              message: _isEdit ? 'تم تعديل القالب بنجاح' : 'تم حفظ القالب بنجاح');
           Navigator.of(context).pop();
-        } else if (state.formStatus == FormStatus.failure) {
+        } else if (state.configStatus == FormStatus.failure) {
           AppSnackBar.show(context,
-              message: state.formError ?? 'تعذّر حفظ القالب', isError: true);
+              message: state.configError ?? 'تعذّر حفظ إعدادات القالب',
+              isError: true);
         }
       },
       builder: (context, state) {
-        final submitting = state.formStatus == FormStatus.submitting;
+        final submitting = _step == 1
+            ? state.createStatus == FormStatus.submitting
+            : state.configStatus == FormStatus.submitting;
 
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Container(
-            color: const Color(0xffF0EFE7),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  _Header(
-                    title: _isEdit ? 'تعديل قالب وثيقة' : 'قالب وثيقة جديد',
-                    onBack: () => Navigator.of(context).maybePop(),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                          horizontal, 8, horizontal, 28),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 820),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _Section(
-                                title: 'بيانات القالب',
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    LabeledField(
-                                      label: 'اسم القالب',
-                                      controller: _nameCtrl,
-                                      hint: 'استمارة معاملة المواطن',
-                                      errorText: _errors.name,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Padding(
-                                      padding:
-                                          EdgeInsets.only(bottom: 6, right: 2),
-                                      child: Text(
-                                        'نوع الوثيقة',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    TypeDocSelector(
-                                      value: _typeDocId,
-                                      onChanged: (id) =>
-                                          setState(() => _typeDocId = id),
-                                      errorText: _errors.typeDoc,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    TemplateFileUpload(
-                                      picked: _pickedFile,
-                                      existingFileName: _existingFileName,
-                                      onPicked: (f) =>
-                                          setState(() => _pickedFile = f),
-                                      onCleared: () =>
-                                          setState(() => _pickedFile = null),
-                                      errorText: _errors.file,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              _Section(
-                                title: 'إعدادات النموذج',
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: LabeledField(
-                                        label: 'معرّف النموذج (form_id)',
-                                        controller: _formIdCtrl,
-                                        hint: 'civil_transaction_55',
-                                        errorText: _errors.formId,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: LabeledField(
-                                        label: 'اسم النموذج (form_name)',
-                                        controller: _formNameCtrl,
-                                        hint: 'استمارة معاملة المواطن',
-                                        errorText: _errors.formName,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              _Section(
-                                title: 'الحقول الديناميكية',
-                                child: DynamicFieldsPicker(
-                                  selected: _widgets,
-                                  onToggle: _toggleWidget,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                height: 54,
-                                child: ElevatedButton(
-                                  onPressed: submitting ? null : _submit,
-                                  child: submitting
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.4,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Text(_isEdit
-                                          ? 'حفظ التعديلات'
-                                          : 'إنشاء القالب'),
-                                ),
-                              ),
-                            ],
+        // Once a template exists (step 2), leaving abandons an incomplete
+        // config — block back/close so the technician finishes step 2.
+        final canPop = _step == 1;
+
+        return PopScope(
+          canPop: canPop,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              AppSnackBar.show(context,
+                  message: 'أكمل ربط الحقول وحفظ القالب أولاً', isError: true);
+            }
+          },
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Container(
+              color: const Color(0xffF0EFE7),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    _Header(
+                      title: _isEdit ? 'تعديل قالب وثيقة' : 'قالب وثيقة جديد',
+                      step: _step,
+                      canBack: canPop,
+                      onBack: () => Navigator.of(context).maybePop(),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding:
+                            EdgeInsets.fromLTRB(horizontal, 8, horizontal, 28),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 820),
+                            child: _step == 1
+                                ? _buildStep1(submitting)
+                                : _buildStep2(context, state, submitting),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -312,13 +277,172 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
       },
     );
   }
+
+  Widget _buildStep1(bool submitting) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Section(
+          title: 'بيانات القالب',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LabeledField(
+                label: 'اسم القالب',
+                controller: _nameCtrl,
+                hint: 'استمارة معاملة المواطن',
+              ),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6, right: 2),
+                child: Text(
+                  'نوع الوثيقة',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TypeDocSelector(
+                value: _typeDocId,
+                onChanged: (id) => setState(() => _typeDocId = id),
+              ),
+              const SizedBox(height: 16),
+              TemplateFileUpload(
+                picked: _pickedFile,
+                existingFileName: _existingFileName,
+                onPicked: (f) => setState(() => _pickedFile = f),
+                onCleared: () => setState(() => _pickedFile = null),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        _PrimaryButton(
+          label: 'التالي',
+          icon: Icons.arrow_back_rounded,
+          submitting: submitting,
+          onPressed: _submitStep1,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep2(
+    BuildContext context,
+    TemplatesState state,
+    bool submitting,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Section(
+          title: 'إعدادات النموذج',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: LabeledField(
+                  label: 'معرّف النموذج (form_id)',
+                  controller: _formIdCtrl,
+                  hint: 'civil_transaction_55',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: LabeledField(
+                  label: 'اسم النموذج (form_name)',
+                  controller: _formNameCtrl,
+                  hint: 'استمارة معاملة المواطن',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        _Section(
+          title: 'ربط حقول الـ PDF',
+          child: _Step2Fields(state: state, links: _links, onLink: _onLink),
+        ),
+        const SizedBox(height: 24),
+        _PrimaryButton(
+          label: 'حفظ القالب',
+          icon: Icons.check_rounded,
+          submitting: submitting,
+          onPressed: state.extractStatus == RequestStatus.success
+              ? () => _submitStep2(state.extractedFields)
+              : null,
+        ),
+      ],
+    );
+  }
+}
+
+/// Renders the extract-fields load states and, on success, the linking cards.
+class _Step2Fields extends StatelessWidget {
+  final TemplatesState state;
+  final Map<String, WidgetConfig?> links;
+  final void Function(ExtractedField pdfField, WidgetConfig? widget) onLink;
+
+  const _Step2Fields({
+    required this.state,
+    required this.links,
+    required this.onLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    switch (state.extractStatus) {
+      case RequestStatus.initial:
+      case RequestStatus.loading:
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      case RequestStatus.failure:
+        return Column(
+          children: [
+            Text(
+              state.extractError ?? 'تعذّر استخراج حقول الـ PDF',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.error, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                final id = state.createdTemplate?.id;
+                if (id != null) {
+                  context.read<TemplatesBloc>().add(ExtractFieldsRequested(id));
+                }
+              },
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
+        );
+      case RequestStatus.success:
+        return ExtractedFieldsPicker(
+          fields: state.extractedFields,
+          links: links,
+          onLink: onLink,
+        );
+    }
+  }
 }
 
 class _Header extends StatelessWidget {
   final String title;
+  final int step;
+  final bool canBack;
   final VoidCallback onBack;
 
-  const _Header({required this.title, required this.onBack});
+  const _Header({
+    required this.title,
+    required this.step,
+    required this.canBack,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -326,22 +450,50 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_forward_rounded,
-                color: AppColors.textPrimary),
-            tooltip: 'رجوع',
-          ),
+          if (canBack)
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_forward_rounded,
+                  color: AppColors.textPrimary),
+              tooltip: 'رجوع',
+            ),
           const SizedBox(width: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
+          _StepBadge(step: step),
         ],
+      ),
+    );
+  }
+}
+
+class _StepBadge extends StatelessWidget {
+  final int step;
+  const _StepBadge({required this.step});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'الخطوة $step من 2',
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -376,6 +528,43 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 16),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool submitting;
+  final VoidCallback? onPressed;
+
+  const _PrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.submitting,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton.icon(
+        onPressed: submitting ? null : onPressed,
+        icon: submitting
+            ? const SizedBox.shrink()
+            : Icon(icon, size: 20),
+        label: submitting
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: Colors.white,
+                ),
+              )
+            : Text(label),
       ),
     );
   }
