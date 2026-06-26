@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/active_org/active_organization_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -20,11 +22,27 @@ class CreateRoleDialog extends StatefulWidget {
 class _CreateRoleDialogState extends State<CreateRoleDialog> {
   final _nameController = TextEditingController();
   final _codeController = TextEditingController();
-  int? _organizationId;
+  // The organization is the user's active one, chosen once after login.
+  late final int? _organizationId =
+      getIt<ActiveOrganizationCubit>().activeOrgId;
   int? _departmentId;
   bool _touched = false;
 
   static final _codePattern = RegExp(r'^[A-Z0-9_]+$');
+
+  @override
+  void initState() {
+    super.initState();
+    // Load the active organization's leaf departments for the (only remaining)
+    // department dropdown. Deferred to post-frame so the RolesBloc provided to
+    // this dialog route is available.
+    final orgId = _organizationId;
+    if (orgId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<RolesBloc>().add(LoadLeafDepartments(orgId));
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -43,22 +61,13 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
     return null;
   }
 
-  void _onOrganizationChanged(int? value) {
-    setState(() {
-      _organizationId = value;
-      _departmentId = null; // a new organization has its own departments
-    });
-    if (value != null) {
-      context.read<RolesBloc>().add(LoadLeafDepartments(value));
-    }
-  }
-
   void _submit(BuildContext context) {
     setState(() => _touched = true);
     final name = _nameController.text.trim();
+    final orgId = _organizationId;
     if (name.isEmpty ||
         _codeError != null ||
-        _organizationId == null ||
+        orgId == null ||
         _departmentId == null) {
       return;
     }
@@ -67,7 +76,7 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
           CreateRoleRequested(
             name: name,
             code: _codeController.text.trim(),
-            organizationId: _organizationId!,
+            organizationId: orgId,
             departmentId: _departmentId!,
           ),
         );
@@ -118,20 +127,6 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _nameAndCode(narrow),
-                          const SizedBox(height: 20),
-                          const _Label('المؤسسة *'),
-                          const SizedBox(height: 8),
-                          _IdDropdown(
-                            hint: 'اختر المؤسسة...',
-                            value: _organizationId,
-                            items: {
-                              for (final o in state.organizations) o.id: o.name,
-                            },
-                            errorText: _touched && _organizationId == null
-                                ? 'هذا الحقل مطلوب'
-                                : null,
-                            onChanged: _onOrganizationChanged,
-                          ),
                           const SizedBox(height: 20),
                           const _Label('القسم *'),
                           const SizedBox(height: 8),

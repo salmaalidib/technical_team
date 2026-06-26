@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import '../active_org/active_organization_cubit.dart';
 import '../services/key_generation_service.dart';
 import '../network/dio_client.dart';
 import '../services/key_storage_service.dart';
@@ -40,6 +41,15 @@ Future<void> setupCoreInjection() async {
     () => KeyStorageService(),
   );
 }
+
+  // The single source of truth for the user's active organization. It resolves
+  // GetInstitutionsUseCase lazily inside load(), so registration order relative
+  // to setupInstitutionsInjection doesn't matter.
+  if (!getIt.isRegistered<ActiveOrganizationCubit>()) {
+    getIt.registerLazySingleton<ActiveOrganizationCubit>(
+      () => ActiveOrganizationCubit(getIt<SecureStorageService>()),
+    );
+  }
 }
 
  

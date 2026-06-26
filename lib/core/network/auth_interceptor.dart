@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import '../active_org/active_organization_cubit.dart';
+import '../di/injection.dart';
 import '../router/app_router.dart';
 import '../services/api_const.dart';
 import '../storage/secure_storage_service.dart';
@@ -85,8 +87,13 @@ class AuthInterceptor extends Interceptor {
 
     final refreshed = await _refreshTokens();
     if (!refreshed) {
-      // Refresh failed → session is over.
+      // Refresh failed → session is over. clear() also wipes the persisted
+      // active-org id; reset the cubit's in-memory state too so a re-login as
+      // a different user doesn't inherit the previous organization.
       await _storage.clear();
+      if (getIt.isRegistered<ActiveOrganizationCubit>()) {
+        await getIt<ActiveOrganizationCubit>().clear();
+      }
       AppRouter.router.go('/login');
       return handler.next(err);
     }

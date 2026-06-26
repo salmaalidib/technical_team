@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
 import '../bloc/employees_bloc.dart';
-import '../bloc/employees_event.dart';
 import '../widgets/employees_grid.dart';
 import '../widgets/employees_header.dart';
 import '../widgets/employees_search_card.dart';
@@ -22,7 +21,7 @@ class _EmployeesPageState extends State<EmployeesPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<EmployeesBloc>()..add(const LoadEmployeeFormData()),
+      create: (_) => getIt<EmployeesBloc>(),
       child: Container(
         color: const Color(0xffF0EFE7),
         padding: const EdgeInsets.fromLTRB(40, 28, 40, 30),

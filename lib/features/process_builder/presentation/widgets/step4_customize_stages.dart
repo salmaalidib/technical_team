@@ -265,18 +265,10 @@ class _UserTaskEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // assignment cascade (org → dept → role)
+        // assignment cascade (dept → role). The organization is the user's
+        // active one, seeded into the draft — no per-stage picker.
         const WizardLabel('التعيين — من ينفّذ المرحلة *'),
         const SizedBox(height: 8),
-        const _MiniLabel('المؤسسة'),
-        const SizedBox(height: 6),
-        WizardDropdown<int>(
-          hint: 'اختر المؤسسة...',
-          value: draft.organizationId,
-          items: {for (final o in state.organizations) o.id: o.name},
-          onChanged: (v) => bloc.add(StageOrgChanged(stageId, v)),
-        ),
-        const SizedBox(height: 12),
         const _MiniLabel('القسم / الدائرة'),
         const SizedBox(height: 6),
         _DepartmentDropdown(state: state, draft: draft),
@@ -1059,16 +1051,8 @@ class _NotificationConfigEditor extends StatelessWidget {
           ),
           if (n.recipient == NotificationRecipient.employee) ...[
             const SizedBox(height: 12),
-            const _MiniLabel('المؤسسة'),
-            const SizedBox(height: 6),
-            WizardDropdown<int>(
-              hint: 'اختر المؤسسة...',
-              value: n.organizationId,
-              items: {for (final o in state.organizations) o.id: o.name},
-              onChanged: (v) =>
-                  bloc.add(StageNotificationOrgChanged(stageId, v)),
-            ),
-            const SizedBox(height: 12),
+            // Organization is the user's active one (seeded when the recipient
+            // becomes an employee) — no picker here.
             const _MiniLabel('القسم / الدائرة'),
             const SizedBox(height: 6),
             _NotificationDeptDropdown(state: state, draft: draft),

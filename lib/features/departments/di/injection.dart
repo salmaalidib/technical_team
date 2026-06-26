@@ -5,7 +5,6 @@ import '../data/datasources/department_remote_data_source.dart';
 import '../data/repositories/department_repository_impl.dart';
 import '../domain/repositories/department_repository.dart';
 import '../domain/usecases/create_department_usecase.dart';
-import '../domain/usecases/get_department_organizations_usecase.dart';
 import '../domain/usecases/get_department_overview_usecase.dart';
 import '../domain/usecases/get_departments_usecase.dart';
 import '../domain/usecases/get_leaf_departments_usecase.dart';
@@ -28,12 +27,6 @@ Future<void> setupDepartmentsInjection() async {
   if (!getIt.isRegistered<GetDepartmentsUseCase>()) {
     getIt.registerLazySingleton<GetDepartmentsUseCase>(
       () => GetDepartmentsUseCase(getIt<DepartmentRepository>()),
-    );
-  }
-
-  if (!getIt.isRegistered<GetDepartmentOrganizationsUseCase>()) {
-    getIt.registerLazySingleton<GetDepartmentOrganizationsUseCase>(
-      () => GetDepartmentOrganizationsUseCase(getIt<DepartmentRepository>()),
     );
   }
 
@@ -64,7 +57,6 @@ Future<void> setupDepartmentsInjection() async {
   getIt.registerFactory<DepartmentsBloc>(
     () => DepartmentsBloc(
       getDepartments: getIt<GetDepartmentsUseCase>(),
-      getOrganizations: getIt<GetDepartmentOrganizationsUseCase>(),
       getOverview: getIt<GetDepartmentOverviewUseCase>(),
       createDepartment: getIt<CreateDepartmentUseCase>(),
       toggleStatus: getIt<ToggleDepartmentStatusUseCase>(),

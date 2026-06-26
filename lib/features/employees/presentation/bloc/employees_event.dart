@@ -7,10 +7,6 @@ abstract class EmployeesEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadEmployeeFormData extends EmployeesEvent {
-  const LoadEmployeeFormData();
-}
-
 class LoadEmployeeDepartments extends EmployeesEvent {
   final int organizationId;
 

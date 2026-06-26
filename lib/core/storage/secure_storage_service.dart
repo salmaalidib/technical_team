@@ -6,6 +6,7 @@ class SecureStorageService {
 
   static const _tokenKey = "token";
   static const _refreshTokenKey = "refresh_token";
+  static const _activeOrgKey = "active_organization_id";
 
   // ===== Access token =====
   Future<void> saveToken(String token) async {
@@ -42,9 +43,41 @@ class SecureStorageService {
     await saveRefreshToken(refreshToken);
   }
 
-  /// Wipe all auth tokens (logout / refresh failure).
+  // ===== Active organization =====
+  // Persisted so the user only picks an organization once. Reads/writes are
+  // wrapped because secure storage can throw on web (best-effort browser
+  // crypto); on failure we degrade to "no active org" rather than crashing.
+  Future<void> saveActiveOrgId(int id) async {
+    try {
+      await _storage.write(key: _activeOrgKey, value: id.toString());
+    } catch (_) {
+      // Persistence failed (e.g. web). The in-memory choice still works for
+      // this session; it just won't survive a reload.
+    }
+  }
+
+  Future<int?> getActiveOrgId() async {
+    try {
+      final raw = await _storage.read(key: _activeOrgKey);
+      return raw == null ? null : int.tryParse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> deleteActiveOrgId() async {
+    try {
+      await _storage.delete(key: _activeOrgKey);
+    } catch (_) {
+      // Best effort.
+    }
+  }
+
+  /// Wipe all auth tokens and the active-organization choice
+  /// (logout / refresh failure).
   Future<void> clear() async {
     await deleteToken();
     await deleteRefreshToken();
+    await deleteActiveOrgId();
   }
 }

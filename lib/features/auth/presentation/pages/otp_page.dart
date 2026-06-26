@@ -40,7 +40,8 @@ class OtpPage extends StatelessWidget {
                 message: "تم تسجيل الدخول بنجاح",
               );
 
-              context.go('/dashboard');
+              // Pick the active organization once before entering the app.
+              context.go('/select-organization');
             }
 
             if (state.error?.isNotEmpty == true) {

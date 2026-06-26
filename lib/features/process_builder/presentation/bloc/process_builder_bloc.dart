@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/active_org/active_organization_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
@@ -72,6 +74,11 @@ class ProcessBuilderBloc
     on<SubmitStageConfigs>(_onSubmitStageConfigs);
   }
 
+  /// The user's active organization — chosen once after login and reused
+  /// everywhere instead of a per-form picker. Stages, notifications and the
+  /// create payload all default to it; the org dropdowns are hidden.
+  int? get _activeOrgId => getIt<ActiveOrganizationCubit>().activeOrgId;
+
   // ── bootstrap ───────────────────────────────────────────────────────────
   Future<void> _onInit(
     InitWizard event,
@@ -89,6 +96,8 @@ class ProcessBuilderBloc
       organizations: orgsResult.getOrElse(() => const []),
       typeProcesses: typesResult.getOrElse(() => const []),
       templates: templatesResult.getOrElse(() => const []),
+      // The organization is the active one — no step-1 picker.
+      organizationId: _activeOrgId,
       // Preselect the type the wizard was opened for (null = شكوى / unset).
       typeTransId: event.typeId,
     ));
@@ -163,11 +172,17 @@ class ProcessBuilderBloc
   /// (read-only, not re-submitted); their linked template ids are recovered
   /// from the saved config so a later GENERATE_PDF can still reference them.
   static StageConfigDraft _draftFromDetailStage(ProcessDetailStage s) {
-    final base = StageConfigDraft(stage: _toProcessStage(s));
-    if (!s.hasConfig) return base;
-
-    final templateIds = _templateIdsFromConfig(s.config);
-    return base.copyWith(locked: true, templateIds: templateIds);
+    if (s.hasConfig) {
+      // Saved stage: keep it locked and DON'T touch its organization.
+      final templateIds = _templateIdsFromConfig(s.config);
+      return StageConfigDraft(stage: _toProcessStage(s))
+          .copyWith(locked: true, templateIds: templateIds);
+    }
+    // Unconfigured stage: default its assignment to the active organization.
+    return StageConfigDraft(
+      stage: _toProcessStage(s),
+      organizationId: getIt<ActiveOrganizationCubit>().activeOrgId,
+    );
   }
 
   static List<int> _templateIdsFromConfig(Map<String, dynamic>? config) {
@@ -245,8 +260,11 @@ class ProcessBuilderBloc
         createError: failure.message,
       )),
       (process) {
+        // Each stage defaults to the active organization (no per-stage picker).
+        final orgId = _activeOrgId;
         final drafts = <int, StageConfigDraft>{
-          for (final s in process.stages) s.id: StageConfigDraft(stage: s),
+          for (final s in process.stages)
+            s.id: StageConfigDraft(stage: s, organizationId: orgId),
         };
         // Expand the first customizable (user) stage by default.
         final firstUser = process.stages.firstWhere(
@@ -451,13 +469,19 @@ class ProcessBuilderBloc
     StageNotificationRecipientChanged event,
     Emitter<ProcessBuilderState> emit,
   ) async {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(notification: d.notification.copyWith(
-              recipient: event.recipient,
-            )));
+    final toEmployee = event.recipient == NotificationRecipient.employee;
+    _updateDraft(event.stageId, emit, (d) {
+      var notification = d.notification.copyWith(recipient: event.recipient);
+      // An employee recipient defaults to the active organization (no picker);
+      // seed it only when not already set so we don't clobber a prior choice.
+      if (toEmployee && notification.organizationId == null) {
+        notification = notification.copyWith(organizationId: _activeOrgId);
+      }
+      return d.copyWith(notification: notification);
+    });
 
-    // Switching to citizen drops the role cascade; switching to employee shows
-    // an empty cascade ready for selection.
+    // Switching to citizen drops the role cascade; switching to employee loads
+    // the active organization's departments ready for selection.
     emit(state.copyWith(
       leafStatus: RequestStatus.initial,
       leafDepartments: const [],
@@ -465,8 +489,18 @@ class ProcessBuilderBloc
       rolesByDepartment: const [],
     ));
 
-    if (event.recipient == NotificationRecipient.employee) {
-      await _restoreNotificationCascade(event.stageId, emit);
+    if (toEmployee) {
+      final orgId = state.drafts[event.stageId]?.notification.organizationId;
+      if (orgId != null) {
+        await _fetchLeaves(
+          orgId,
+          event.stageId,
+          emit,
+          organizationOf: (d) => d.notification.organizationId,
+        );
+      } else {
+        await _restoreNotificationCascade(event.stageId, emit);
+      }
     }
   }
 

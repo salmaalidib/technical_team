@@ -62,18 +62,8 @@ class Step1BasicInfo extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            const WizardLabel('المؤسسة *'),
-            const SizedBox(height: 8),
-            WizardDropdown<int>(
-              hint: 'اختر المؤسسة...',
-              value: state.organizationId,
-              items: {for (final o in state.organizations) o.id: o.name},
-              onChanged: (v) => bloc.add(OrganizationChanged(v)),
-              errorText: showErrors && state.organizationId == null
-                  ? 'هذا الحقل مطلوب'
-                  : null,
-            ),
-            const SizedBox(height: 20),
+            // Organization isn't picked here: it's the user's active one,
+            // chosen once after login and seeded into the wizard at init.
 
             _twoCols(
               narrow,

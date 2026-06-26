@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/entities/leaf_department.dart';
-import '../../../institutions/domain/entities/institution.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../../domain/entities/role_by_department.dart';
 
@@ -12,9 +11,6 @@ class RolesState extends Equatable {
   final RequestStatus status;
   final List<RoleAssignment> roles;
   final String? error;
-
-  /// Organizations used by the create form (from the institutions feature).
-  final List<Institution> organizations;
 
   /// Create-role form submission.
   final FormStatus formStatus;
@@ -40,7 +36,6 @@ class RolesState extends Equatable {
     this.status = RequestStatus.initial,
     this.roles = const [],
     this.error,
-    this.organizations = const [],
     this.formStatus = FormStatus.idle,
     this.formError,
     this.leafStatus = RequestStatus.initial,
@@ -57,7 +52,6 @@ class RolesState extends Equatable {
     RequestStatus? status,
     List<RoleAssignment>? roles,
     String? error,
-    List<Institution>? organizations,
     FormStatus? formStatus,
     String? formError,
     RequestStatus? leafStatus,
@@ -73,7 +67,6 @@ class RolesState extends Equatable {
       status: status ?? this.status,
       roles: roles ?? this.roles,
       error: error,
-      organizations: organizations ?? this.organizations,
       formStatus: formStatus ?? this.formStatus,
       formError: formError,
       leafStatus: leafStatus ?? this.leafStatus,
@@ -92,7 +85,6 @@ class RolesState extends Equatable {
         status,
         roles,
         error,
-        organizations,
         formStatus,
         formError,
         leafStatus,

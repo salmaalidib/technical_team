@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
-import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../../roles/domain/usecases/get_roles_by_department_usecase.dart';
 import '../../domain/usecases/create_employee_usecase.dart';
 import 'employees_event.dart';
@@ -12,43 +11,17 @@ import 'employees_state.dart';
 class EmployeesBloc extends Bloc<EmployeesEvent, EmployeesState> {
   final CreateEmployeeUseCase createEmployee;
 
-  final GetInstitutionsUseCase getOrganizations;
   final GetLeafDepartmentsUseCase getLeafDepartments;
   final GetRolesByDepartmentUseCase getRolesByDepartment;
 
   EmployeesBloc({
     required this.createEmployee,
-    required this.getOrganizations,
     required this.getLeafDepartments,
     required this.getRolesByDepartment,
   }) : super(const EmployeesState()) {
-    on<LoadEmployeeFormData>(_onLoadFormData);
     on<LoadEmployeeDepartments>(_onLoadDepartments);
     on<LoadEmployeeRoles>(_onLoadRoles);
     on<CreateEmployeeRequested>(_onCreate);
-  }
-
-  Future<void> _onLoadFormData(
-    LoadEmployeeFormData event,
-    Emitter<EmployeesState> emit,
-  ) async {
-    emit(state.copyWith(
-      organizationsStatus: RequestStatus.loading,
-      actionError: null,
-    ));
-
-    final result = await getOrganizations();
-
-    result.fold(
-      (failure) => emit(state.copyWith(
-        organizationsStatus: RequestStatus.failure,
-        actionError: failure.message,
-      )),
-      (organizations) => emit(state.copyWith(
-        organizationsStatus: RequestStatus.success,
-        organizations: organizations,
-      )),
-    );
   }
 
   Future<void> _onLoadDepartments(

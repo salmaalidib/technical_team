@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
@@ -34,7 +35,9 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   String? _lastGeneratedPassword;
   String? _lastGeneratedPin;
 
-  int? _organizationId;
+  // The organization is the user's active one, chosen once after login.
+  late final int? _organizationId =
+      getIt<ActiveOrganizationCubit>().activeOrgId;
   int? _departmentId;
   int? _roleId;
   bool _touched = false;
@@ -43,6 +46,17 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   void initState() {
     super.initState();
     _generatePasswordAndPin();
+    // Load the active organization's departments for the (cascading) department
+    // dropdown. Deferred to post-frame so the EmployeesBloc provided to this
+    // dialog route is available.
+    final orgId = _organizationId;
+    if (orgId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<EmployeesBloc>().add(LoadEmployeeDepartments(orgId));
+        }
+      });
+    }
   }
 
   void _generatePasswordAndPin() {
@@ -201,7 +215,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
               password: generatedPassword,
               pin: generatedPin,
               confirmPin: generatedPin,
-              organizationId: _organizationId!,
+              organizationId: _organizationId,
               departmentId: _departmentId,
               roleId: _roleId,
               publicKey: _publicKey.text,
@@ -420,36 +434,6 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                             title: 'التعيين الإداري',
                           ),
                           const SizedBox(height: 20),
-                          _AppDropdown(
-                            label: 'المؤسسة *',
-                            hint: state.organizationsStatus ==
-                                    RequestStatus.loading
-                                ? 'جار تحميل المؤسسات...'
-                                : 'اختر المؤسسة...',
-                            value: _organizationId,
-                            items: {
-                              for (final o in state.organizations) o.id: o.name,
-                            },
-                            errorText: _touched && _organizationId == null
-                                ? 'هذا الحقل مطلوب'
-                                : null,
-                            onChanged: submitting
-                                ? null
-                                : (v) {
-                                    setState(() {
-                                      _organizationId = v;
-                                      _departmentId = null;
-                                      _roleId = null;
-                                    });
-
-                                    if (v != null) {
-                                      context
-                                          .read<EmployeesBloc>()
-                                          .add(LoadEmployeeDepartments(v));
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 18),
                           _AppDropdown(
                             label: hasDepartments
                                 ? 'القسم / الدائرة *'

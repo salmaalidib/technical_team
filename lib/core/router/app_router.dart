@@ -9,6 +9,7 @@ import '../../features/institutions/presentation/pages/institutions_page.dart';
 import '../../features/roles/presentation/pages/roles_page.dart';
 import '../../features/type_processes/presentation/pages/type_processes_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../features/select_organization/presentation/pages/select_organization_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/process_builder/presentation/pages/process_types_page.dart';
@@ -48,6 +49,14 @@ class AppRouter {
             child: OtpPage(sessionId: sessionId),
           );
         },
+      ),
+      // Standalone (no app shell): the user picks their active organization
+      // once after login before entering the dashboard.
+      GoRoute(
+        path: '/select-organization',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SelectOrganizationPage(),
+        ),
       ),
       ShellRoute(
         pageBuilder: (context, state, child) {

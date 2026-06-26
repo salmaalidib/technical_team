@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/active_org/active_organization_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
@@ -17,7 +19,10 @@ class CreateDepartmentDialog extends StatefulWidget {
 
 class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
   final _nameController = TextEditingController();
-  int? _organizationId;
+  // The organization is the user's active one, chosen once after login — no
+  // per-form selection.
+  late final int? _organizationId =
+      getIt<ActiveOrganizationCubit>().activeOrgId;
   int? _parentId;
   bool _touched = false;
 
@@ -30,12 +35,13 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
   void _submit(BuildContext context) {
     setState(() => _touched = true);
     final name = _nameController.text.trim();
-    if (name.isEmpty || _organizationId == null) return;
+    final orgId = _organizationId;
+    if (name.isEmpty || orgId == null) return;
 
     context.read<DepartmentsBloc>().add(
           CreateDepartmentRequested(
             name: name,
-            organizationId: _organizationId!,
+            organizationId: orgId,
             parentId: _parentId,
           ),
         );
@@ -95,23 +101,6 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
                               _touched && _nameController.text.trim().isEmpty
                                   ? 'هذا الحقل مطلوب'
                                   : null,
-                        ),
-                        const SizedBox(height: 20),
-                        const _Label('المؤسسة *'),
-                        const SizedBox(height: 8),
-                        _IdDropdown(
-                          hint: 'اختر المؤسسة...',
-                          value: _organizationId,
-                          items: {
-                            for (final o in state.organizations) o.id: o.name,
-                          },
-                          errorText: _touched && _organizationId == null
-                              ? 'هذا الحقل مطلوب'
-                              : null,
-                          onChanged: (v) => setState(() {
-                            _organizationId = v;
-                            _parentId = null; // reset parent when org changes
-                          }),
                         ),
                         const SizedBox(height: 20),
                         const _Label('القسم الأب (اختياري)'),
@@ -248,14 +237,12 @@ class _IdDropdown extends StatelessWidget {
   final int? value;
   final Map<int, String> items;
   final ValueChanged<int?> onChanged;
-  final String? errorText;
 
   const _IdDropdown({
     required this.hint,
     required this.value,
     required this.items,
     required this.onChanged,
-    this.errorText,
   });
 
   @override
@@ -268,7 +255,6 @@ class _IdDropdown extends StatelessWidget {
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
-        errorText: errorText,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(

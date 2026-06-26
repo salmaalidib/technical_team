@@ -2,14 +2,12 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
-import '../../../institutions/domain/entities/institution.dart';
 import '../../domain/entities/department.dart';
 import '../../domain/entities/department_overview.dart';
 
 class DepartmentsState extends Equatable {
   final RequestStatus status;
   final List<Department> departments;
-  final List<Institution> organizations;
   final String? error;
 
   /// Create-department form submission.
@@ -30,7 +28,6 @@ class DepartmentsState extends Equatable {
   const DepartmentsState({
     this.status = RequestStatus.initial,
     this.departments = const [],
-    this.organizations = const [],
     this.error,
     this.formStatus = FormStatus.idle,
     this.formError,
@@ -43,7 +40,6 @@ class DepartmentsState extends Equatable {
   DepartmentsState copyWith({
     RequestStatus? status,
     List<Department>? departments,
-    List<Institution>? organizations,
     String? error,
     FormStatus? formStatus,
     String? formError,
@@ -55,7 +51,6 @@ class DepartmentsState extends Equatable {
     return DepartmentsState(
       status: status ?? this.status,
       departments: departments ?? this.departments,
-      organizations: organizations ?? this.organizations,
       error: error,
       formStatus: formStatus ?? this.formStatus,
       formError: formError,
@@ -70,7 +65,6 @@ class DepartmentsState extends Equatable {
   List<Object?> get props => [
         status,
         departments,
-        organizations,
         error,
         formStatus,
         formError,

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
-import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../domain/usecases/create_role_usecase.dart';
 import '../../domain/usecases/get_roles_by_department_usecase.dart';
 import '../../domain/usecases/get_roles_usecase.dart';
@@ -17,16 +16,15 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   final ToggleRoleStatusUseCase toggleStatus;
   final GetRolesByDepartmentUseCase getRolesByDepartment;
 
-  /// Reused across features: organizations come from `institutions`, the
-  /// department options come from `departments`.
-  final GetInstitutionsUseCase getOrganizations;
+  /// Leaf-department options for the create-role form. The organization is the
+  /// user's active one (ActiveOrganizationCubit); the dialog fires the leaf
+  /// fetch for it on open, so there's no org dropdown to load a list for.
   final GetLeafDepartmentsUseCase getLeafDepartments;
 
   RolesBloc({
     required this.getRoles,
     required this.createRole,
     required this.toggleStatus,
-    required this.getOrganizations,
     required this.getLeafDepartments,
     required this.getRolesByDepartment,
   }) : super(const RolesState()) {
@@ -47,23 +45,16 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
 
     final rolesResult = await getRoles();
 
-    await rolesResult.fold(
-      (failure) async => emit(state.copyWith(
+    rolesResult.fold(
+      (failure) => emit(state.copyWith(
         status: RequestStatus.failure,
         error: failure.message,
       )),
-      (roles) async {
-        final organizationsResult = await getOrganizations();
-        final organizations =
-            organizationsResult.getOrElse(() => state.organizations);
-
-        emit(state.copyWith(
-          status: RequestStatus.success,
-          roles: roles,
-          organizations: organizations,
-          error: null,
-        ));
-      },
+      (roles) => emit(state.copyWith(
+        status: RequestStatus.success,
+        roles: roles,
+        error: null,
+      )),
     );
   }
 

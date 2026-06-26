@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/active_org/active_organization_cubit.dart';
 import '../theme/app_colors.dart';
 
 class AppTopbar extends StatelessWidget {
@@ -42,6 +44,8 @@ class AppTopbar extends StatelessWidget {
               width: 90,
               child: _UserInfo(compact: true),
             ),
+          const SizedBox(width: 16),
+          const _ActiveOrgBadge(),
           const Spacer(flex: 2),
           const SizedBox(width: 18),
           Flexible(
@@ -99,6 +103,52 @@ class _UserInfo extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Shows the user's active organization (chosen once after login). Read-only —
+/// a quiet reminder of the context every form is scoped to.
+class _ActiveOrgBadge extends StatelessWidget {
+  const _ActiveOrgBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ActiveOrganizationCubit, ActiveOrgState>(
+      builder: (context, state) {
+        final name = state.activeOrg?.name;
+        if (name == null || name.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.lightPrimary,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.business_rounded,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -2,7 +2,6 @@ import '../../../core/di/injection.dart';
 import '../../../core/services/api_service.dart';
 
 import '../../departments/domain/usecases/get_leaf_departments_usecase.dart';
-import '../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../roles/domain/usecases/get_roles_by_department_usecase.dart';
 
 import '../data/datasources/employee_remote_data_source.dart';
@@ -33,7 +32,6 @@ Future<void> setupEmployeesInjection() async {
   getIt.registerFactory<EmployeesBloc>(
     () => EmployeesBloc(
       createEmployee: getIt<CreateEmployeeUseCase>(),
-      getOrganizations: getIt<GetInstitutionsUseCase>(),
       getLeafDepartments: getIt<GetLeafDepartmentsUseCase>(),
       getRolesByDepartment: getIt<GetRolesByDepartmentUseCase>(),
     ),

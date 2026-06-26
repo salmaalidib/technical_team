@@ -4,7 +4,6 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/department_overview.dart';
 import '../../domain/usecases/create_department_usecase.dart';
-import '../../domain/usecases/get_department_organizations_usecase.dart';
 import '../../domain/usecases/get_department_overview_usecase.dart';
 import '../../domain/usecases/get_departments_usecase.dart';
 import '../../domain/usecases/toggle_department_status_usecase.dart';
@@ -13,14 +12,12 @@ import 'departments_state.dart';
 
 class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
   final GetDepartmentsUseCase getDepartments;
-  final GetDepartmentOrganizationsUseCase getOrganizations;
   final GetDepartmentOverviewUseCase getOverview;
   final CreateDepartmentUseCase createDepartment;
   final ToggleDepartmentStatusUseCase toggleStatus;
 
   DepartmentsBloc({
     required this.getDepartments,
-    required this.getOrganizations,
     required this.getOverview,
     required this.createDepartment,
     required this.toggleStatus,
@@ -44,25 +41,18 @@ class DepartmentsBloc extends Bloc<DepartmentsEvent, DepartmentsState> {
 
     final departmentsResult = await getDepartments();
 
-    await departmentsResult.fold(
-      (failure) async => emit(state.copyWith(
+    departmentsResult.fold(
+      (failure) => emit(state.copyWith(
         status: RequestStatus.failure,
         error: failure.message,
       )),
-      (departments) async {
-        final organizationsResult = await getOrganizations();
-        final organizations =
-            organizationsResult.getOrElse(() => state.organizations);
-
-        emit(state.copyWith(
-          status: RequestStatus.success,
-          departments: departments,
-          organizations: organizations,
-          // A fresh list invalidates the cached overviews.
-          overviews: const <int, DepartmentOverview>{},
-          error: null,
-        ));
-      },
+      (departments) => emit(state.copyWith(
+        status: RequestStatus.success,
+        departments: departments,
+        // A fresh list invalidates the cached overviews.
+        overviews: const <int, DepartmentOverview>{},
+        error: null,
+      )),
     );
   }
 
