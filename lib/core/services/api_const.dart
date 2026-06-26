@@ -95,6 +95,11 @@ class EndPoints {
 
   // ===== employee registration =====
 String get registerEmployee => 'api/auth/register/employee/';
+
+  // ===== employees (bearer token required) =====
+  String get employees => 'api/employees'; // GET list (paginated + search)
+  String employeeById(Object id) =>
+      'api/employees/$id'; // GET one · PUT update
 }
 
 /// Base API configuration. The base url is read from the loaded environment

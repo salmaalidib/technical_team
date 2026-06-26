@@ -7,6 +7,44 @@ abstract class EmployeesEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// تحميل صفحة من الموظفين (مع البحث الحالي إن وُجد).
+class LoadEmployees extends EmployeesEvent {
+  final int page;
+  final int? limit;
+  final String? search; // null = أبقِ البحث الحالي
+
+  const LoadEmployees({this.page = 1, this.limit, this.search});
+
+  @override
+  List<Object?> get props => [page, limit, search];
+}
+
+/// تغيير نص البحث (يعيد التحميل من الصفحة 1).
+class SearchEmployees extends EmployeesEvent {
+  final String query;
+
+  const SearchEmployees(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}
+
+/// تعديل موظف. [data] حمولة جزئية بمفاتيح snake_case.
+class UpdateEmployeeRequested extends EmployeesEvent {
+  final int id;
+  final Map<String, dynamic> data;
+
+  const UpdateEmployeeRequested({required this.id, required this.data});
+
+  @override
+  List<Object?> get props => [id, data];
+}
+
+/// إعادة تهيئة حالة نموذج التعديل (بعد إغلاق الحوار).
+class ResetEmployeeFormStatus extends EmployeesEvent {
+  const ResetEmployeeFormStatus();
+}
+
 class LoadEmployeeDepartments extends EmployeesEvent {
   final int organizationId;
 

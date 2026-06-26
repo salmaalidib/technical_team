@@ -2,17 +2,69 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/created_employee.dart';
+import '../../domain/entities/employee.dart';
+import '../../domain/entities/employees_page.dart';
 import '../../domain/repositories/employee_repository.dart';
 import '../datasources/employee_remote_data_source.dart';
 import '../models/created_employee_model.dart';
+import '../models/employee_model.dart';
+import '../models/employees_page_model.dart';
 
 class EmployeeRepositoryImpl implements EmployeeRepository {
   final EmployeeRemoteDataSource remote;
 
   EmployeeRepositoryImpl(this.remote);
 
+  /// يفكّ غلاف `{ success, message, data }` ويُرجع محتوى data.
   static dynamic _payload(dynamic body) =>
       body is Map<String, dynamic> ? body['data'] : body;
+
+  @override
+  Future<Either<Failure, EmployeesPage>> getEmployees({
+    int page = 1,
+    int limit = 20,
+    String? search,
+  }) async {
+    final result = await remote.getEmployees(
+      page: page,
+      limit: limit,
+      search: search,
+    );
+
+    return result.fold<Either<Failure, EmployeesPage>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            EmployeesPageModel.fromJson(_payload(body) as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة الموظفين.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, Employee>> updateEmployee({
+    required int id,
+    required Map<String, dynamic> data,
+  }) async {
+    final result = await remote.updateEmployee(id, data);
+
+    return result.fold<Either<Failure, Employee>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            EmployeeModel.fromJson(_payload(body) as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة استجابة تعديل الموظف.'));
+        }
+      },
+    );
+  }
 
   @override
   Future<Either<Failure, CreatedEmployee>> createEmployee({

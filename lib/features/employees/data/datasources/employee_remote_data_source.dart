@@ -21,4 +21,31 @@ class EmployeeRemoteDataSource {
       body: body,
     );
   }
+
+  Future<Either<Failure, dynamic>> getEmployees({
+    required int page,
+    required int limit,
+    String? search,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.employees,
+      queryParameters: {
+        'page': page,
+        'limit': limit,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+    );
+  }
+
+  Future<Either<Failure, dynamic>> updateEmployee(
+    int id,
+    Map<String, dynamic> body,
+  ) {
+    return api.makeRequest(
+      method: ApiMethod.put,
+      endPoint: _endPoints.employeeById(id),
+      body: body,
+    );
+  }
 }

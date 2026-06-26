@@ -1,37 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:technical_team/features/employees/presentation/widgets/employee_details_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../domain/entities/employee.dart';
+import 'employee_dialogs.dart';
+import 'employee_status_badge.dart';
 
 class EmployeesGrid extends StatelessWidget {
-  const EmployeesGrid({super.key});
+  final List<Employee> employees;
 
-  static const employees = [
-    _EmployeeCardData(
-      name: 'أحمد محمد الأحمد',
-      username: 'ahmad.ahmad',
-      letter: 'أ',
-      department: 'دائرة التعليم الثانوي',
-      section: 'شعبة المدرسين',
-      role: 'موظف مختص',
-    ),
-    _EmployeeCardData(
-      name: 'فاطمة أحمد الحسن',
-      username: 'fatima.hassan',
-      letter: 'ف',
-      department: 'دائرة التعليم الثانوي',
-      section: 'شعبة الطلاب',
-      role: 'رئيس شعبة',
-    ),
-    _EmployeeCardData(
-      name: 'محمد علي السيد',
-      username: 'mohammad.alsayed',
-      letter: 'م',
-      department: 'دائرة التعليم الثانوي',
-      section: '-',
-      role: 'رئيس دائرة',
-    ),
-  ];
+  const EmployeesGrid({super.key, required this.employees});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +33,7 @@ class EmployeesGrid extends StatelessWidget {
             childAspectRatio: 1.32,
           ),
           itemBuilder: (context, index) {
-            return EmployeeCard(data: employees[index]);
+            return EmployeeCard(employee: employees[index]);
           },
         );
       },
@@ -65,11 +42,14 @@ class EmployeesGrid extends StatelessWidget {
 }
 
 class EmployeeCard extends StatelessWidget {
-  final _EmployeeCardData data;
+  final Employee employee;
 
-  const EmployeeCard({
-    required this.data,
-  });
+  const EmployeeCard({super.key, required this.employee});
+
+  String get _letter {
+    final name = employee.firstName.trim();
+    return name.isNotEmpty ? name.characters.first : '؟';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +76,7 @@ class EmployeeCard extends StatelessWidget {
                 radius: 27,
                 backgroundColor: AppColors.primary,
                 child: Text(
-                  data.letter,
+                  _letter,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
@@ -109,7 +89,7 @@ class EmployeeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      data.name,
+                      employee.fullName,
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -120,7 +100,7 @@ class EmployeeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      data.username,
+                      employee.userName,
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -129,18 +109,20 @@ class EmployeeCard extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 5),
-                    const _StatusBadge(),
+                    EmployeeStatusBadge(isActive: employee.isActive),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _InfoRow(label: 'الدائرة:', value: data.department),
+          _InfoRow(label: 'الدائرة:', value: employee.department?.name ?? '-'),
           const SizedBox(height: 7),
-          _InfoRow(label: 'الشعبة:', value: data.section),
-          const SizedBox(height: 7),
-          _InfoRow(label: 'الدور:', value: data.role, asBadge: true),
+          _InfoRow(
+            label: 'الدور:',
+            value: employee.role?.name ?? '-',
+            asBadge: true,
+          ),
           const SizedBox(height: 9),
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 9),
@@ -148,52 +130,17 @@ class EmployeeCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _CardButton(
-                  icon: Icons.description_outlined,
-                  label: 'المعاملات',
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _CardButton(
                   icon: Icons.visibility_outlined,
                   label: 'الملف',
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      barrierColor: Colors.black.withOpacity(0.55),
-                      builder: (_) => EmployeeDetailsDialog(
-                        firstName: 'أحمد',
-                        fatherName: 'محمد',
-                        motherName: 'فاطمة',
-                        lastName: 'الأحمد',
-                        nationalId: '01010101010',
-                        username: data.username,
-                        email: 'ahmad@edu.sy',
-                        phone: '0944123456',
-                        department: data.department,
-                        section: data.section,
-                        role: data.role,
-                      ),
-                    );
-                  },
+                  onPressed: () => showEmployeeDetails(context, employee),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: const [
+              const SizedBox(width: 10),
               Expanded(
                 child: _CardButton(
                   icon: Icons.edit_outlined,
                   label: 'تعديل',
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _CardButton(
-                  icon: Icons.account_tree_outlined,
-                  label: 'الهيكل',
+                  onPressed: () => showEmployeeEditor(context, employee),
                 ),
               ),
             ],
@@ -270,30 +217,6 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.lightPrimary,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        'نشط',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-  }
-}
-
 class _CardButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -342,22 +265,4 @@ class _CardButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _EmployeeCardData {
-  final String name;
-  final String username;
-  final String letter;
-  final String department;
-  final String section;
-  final String role;
-
-  const _EmployeeCardData({
-    required this.name,
-    required this.username,
-    required this.letter,
-    required this.department,
-    required this.section,
-    required this.role,
-  });
 }

@@ -1,9 +1,37 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../bloc/employees_bloc.dart';
+import '../bloc/employees_event.dart';
 
-class EmployeesSearchCard extends StatelessWidget {
+class EmployeesSearchCard extends StatefulWidget {
   const EmployeesSearchCard({super.key});
+
+  @override
+  State<EmployeesSearchCard> createState() => _EmployeesSearchCardState();
+}
+
+class _EmployeesSearchCardState extends State<EmployeesSearchCard> {
+  final _controller = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      context.read<EmployeesBloc>().add(SearchEmployees(value));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +52,8 @@ class EmployeesSearchCard extends StatelessWidget {
       child: SizedBox(
         height: 58,
         child: TextField(
+          controller: _controller,
+          onChanged: _onChanged,
           textDirection: TextDirection.rtl,
           textAlign: TextAlign.right,
           decoration: InputDecoration(

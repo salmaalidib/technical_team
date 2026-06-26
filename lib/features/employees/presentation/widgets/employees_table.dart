@@ -1,13 +1,16 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:technical_team/features/employees/presentation/widgets/employee_details_dialog.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../domain/entities/employee.dart';
 import 'employee_action_button.dart';
+import 'employee_dialogs.dart';
 import 'employee_status_badge.dart';
 
 class EmployeesTable extends StatelessWidget {
-  const EmployeesTable({super.key});
+  final List<Employee> employees;
+
+  const EmployeesTable({super.key, required this.employees});
 
   static const double minTableWidth = 1320;
 
@@ -36,36 +39,14 @@ class EmployeesTable extends StatelessWidget {
             reverse: true,
             child: SizedBox(
               width: tableWidth,
-              child: const Column(
+              child: Column(
                 children: [
-                  _EmployeesTableHeader(),
-                  _EmployeesTableRow(
-                    name: 'أحمد\nمحمد\nالأحمد',
-                    username: 'ahmad.ahmad',
-                    email: 'ahmad@edu.sy',
-                    phone: '0944123456',
-                    department: 'دائرة\nالتعليم\nالثانوي',
-                    section: 'شعبة\nالمدرسين',
-                    role: 'موظف\nمختص',
-                  ),
-                  _EmployeesTableRow(
-                    name: 'فاطمة\nحسن\nالحسن',
-                    username: 'fatima.hassan',
-                    email: 'fatima@edu.sy',
-                    phone: '0933654321',
-                    department: 'دائرة\nالتعليم\nالثانوي',
-                    section: 'شعبة\nالطلاب',
-                    role: 'رئيس\nشعبة',
-                  ),
-                  _EmployeesTableRow(
-                    name: 'محمد\nعلي\nالسيد',
-                    username: 'mohammad.alsayed',
-                    email: 'mohammad@edu.sy',
-                    phone: '0955789012',
-                    department: 'دائرة\nالتعليم\nالثانوي',
-                    section: '-',
-                    role: 'رئيس\nدائرة',
-                  ),
+                  const _EmployeesTableHeader(),
+                  for (final employee in employees)
+                    _EmployeesTableRow(
+                      key: ValueKey(employee.id),
+                      employee: employee,
+                    ),
                 ],
               ),
             ),
@@ -85,15 +66,14 @@ class _EmployeesTableHeader extends StatelessWidget {
       height: 86,
       color: const Color(0xffF0EFE7),
       padding: const EdgeInsets.symmetric(horizontal: 26),
-      child: Row(
+      child: const Row(
         textDirection: TextDirection.rtl,
-        children: const [
+        children: [
           _HeaderCell('اسم\nالموظف', flex: 11),
           _HeaderCell('اسم المستخدم', flex: 13),
           _HeaderCell('البريد الإلكتروني', flex: 14),
           _HeaderCell('الهاتف', flex: 10),
           _HeaderCell('الدائرة', flex: 10),
-          _HeaderCell('الشعبة', flex: 10),
           _HeaderCell('الدور', flex: 9),
           _HeaderCell('الحالة', flex: 8),
           _HeaderCell('الإجراءات', flex: 16, alignCenter: true),
@@ -104,23 +84,9 @@ class _EmployeesTableHeader extends StatelessWidget {
 }
 
 class _EmployeesTableRow extends StatelessWidget {
-  final String name;
-  final String username;
-  final String email;
-  final String phone;
-  final String department;
-  final String section;
-  final String role;
+  final Employee employee;
 
-  const _EmployeesTableRow({
-    required this.name,
-    required this.username,
-    required this.email,
-    required this.phone,
-    required this.department,
-    required this.section,
-    required this.role,
-  });
+  const _EmployeesTableRow({super.key, required this.employee});
 
   @override
   Widget build(BuildContext context) {
@@ -136,12 +102,11 @@ class _EmployeesTableRow extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          _BodyCell(name, flex: 11, isBold: true),
-          _BodyCell(username, flex: 13, muted: true),
-          _BodyCell(email, flex: 14, muted: true),
-          _BodyCell(phone, flex: 10, muted: true),
-          _BodyCell(department, flex: 10),
-          _BodyCell(section, flex: 10, muted: true),
+          _BodyCell(employee.fullName, flex: 11, isBold: true),
+          _BodyCell(employee.userName, flex: 13, muted: true),
+          _BodyCell(employee.email, flex: 14, muted: true),
+          _BodyCell(employee.phoneNumber, flex: 10, muted: true),
+          _BodyCell(employee.department?.name ?? '-', flex: 10),
           Expanded(
             flex: 9,
             child: Align(
@@ -154,7 +119,7 @@ class _EmployeesTableRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  role,
+                  employee.role?.name ?? '-',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.primary,
@@ -164,16 +129,16 @@ class _EmployeesTableRow extends StatelessWidget {
               ),
             ),
           ),
-          const Expanded(
+          Expanded(
             flex: 8,
             child: Align(
               alignment: Alignment.centerRight,
-              child: EmployeeStatusBadge(isActive: true),
+              child: EmployeeStatusBadge(isActive: employee.isActive),
             ),
           ),
-          const Expanded(
+          Expanded(
             flex: 16,
-            child: _ActionsCell(),
+            child: _ActionsCell(employee: employee),
           ),
         ],
       ),
@@ -241,7 +206,9 @@ class _BodyCell extends StatelessWidget {
 }
 
 class _ActionsCell extends StatelessWidget {
-  const _ActionsCell();
+  final Employee employee;
+
+  const _ActionsCell({required this.employee});
 
   @override
   Widget build(BuildContext context) {
@@ -253,43 +220,14 @@ class _ActionsCell extends StatelessWidget {
           icon: Icons.visibility_outlined,
           backgroundColor: AppColors.lightPrimary,
           iconColor: AppColors.primary,
-          onTap: () {
-            showDialog(
-              context: context,
-              barrierColor: Colors.black.withOpacity(0.55),
-              builder: (_) => const EmployeeDetailsDialog(
-                firstName: 'أحمد',
-                fatherName: 'محمد',
-                motherName: 'فاطمة',
-                lastName: 'الأحمد',
-                nationalId: '01010101010',
-                username: 'ahmad.ahmad',
-                email: 'ahmad@edu.sy',
-                phone: '0944123456',
-                department: 'دائرة التعليم الثانوي',
-                section: 'شعبة المدرسين',
-                role: 'موظف مختص',
-              ),
-            );
-          },
+          onTap: () => showEmployeeDetails(context, employee),
         ),
         const SizedBox(width: 6),
-        const EmployeeActionButton(
+        EmployeeActionButton(
           icon: Icons.edit_outlined,
           backgroundColor: AppColors.inputBackground,
           iconColor: AppColors.secondary,
-        ),
-        const SizedBox(width: 6),
-        const EmployeeActionButton(
-          icon: Icons.vpn_key_outlined,
-          backgroundColor: AppColors.inputBackground,
-          iconColor: AppColors.secondary,
-        ),
-        const SizedBox(width: 6),
-        const EmployeeActionButton(
-          icon: Icons.block_rounded,
-          backgroundColor: Color(0xffFDECEC),
-          iconColor: AppColors.error,
+          onTap: () => showEmployeeEditor(context, employee),
         ),
       ],
     );
