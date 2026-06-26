@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/doc_template.dart';
+import '../../domain/entities/extract_fields_result.dart';
 import '../../domain/entities/extracted_field.dart';
 import '../../domain/entities/form_config.dart';
 import '../../domain/repositories/doc_template_repository.dart';
@@ -37,23 +38,46 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
   }
 
   @override
-  Future<Either<Failure, DocTemplate>> getTemplate(int id) async {
-    final result = await remote.getTemplate(id);
-    return _readTemplate(result, 'تعذّر قراءة بيانات القالب.');
+  Future<Either<Failure, ExtractFieldsResult>> extractFieldsFromUpload({
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    final result = await remote.extractFieldsFromUpload(
+      fileBytes: fileBytes,
+      fileName: fileName,
+    );
+    return result.fold<Either<Failure, ExtractFieldsResult>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final out = extractFieldsResultFromData(_payload(body));
+          if (out.path.isEmpty || out.url.isEmpty) {
+            return const Left(
+              ServerFailure('تعذّر استخراج حقول الملف — لم يُرجع الخادم مسار الملف.'),
+            );
+          }
+          return Right(out);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة حقول الملف المرفوع.'));
+        }
+      },
+    );
   }
 
   @override
   Future<Either<Failure, DocTemplate>> createTemplate({
     required String name,
     required int typeDocId,
-    required List<int> fileBytes,
-    required String fileName,
+    required String path,
+    required String url,
+    required FormConfig config,
   }) async {
     final result = await remote.createTemplate(
       name: name.trim(),
       typeDocId: typeDocId,
-      fileBytes: fileBytes,
-      fileName: fileName,
+      path: path,
+      url: url,
+      configJson: config.toJson(),
     );
 
     return _readTemplate(result, 'تعذّر قراءة استجابة إنشاء القالب.');

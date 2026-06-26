@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 
@@ -9,20 +8,12 @@ class LabeledField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
-  final bool digitsOnly;
-  final int? maxLines;
-  final ValueChanged<String>? onChanged;
-  final String? errorText;
 
   const LabeledField({
     super.key,
     required this.label,
     required this.controller,
     this.hint,
-    this.digitsOnly = false,
-    this.maxLines = 1,
-    this.onChanged,
-    this.errorText,
   });
 
   @override
@@ -44,17 +35,11 @@ class LabeledField extends StatelessWidget {
         ),
         TextField(
           controller: controller,
-          maxLines: maxLines,
-          onChanged: onChanged,
+          maxLines: 1,
           textAlign: TextAlign.right,
-          keyboardType:
-              digitsOnly ? TextInputType.number : TextInputType.text,
-          inputFormatters:
-              digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
           decoration: InputDecoration(
             isDense: true,
             hintText: hint,
-            errorText: errorText,
             filled: true,
             fillColor: Colors.white,
             contentPadding:

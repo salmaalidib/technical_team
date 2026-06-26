@@ -25,7 +25,6 @@ class TemplateFileUpload extends StatelessWidget {
   final String? existingFileName;
   final ValueChanged<PickedFile> onPicked;
   final VoidCallback onCleared;
-  final String? errorText;
 
   const TemplateFileUpload({
     super.key,
@@ -33,7 +32,6 @@ class TemplateFileUpload extends StatelessWidget {
     required this.onPicked,
     required this.onCleared,
     this.existingFileName,
-    this.errorText,
   });
 
   static const _allowed = ['pdf', 'docx', 'html'];
@@ -95,7 +93,7 @@ class TemplateFileUpload extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: errorText != null ? AppColors.error : AppColors.border,
+                  color: AppColors.border,
                   width: 1.4,
                 ),
               ),
@@ -130,15 +128,6 @@ class TemplateFileUpload extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          ),
-        if (errorText != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6, right: 4),
-            child: Text(
-              errorText!,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ),
       ],

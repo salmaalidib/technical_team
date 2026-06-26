@@ -25,12 +25,14 @@ import 'template_validation.dart';
 
 /// Create / edit a document template as a **two-step wizard** that mirrors the
 /// backend API:
-///   * Step 1 — create the row (`POST`: file + name + type_doc_id).
-///   * Step 2 — load the PDF's extracted fields (`GET /{id}/fields`), link each
-///     to a library field, then save `config_json` (`PUT /{id}`).
+///   * Step 1 (create) — upload the PDF (`POST /extract-fields`); the backend
+///     returns its AcroForm fields + the stored file's path/url.
+///   * Step 2 (create) — enter name + type + form metadata, link each extracted
+///     field to a library field, then create the template in one JSON call
+///     (`POST /` with name + type + path + url + config_json).
 ///
 /// On edit the form opens straight on step 2 for the existing template (its
-/// name / type / file are not editable via the backend `PUT`).
+/// name / type / file are not editable — only `config_json` via `PUT /{id}`).
 class TemplateFormPage extends StatelessWidget {
   final TemplatesBloc templatesBloc;
   final DocTemplate? template; // null = create
@@ -71,8 +73,6 @@ class _TemplateFormView extends StatefulWidget {
 
 class _TemplateFormViewState extends State<_TemplateFormView> {
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _formIdCtrl;
-  late final TextEditingController _formNameCtrl;
 
   int? _typeDocId;
   PickedFile? _pickedFile;
@@ -86,7 +86,29 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
   /// PDF-field-id → linked widget (`data.id` forced to the PDF field id).
   final Map<String, WidgetConfig?> _links = {};
 
+  /// On edit, the saved `form_id`/`form_name` are preserved as-is (the name is
+  /// not editable). On create they are derived from the template name — see
+  /// [_formId] / [_formName].
+  String? _existingFormId;
+  String? _existingFormName;
+
   bool get _isEdit => widget.template != null;
+
+  /// `form_id` sent to the backend: the saved one on edit, otherwise the
+  /// template name (capped at the backend's 128-char limit).
+  String get _formId {
+    if (_isEdit && (_existingFormId?.isNotEmpty ?? false)) {
+      return _existingFormId!;
+    }
+    final name = _nameCtrl.text.trim();
+    return name.length > 128 ? name.substring(0, 128) : name;
+  }
+
+  /// `form_name` sent to the backend: the saved one on edit, otherwise the
+  /// template name.
+  String get _formName => _isEdit && (_existingFormName?.isNotEmpty ?? false)
+      ? _existingFormName!
+      : _nameCtrl.text.trim();
 
   @override
   void initState() {
@@ -94,8 +116,8 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     final t = widget.template;
     final cfg = t?.config;
     _nameCtrl = TextEditingController(text: t?.name ?? '');
-    _formIdCtrl = TextEditingController(text: cfg?.formId ?? '');
-    _formNameCtrl = TextEditingController(text: cfg?.formName ?? '');
+    _existingFormId = cfg?.formId;
+    _existingFormName = cfg?.formName;
     _typeDocId = t?.typeDocId;
 
     if (_isEdit) {
@@ -117,8 +139,6 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _formIdCtrl.dispose();
-    _formNameCtrl.dispose();
     super.dispose();
   }
 
@@ -128,36 +148,35 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     return path.split('/').last;
   }
 
-  // ───────────────────────── step 1: create ─────────────────────────
+  // ────────────── step 1 (create): upload + extract fields ──────────────
   void _submitStep1() {
-    final errors = validateStep1(
-      name: _nameCtrl.text.trim(),
-      typeDocId: _typeDocId,
-      hasFile: _pickedFile != null,
-    );
+    final errors = validateStep1(hasFile: _pickedFile != null);
     if (!errors.isValid) {
       AppSnackBar.show(context,
           message: errors.firstMessage ?? 'يرجى تصحيح الأخطاء', isError: true);
       return;
     }
 
-    context.read<TemplatesBloc>().add(CreateTemplateRequested(
-          name: _nameCtrl.text.trim(),
-          typeDocId: _typeDocId!,
+    context.read<TemplatesBloc>().add(ExtractFromUploadRequested(
           fileBytes: _pickedFile!.bytes,
           fileName: _pickedFile!.name,
         ));
   }
 
-  // ───────────────────────── step 2: save config ─────────────────────────
+  // ──────────── step 2: link fields, then create / save config ────────────
   void _submitStep2(List<ExtractedField> extractedFields) {
     final supported = ExtractedFieldsPicker.supportedFields(extractedFields);
     final linkedWidgets =
         _links.values.whereType<WidgetConfig>().toList(growable: false);
 
     final errors = validateStep2(
-      formId: _formIdCtrl.text.trim(),
-      formName: _formNameCtrl.text.trim(),
+      name: _nameCtrl.text.trim(),
+      typeDocId: _typeDocId,
+      validateMeta: !_isEdit, // name/type only required on create
+      // form_id / form_name are derived from the name, not entered — always
+      // valid once the name passes [validateMeta].
+      formId: _formId,
+      formName: _formName,
       supportedFieldCount: supported.length,
       linkedCount: linkedWidgets.length,
     );
@@ -168,16 +187,22 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     }
 
     final config = FormConfig(
-      formId: _formIdCtrl.text.trim(),
-      formName: _formNameCtrl.text.trim(),
+      formId: _formId,
+      formName: _formName,
       widgets: linkedWidgets,
       pdfRaw: widget.template?.config?.pdfRaw,
     );
 
-    context.read<TemplatesBloc>().add(UpdateTemplateConfigRequested(
-          id: _templateId!,
-          config: config,
-        ));
+    final bloc = context.read<TemplatesBloc>();
+    if (_isEdit) {
+      bloc.add(UpdateTemplateConfigRequested(id: _templateId!, config: config));
+    } else {
+      bloc.add(CreateTemplateRequested(
+        name: _nameCtrl.text.trim(),
+        typeDocId: _typeDocId!,
+        config: config,
+      ));
+    }
   }
 
   void _onLink(ExtractedField pdfField, WidgetConfig? widget) {
@@ -196,27 +221,35 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
 
     return BlocConsumer<TemplatesBloc, TemplatesState>(
       listenWhen: (p, c) =>
+          p.extractStatus != c.extractStatus ||
           p.createStatus != c.createStatus ||
           p.configStatus != c.configStatus,
       listener: (context, state) {
-        // Step 1 finished.
-        if (state.createStatus == FormStatus.success && _step == 1) {
-          setState(() {
-            _step = 2;
-            _templateId = state.createdTemplate?.id;
-          });
-          AppSnackBar.show(context,
-              message: 'تم إنشاء القالب — أكمل ربط الحقول');
-        } else if (state.createStatus == FormStatus.failure && _step == 1) {
-          AppSnackBar.show(context,
-              message: state.createError ?? 'تعذّر إنشاء القالب',
-              isError: true);
+        // Step 1 (create) — upload + extract finished: advance to step 2.
+        if (!_isEdit && _step == 1) {
+          if (state.extractStatus == RequestStatus.success) {
+            setState(() => _step = 2);
+            AppSnackBar.show(context,
+                message: 'تم رفع الملف — أكمل بيانات القالب وربط الحقول');
+          } else if (state.extractStatus == RequestStatus.failure) {
+            AppSnackBar.show(context,
+                message: state.extractError ?? 'تعذّر رفع الملف واستخراج الحقول',
+                isError: true);
+          }
         }
 
-        // Step 2 finished.
-        if (state.configStatus == FormStatus.success) {
+        // Step 2 (create) — the single create call finished.
+        if (state.createStatus == FormStatus.success) {
+          AppSnackBar.show(context, message: 'تم حفظ القالب بنجاح');
+          Navigator.of(context).pop();
+        } else if (state.createStatus == FormStatus.failure) {
           AppSnackBar.show(context,
-              message: _isEdit ? 'تم تعديل القالب بنجاح' : 'تم حفظ القالب بنجاح');
+              message: state.createError ?? 'تعذّر إنشاء القالب', isError: true);
+        }
+
+        // Step 2 (edit) — config save finished.
+        if (state.configStatus == FormStatus.success) {
+          AppSnackBar.show(context, message: 'تم تعديل القالب بنجاح');
           Navigator.of(context).pop();
         } else if (state.configStatus == FormStatus.failure) {
           AppSnackBar.show(context,
@@ -226,22 +259,13 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
       },
       builder: (context, state) {
         final submitting = _step == 1
-            ? state.createStatus == FormStatus.submitting
-            : state.configStatus == FormStatus.submitting;
+            ? state.extractStatus == RequestStatus.loading
+            : (state.createStatus == FormStatus.submitting ||
+                state.configStatus == FormStatus.submitting);
 
-        // Once a template exists (step 2), leaving abandons an incomplete
-        // config — block back/close so the technician finishes step 2.
-        final canPop = _step == 1;
-
-        return PopScope(
-          canPop: canPop,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) {
-              AppSnackBar.show(context,
-                  message: 'أكمل ربط الحقول وحفظ القالب أولاً', isError: true);
-            }
-          },
-          child: Directionality(
+        // Nothing is persisted until the final submit, so leaving is always
+        // safe — no back-navigation guard needed.
+        return Directionality(
             textDirection: TextDirection.rtl,
             child: Container(
               color: const Color(0xffF0EFE7),
@@ -251,7 +275,7 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
                     _Header(
                       title: _isEdit ? 'تعديل قالب وثيقة' : 'قالب وثيقة جديد',
                       step: _step,
-                      canBack: canPop,
+                      canBack: true,
                       onBack: () => Navigator.of(context).maybePop(),
                     ),
                     Expanded(
@@ -272,7 +296,6 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
                 ),
               ),
             ),
-          ),
         );
       },
     );
@@ -283,32 +306,22 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Section(
-          title: 'بيانات القالب',
+          title: 'ملف القالب',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LabeledField(
-                label: 'اسم القالب',
-                controller: _nameCtrl,
-                hint: 'استمارة معاملة المواطن',
-              ),
-              const SizedBox(height: 16),
               const Padding(
-                padding: EdgeInsets.only(bottom: 6, right: 2),
+                padding: EdgeInsets.only(bottom: 12, right: 2),
                 child: Text(
-                  'نوع الوثيقة',
+                  'ارفع ملف الـ PDF لاستخراج حقوله، ثم أكمل بياناته في الخطوة '
+                  'التالية.',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColors.textSecondary,
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    height: 1.5,
                   ),
                 ),
               ),
-              TypeDocSelector(
-                value: _typeDocId,
-                onChanged: (id) => setState(() => _typeDocId = id),
-              ),
-              const SizedBox(height: 16),
               TemplateFileUpload(
                 picked: _pickedFile,
                 existingFileName: _existingFileName,
@@ -320,7 +333,7 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
         ),
         const SizedBox(height: 24),
         _PrimaryButton(
-          label: 'التالي',
+          label: 'رفع واستخراج الحقول',
           icon: Icons.arrow_back_rounded,
           submitting: submitting,
           onPressed: _submitStep1,
@@ -337,33 +350,50 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Section(
-          title: 'إعدادات النموذج',
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: LabeledField(
-                  label: 'معرّف النموذج (form_id)',
-                  controller: _formIdCtrl,
-                  hint: 'civil_transaction_55',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: LabeledField(
-                  label: 'اسم النموذج (form_name)',
-                  controller: _formNameCtrl,
+        // Name + document type — only entered on create; on edit they are fixed
+        // by the backend and the section is omitted.
+        if (!_isEdit) ...[
+          _Section(
+            title: 'بيانات القالب',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LabeledField(
+                  label: 'اسم القالب',
+                  controller: _nameCtrl,
                   hint: 'استمارة معاملة المواطن',
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 6, right: 2),
+                  child: Text(
+                    'نوع الوثيقة',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TypeDocSelector(
+                  value: _typeDocId,
+                  onChanged: (id) => setState(() => _typeDocId = id),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
+          const SizedBox(height: 18),
+        ],
         _Section(
           title: 'ربط حقول الـ PDF',
-          child: _Step2Fields(state: state, links: _links, onLink: _onLink),
+          child: _Step2Fields(
+            state: state,
+            links: _links,
+            onLink: _onLink,
+            // Re-extract only applies to the edit flow (by saved-template id).
+            // On create, an extract failure keeps the user on step 1.
+            retryTemplateId: _isEdit ? _templateId : null,
+          ),
         ),
         const SizedBox(height: 24),
         _PrimaryButton(
@@ -385,10 +415,15 @@ class _Step2Fields extends StatelessWidget {
   final Map<String, WidgetConfig?> links;
   final void Function(ExtractedField pdfField, WidgetConfig? widget) onLink;
 
+  /// The saved template id to re-extract from on retry — set only on the edit
+  /// flow. Null on create (where retry is not offered here).
+  final int? retryTemplateId;
+
   const _Step2Fields({
     required this.state,
     required this.links,
     required this.onLink,
+    required this.retryTemplateId,
   });
 
   @override
@@ -409,16 +444,14 @@ class _Step2Fields extends StatelessWidget {
               style: const TextStyle(color: AppColors.error, fontSize: 14),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                final id = state.createdTemplate?.id;
-                if (id != null) {
-                  context.read<TemplatesBloc>().add(ExtractFieldsRequested(id));
-                }
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('إعادة المحاولة'),
-            ),
+            if (retryTemplateId != null)
+              OutlinedButton.icon(
+                onPressed: () => context
+                    .read<TemplatesBloc>()
+                    .add(ExtractFieldsRequested(retryTemplateId!)),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('إعادة المحاولة'),
+              ),
           ],
         );
       case RequestStatus.success:

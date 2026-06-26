@@ -5,8 +5,8 @@ import '../data/datasources/doc_template_remote_data_source.dart';
 import '../data/repositories/doc_template_repository_impl.dart';
 import '../domain/repositories/doc_template_repository.dart';
 import '../domain/usecases/create_template_usecase.dart';
+import '../domain/usecases/extract_fields_from_upload_usecase.dart';
 import '../domain/usecases/extract_template_fields_usecase.dart';
-import '../domain/usecases/get_template_usecase.dart';
 import '../domain/usecases/get_templates_usecase.dart';
 import '../domain/usecases/update_template_usecase.dart';
 import '../presentation/bloc/templates_bloc.dart';
@@ -33,12 +33,6 @@ Future<void> setupTemplatesInjection() async {
     );
   }
 
-  if (!getIt.isRegistered<GetTemplateUseCase>()) {
-    getIt.registerLazySingleton<GetTemplateUseCase>(
-      () => GetTemplateUseCase(getIt<DocTemplateRepository>()),
-    );
-  }
-
   if (!getIt.isRegistered<CreateTemplateUseCase>()) {
     getIt.registerLazySingleton<CreateTemplateUseCase>(
       () => CreateTemplateUseCase(getIt<DocTemplateRepository>()),
@@ -57,12 +51,19 @@ Future<void> setupTemplatesInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<ExtractFieldsFromUploadUseCase>()) {
+    getIt.registerLazySingleton<ExtractFieldsFromUploadUseCase>(
+      () => ExtractFieldsFromUploadUseCase(getIt<DocTemplateRepository>()),
+    );
+  }
+
   getIt.registerFactory<TemplatesBloc>(
     () => TemplatesBloc(
       getTemplates: getIt<GetTemplatesUseCase>(),
       createTemplate: getIt<CreateTemplateUseCase>(),
       updateTemplate: getIt<UpdateTemplateUseCase>(),
       extractFields: getIt<ExtractTemplateFieldsUseCase>(),
+      extractFieldsFromUpload: getIt<ExtractFieldsFromUploadUseCase>(),
     ),
   );
 }

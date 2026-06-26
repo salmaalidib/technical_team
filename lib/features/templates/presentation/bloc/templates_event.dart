@@ -19,30 +19,42 @@ class ResetTemplateForm extends TemplatesEvent {
   const ResetTemplateForm();
 }
 
-/// Step 1 — creates the template row via `POST /api/document-templates`
-/// (file + name + type_doc_id). On success the bloc stores the created
-/// template, adds it to the list (still without config), and auto-loads its
-/// extracted fields for step 2.
-class CreateTemplateRequested extends TemplatesEvent {
-  final String name;
-  final int typeDocId;
+/// Create step 1 — uploads the picked PDF via
+/// `POST /api/document-templates/extract-fields` and, on success, stores the
+/// returned `path`/`url` and extracted fields in the state so step 2 can render
+/// the field-linking cards. No template row exists yet.
+class ExtractFromUploadRequested extends TemplatesEvent {
   final List<int> fileBytes;
   final String fileName;
 
-  const CreateTemplateRequested({
-    required this.name,
-    required this.typeDocId,
+  const ExtractFromUploadRequested({
     required this.fileBytes,
     required this.fileName,
   });
 
   @override
-  List<Object?> get props => [name, typeDocId, fileName];
+  List<Object?> get props => [fileName];
 }
 
-/// Loads the extracted PDF fields for [id] via
-/// `GET /api/document-templates/{id}/fields`. Dispatched automatically after a
-/// successful create, and on opening the edit form for an existing template.
+/// Create step 2 — creates the fully-configured template in one JSON call via
+/// `POST /api/document-templates` using the `path`/`url` captured in step 1.
+class CreateTemplateRequested extends TemplatesEvent {
+  final String name;
+  final int typeDocId;
+  final FormConfig config;
+
+  const CreateTemplateRequested({
+    required this.name,
+    required this.typeDocId,
+    required this.config,
+  });
+
+  @override
+  List<Object?> get props => [name, typeDocId, config];
+}
+
+/// Loads the extracted PDF fields of an **existing** template [id] via
+/// `GET /api/document-templates/{id}/fields`. Used only by the edit form.
 class ExtractFieldsRequested extends TemplatesEvent {
   final int id;
 

@@ -2,10 +2,12 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/doc_template.dart';
+import '../entities/form_config.dart';
 import '../repositories/doc_template_repository.dart';
 
-/// Step 1 of authoring: create the template row from the uploaded file +
-/// metadata. `config_json` is added afterwards via [UpdateTemplateUseCase].
+/// Create step 2: creates the fully-configured template in one call. [path] and
+/// [url] are the values returned by [ExtractFieldsFromUploadUseCase]; [config]
+/// is the `config_json` built from linking the extracted fields.
 class CreateTemplateUseCase {
   final DocTemplateRepository repository;
 
@@ -14,14 +16,16 @@ class CreateTemplateUseCase {
   Future<Either<Failure, DocTemplate>> call({
     required String name,
     required int typeDocId,
-    required List<int> fileBytes,
-    required String fileName,
+    required String path,
+    required String url,
+    required FormConfig config,
   }) {
     return repository.createTemplate(
       name: name,
       typeDocId: typeDocId,
-      fileBytes: fileBytes,
-      fileName: fileName,
+      path: path,
+      url: url,
+      config: config,
     );
   }
 }

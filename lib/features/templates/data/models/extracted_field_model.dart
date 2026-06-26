@@ -1,7 +1,21 @@
+import '../../domain/entities/extract_fields_result.dart';
 import '../../domain/entities/extracted_field.dart';
 
+/// Builds the [ExtractFieldsResult] domain entity from the unwrapped `data`
+/// payload of `POST /api/document-templates/extract-fields`
+/// (`{ fields, path, url }`).
+ExtractFieldsResult extractFieldsResultFromData(dynamic data) {
+  final map = data is Map<String, dynamic> ? data : const <String, dynamic>{};
+  return ExtractFieldsResult(
+    fields: ExtractedFieldModel.listFromData(map),
+    path: (map['path'] ?? '') as String,
+    url: (map['url'] ?? '') as String,
+  );
+}
+
 /// Parses the `data.fields[]` items returned by
-/// `GET /api/document-templates/{id}/fields`:
+/// `GET /api/document-templates/{id}/fields` and
+/// `POST /api/document-templates/extract-fields`:
 /// `{ id, pdf_field_type, widget_type }`.
 class ExtractedFieldModel extends ExtractedField {
   const ExtractedFieldModel({

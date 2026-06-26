@@ -74,7 +74,9 @@ class EndPoints {
 
   // ===== document templates (المسؤول التقني) =====
   String get documentTemplates =>
-      'api/document-templates'; // GET active list · POST create (multipart)
+      'api/document-templates'; // GET active list · POST create (JSON: name + type_doc_id + path + url + config_json)
+  String get documentTemplatesExtractFields =>
+      'api/document-templates/extract-fields'; // POST multipart (file) → AcroForm fields + path + url
   String documentTemplateById(Object id) =>
       'api/document-templates/$id'; // GET one · PUT update config_json (JSON, versioned)
   String documentTemplateFields(Object id) =>

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../domain/usecases/create_template_usecase.dart';
+import '../../domain/usecases/extract_fields_from_upload_usecase.dart';
 import '../../domain/usecases/extract_template_fields_usecase.dart';
 import '../../domain/usecases/get_templates_usecase.dart';
 import '../../domain/usecases/update_template_usecase.dart';
@@ -14,15 +15,18 @@ class TemplatesBloc extends Bloc<TemplatesEvent, TemplatesState> {
   final CreateTemplateUseCase createTemplate;
   final UpdateTemplateUseCase updateTemplate;
   final ExtractTemplateFieldsUseCase extractFields;
+  final ExtractFieldsFromUploadUseCase extractFieldsFromUpload;
 
   TemplatesBloc({
     required this.getTemplates,
     required this.createTemplate,
     required this.updateTemplate,
     required this.extractFields,
+    required this.extractFieldsFromUpload,
   }) : super(const TemplatesState()) {
     on<LoadTemplates>(_onLoad);
     on<ResetTemplateForm>(_onResetForm);
+    on<ExtractFromUploadRequested>(_onExtractFromUpload);
     on<CreateTemplateRequested>(_onCreate);
     on<ExtractFieldsRequested>(_onExtractFields);
     on<UpdateTemplateConfigRequested>(_onUpdateConfig);
@@ -52,37 +56,76 @@ class TemplatesBloc extends Bloc<TemplatesEvent, TemplatesState> {
     emit(state.copyWith(clearWizard: true));
   }
 
-  /// Step 1 — create the row, then auto-load its extracted fields. The created
-  /// template is added to the list immediately so that, even if step 2 is never
-  /// completed (config save fails / user leaves), it surfaces in the list with
-  /// `config = null` and can be finished later.
+  /// Create step 1 — upload the picked PDF, extract its fields, and capture the
+  /// `path`/`url` the backend assigned. On success the wizard advances to step 2
+  /// where these fields are linked and the template is created.
+  Future<void> _onExtractFromUpload(
+    ExtractFromUploadRequested event,
+    Emitter<TemplatesState> emit,
+  ) async {
+    emit(state.copyWith(
+      extractStatus: RequestStatus.loading,
+      extractError: null,
+    ));
+
+    final result = await extractFieldsFromUpload(
+      fileBytes: event.fileBytes,
+      fileName: event.fileName,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        extractStatus: RequestStatus.failure,
+        extractError: failure.message,
+      )),
+      (out) => emit(state.copyWith(
+        extractStatus: RequestStatus.success,
+        extractedFields: out.fields,
+        uploadedPath: out.path,
+        uploadedUrl: out.url,
+      )),
+    );
+  }
+
+  /// Create step 2 — create the fully-configured template in one call, using the
+  /// `path`/`url` captured by [_onExtractFromUpload]. On success it is prepended
+  /// to the list.
   Future<void> _onCreate(
     CreateTemplateRequested event,
     Emitter<TemplatesState> emit,
   ) async {
+    final path = state.uploadedPath;
+    final url = state.uploadedUrl;
+
+    if (path == null || path.isEmpty || url == null || url.isEmpty) {
+      emit(state.copyWith(
+        createStatus: FormStatus.failure,
+        createError: 'ارفع ملف القالب أولاً قبل الحفظ.',
+      ));
+      return;
+    }
+
     emit(state.copyWith(createStatus: FormStatus.submitting, createError: null));
 
     final result = await createTemplate(
       name: event.name,
       typeDocId: event.typeDocId,
-      fileBytes: event.fileBytes,
-      fileName: event.fileName,
+      path: path,
+      url: url,
+      config: event.config,
     );
 
-    await result.fold(
-      (failure) async => emit(state.copyWith(
+    result.fold(
+      (failure) => emit(state.copyWith(
         createStatus: FormStatus.failure,
         createError: failure.message,
       )),
-      (created) async {
-        emit(state.copyWith(
-          createStatus: FormStatus.success,
-          createdTemplate: created,
-          templates: [created, ...state.templates],
-        ));
-        // Advance to step 2 by loading the PDF fields of the new template.
-        await _loadFields(created.id, emit);
-      },
+      (created) => emit(state.copyWith(
+        createStatus: FormStatus.success,
+        createdTemplate: created,
+        templates: [created, ...state.templates],
+        lastSavedId: created.id,
+      )),
     );
   }
 

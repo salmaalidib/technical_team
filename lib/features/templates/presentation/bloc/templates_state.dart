@@ -22,6 +22,12 @@ class TemplatesState extends Equatable {
   final List<ExtractedField> extractedFields;
   final String? extractError;
 
+  /// Create flow only — the `path`/`url` returned by the upload step. They are
+  /// sent back verbatim in the final create call. Null on the edit flow (which
+  /// has no upload).
+  final String? uploadedPath;
+  final String? uploadedUrl;
+
   /// Step 2 — config save (PUT). Kept separate from create so the wizard can
   /// tell "row created" apart from "config saved".
   final FormStatus configStatus;
@@ -41,6 +47,8 @@ class TemplatesState extends Equatable {
     this.extractStatus = RequestStatus.initial,
     this.extractedFields = const [],
     this.extractError,
+    this.uploadedPath,
+    this.uploadedUrl,
     this.configStatus = FormStatus.idle,
     this.configError,
     this.lastSavedId,
@@ -56,6 +64,8 @@ class TemplatesState extends Equatable {
     RequestStatus? extractStatus,
     List<ExtractedField>? extractedFields,
     String? extractError,
+    String? uploadedPath,
+    String? uploadedUrl,
     FormStatus? configStatus,
     String? configError,
     int? lastSavedId,
@@ -76,6 +86,8 @@ class TemplatesState extends Equatable {
       extractedFields:
           clearWizard ? const [] : (extractedFields ?? this.extractedFields),
       extractError: clearWizard ? null : extractError,
+      uploadedPath: clearWizard ? null : (uploadedPath ?? this.uploadedPath),
+      uploadedUrl: clearWizard ? null : (uploadedUrl ?? this.uploadedUrl),
       configStatus:
           clearWizard ? FormStatus.idle : (configStatus ?? this.configStatus),
       configError: clearWizard ? null : configError,
@@ -94,6 +106,8 @@ class TemplatesState extends Equatable {
         extractStatus,
         extractedFields,
         extractError,
+        uploadedPath,
+        uploadedUrl,
         configStatus,
         configError,
         lastSavedId,
