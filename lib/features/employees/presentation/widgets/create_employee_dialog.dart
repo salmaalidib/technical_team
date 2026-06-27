@@ -7,6 +7,7 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../core/services/key_generation_service.dart';
 import '../../../../core/services/key_storage_service.dart';
+import '../../../../core/services/whatsapp_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
@@ -100,12 +101,12 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   void _showDialogMessage(String message) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('تنبيه'),
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('حسناً'),
           ),
         ],
@@ -114,14 +115,17 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   }
 
   void _showCredentialsDialog({
+    required BuildContext rootContext,
     required String message,
+    required String userName,
+    required String phone,
     required String password,
     required String pin,
   }) {
     showDialog(
-      context: context,
+      context: rootContext,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('تم إنشاء الموظف بنجاح'),
         content: SelectableText(
           '$message\n\n'
@@ -131,11 +135,61 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           textDirection: TextDirection.rtl,
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () => _sendCredentialsToWhatsApp(
+              dialogContext: dialogContext,
+              userName: userName,
+              phone: phone,
+              password: password,
+              pin: pin,
+            ),
+            icon: const Icon(Icons.send_rounded, size: 18),
+            label: const Text('إرسال عبر واتساب'),
+          ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('حسناً'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _sendCredentialsToWhatsApp({
+    required BuildContext dialogContext,
+    required String userName,
+    required String phone,
+    required String password,
+    required String pin,
+  }) async {
+    final trimmedPhone = phone.trim();
+    if (trimmedPhone.isEmpty) {
+      _showDialogMessage('لا يوجد رقم هاتف للموظف لإرسال الرسالة عبر واتساب');
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.maybeOf(dialogContext);
+    final whatsapp = getIt<WhatsAppService>();
+    final body = WhatsAppService.buildCredentialsMessage(
+      userName: userName,
+      password: password,
+      pin: pin,
+    );
+
+    final opened = await whatsapp.sendCredentials(
+      phone: trimmedPhone,
+      message: body,
+    );
+
+    if (!opened) {
+      // canLaunchUrl/launchUrl failed (no WhatsApp and no browser handler).
+      _showDialogMessage('تعذّر فتح واتساب على هذا الجهاز');
+      return;
+    }
+
+    messenger?.showSnackBar(
+      const SnackBar(
+        content: Text('تم فتح واتساب — اضغط إرسال لإتمام إرسال الرسالة'),
       ),
     );
   }
@@ -245,16 +299,30 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           final password = _lastGeneratedPassword ?? '';
           final pin = _lastGeneratedPin ?? '';
 
-          Navigator.pop(context);
+          // Capture the controller values BEFORE the pop — popping unmounts this
+          // State and disposes the controllers, so reading them afterwards is
+          // unsafe.
+          final userName = _userName.text.trim();
+          final phone = _phone.text.trim();
 
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (!mounted) return;
-            _showCredentialsDialog(
-              message: successMessage,
-              password: password,
-              pin: pin,
-            );
-          });
+          // Capture the navigator that hosts this page BEFORE popping the
+          // create dialog. After the pop this State is unmounted, so its own
+          // context is defunct — but this navigator outlives it and can host
+          // the credentials dialog.
+          final navigator = Navigator.of(context);
+
+          navigator.pop();
+
+          // Show the credentials dialog on the root navigator's context, which
+          // is still mounted after the create dialog is gone.
+          _showCredentialsDialog(
+            rootContext: navigator.context,
+            message: successMessage,
+            userName: userName,
+            phone: phone,
+            password: password,
+            pin: pin,
+          );
         }
 
         if (state.formStatus == FormStatus.failure) {

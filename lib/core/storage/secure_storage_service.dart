@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SecureStorageService {
-
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   static const _tokenKey = "token";
@@ -44,28 +44,41 @@ class SecureStorageService {
   }
 
   // ===== Active organization =====
-  // Persisted so the user only picks an organization once. Reads/writes are
-  // wrapped because secure storage can throw on web (best-effort browser
-  // crypto); on failure we degrade to "no active org" rather than crashing.
+  // Stored in SharedPreferences (not secure storage): the org id is a
+  // non-sensitive integer, and flutter_secure_storage does NOT persist
+  // reliably on web — its value is lost across a page reload. SharedPreferences
+  // maps to localStorage on web and durable native storage elsewhere, so the
+  // user's organization choice survives a reload on every platform.
   Future<void> saveActiveOrgId(int id) async {
-    try {
-      await _storage.write(key: _activeOrgKey, value: id.toString());
-    } catch (_) {
-      // Persistence failed (e.g. web). The in-memory choice still works for
-      // this session; it just won't survive a reload.
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_activeOrgKey, id);
   }
 
   Future<int?> getActiveOrgId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt(_activeOrgKey);
+    if (id != null) return id;
+
+    // One-time migration: pick up an id previously stored in secure storage
+    // (e.g. on desktop before this change) and move it to SharedPreferences.
     try {
       final raw = await _storage.read(key: _activeOrgKey);
-      return raw == null ? null : int.tryParse(raw);
+      final migrated = raw == null ? null : int.tryParse(raw);
+      if (migrated != null) {
+        await prefs.setInt(_activeOrgKey, migrated);
+        await _storage.delete(key: _activeOrgKey);
+      }
+      return migrated;
     } catch (_) {
       return null;
     }
   }
 
   Future<void> deleteActiveOrgId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_activeOrgKey);
+
+    // Also clear any legacy value left in secure storage.
     try {
       await _storage.delete(key: _activeOrgKey);
     } catch (_) {

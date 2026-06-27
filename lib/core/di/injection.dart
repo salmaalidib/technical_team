@@ -4,6 +4,7 @@ import '../active_org/active_organization_cubit.dart';
 import '../services/key_generation_service.dart';
 import '../network/dio_client.dart';
 import '../services/key_storage_service.dart';
+import '../services/whatsapp_service.dart';
 import '../services/api_service.dart';
 import '../storage/secure_storage_service.dart';
 
@@ -41,6 +42,12 @@ Future<void> setupCoreInjection() async {
     () => KeyStorageService(),
   );
 }
+
+  if (!getIt.isRegistered<WhatsAppService>()) {
+    getIt.registerLazySingleton<WhatsAppService>(
+      () => WhatsAppService(),
+    );
+  }
 
   // The single source of truth for the user's active organization. It resolves
   // GetInstitutionsUseCase lazily inside load(), so registration order relative

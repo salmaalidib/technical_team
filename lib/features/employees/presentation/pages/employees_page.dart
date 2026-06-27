@@ -8,7 +8,6 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
-import '../widgets/employees_grid.dart';
 import '../widgets/employees_header.dart';
 import '../widgets/employees_pagination.dart';
 import '../widgets/employees_search_card.dart';
@@ -23,7 +22,6 @@ class EmployeesPage extends StatefulWidget {
 
 class _EmployeesPageState extends State<EmployeesPage> {
   late final EmployeesBloc _bloc;
-  bool isGridView = false;
 
   @override
   void initState() {
@@ -56,21 +54,17 @@ class _EmployeesPageState extends State<EmployeesPage> {
         child: Container(
           color: const Color(0xffF0EFE7),
           padding: const EdgeInsets.fromLTRB(40, 28, 40, 30),
-          child: SingleChildScrollView(
+          child: const SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                EmployeesHeader(
-                  isGridView: isGridView,
-                  onGridTap: () => setState(() => isGridView = true),
-                  onTableTap: () => setState(() => isGridView = false),
-                ),
-                const SizedBox(height: 28),
-                const EmployeesSearchCard(),
-                const SizedBox(height: 24),
-                _EmployeesBody(isGridView: isGridView),
-                const SizedBox(height: 20),
-                const EmployeesPagination(),
+                EmployeesHeader(),
+                SizedBox(height: 28),
+                EmployeesSearchCard(),
+                SizedBox(height: 24),
+                _EmployeesBody(),
+                SizedBox(height: 20),
+                EmployeesPagination(),
               ],
             ),
           ),
@@ -80,11 +74,9 @@ class _EmployeesPageState extends State<EmployeesPage> {
   }
 }
 
-/// يعرض حالة القائمة (تحميل / خطأ / فارغ / نجاح) ثم الجدول أو الـ grid.
+/// يعرض حالة القائمة (تحميل / خطأ / فارغ / نجاح) ثم الجدول.
 class _EmployeesBody extends StatelessWidget {
-  final bool isGridView;
-
-  const _EmployeesBody({required this.isGridView});
+  const _EmployeesBody();
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +103,7 @@ class _EmployeesBody extends StatelessWidget {
             if (state.employees.isEmpty) {
               return const _EmptyState();
             }
-            return isGridView
-                ? EmployeesGrid(employees: state.employees)
-                : EmployeesTable(employees: state.employees);
+            return EmployeesTable(employees: state.employees);
         }
       },
     );
