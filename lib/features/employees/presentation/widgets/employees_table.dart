@@ -1,235 +1,129 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:syncfusion_flutter_core/theme.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../../../shared/theme/app_colors.dart';
-import '../../domain/entities/employee.dart';
-import 'employee_action_button.dart';
+import '../../../../shared/widgets/table/data_pager_widget.dart';
+import '../../../../shared/widgets/table/grid_column.dart';
+import '../bloc/employees_bloc.dart';
+import '../bloc/employees_event.dart';
+import '../bloc/employees_state.dart';
 import 'employee_dialogs.dart';
-import 'employee_status_badge.dart';
+import 'employees_data_source.dart';
 
-class EmployeesTable extends StatelessWidget {
-  final List<Employee> employees;
+/// جدول الموظفين مبني على [SfDataGrid] مع ترقيم من جهة الخادم عبر
+/// [DataPagerWidget]. يقرأ الصفحة الحالية وحجمها والإجمالي من حالة الـ BLoC،
+/// ويطلق [LoadEmployees] عند تغيّر الصفحة أو حجمها.
+class EmployeesTable extends StatefulWidget {
+  final EmployeesState state;
 
-  const EmployeesTable({super.key, required this.employees});
-
-  static const double minTableWidth = 1320;
+  const EmployeesTable({super.key, required this.state});
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tableWidth = math.max(constraints.maxWidth, minTableWidth);
-
-        return Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            reverse: true,
-            child: SizedBox(
-              width: tableWidth,
-              child: Column(
-                children: [
-                  const _EmployeesTableHeader(),
-                  for (final employee in employees)
-                    _EmployeesTableRow(
-                      key: ValueKey(employee.id),
-                      employee: employee,
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  State<EmployeesTable> createState() => _EmployeesTableState();
 }
 
-class _EmployeesTableHeader extends StatelessWidget {
-  const _EmployeesTableHeader();
+class _EmployeesTableState extends State<EmployeesTable> {
+  late EmployeesDataSource _dataSource;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 86,
-      color: const Color(0xffF0EFE7),
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      child: const Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          _HeaderCell('اسم\nالموظف', flex: 11),
-          _HeaderCell('اسم المستخدم', flex: 13),
-          _HeaderCell('البريد الإلكتروني', flex: 14),
-          _HeaderCell('الهاتف', flex: 10),
-          _HeaderCell('الدائرة', flex: 10),
-          _HeaderCell('الدور', flex: 9),
-          _HeaderCell('الحالة', flex: 8),
-          _HeaderCell('الإجراءات', flex: 16, alignCenter: true),
-        ],
-      ),
+  void initState() {
+    super.initState();
+    _dataSource = _buildSource();
+  }
+
+  @override
+  void didUpdateWidget(covariant EmployeesTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // حدّث الصفوف في نفس المصدر (دون إنشاء مصدر جديد) للحفاظ على تزامن
+    // الـ pager عند وصول صفحة جديدة من الخادم.
+    if (oldWidget.state.employees != widget.state.employees) {
+      _dataSource.updateData(widget.state.employees);
+    }
+  }
+
+  EmployeesDataSource _buildSource() {
+    return EmployeesDataSource(
+      employees: widget.state.employees,
+      onView: (e) => showEmployeeDetails(context, e),
+      onEdit: (e) => showEmployeeEditor(context, e),
     );
   }
-}
-
-class _EmployeesTableRow extends StatelessWidget {
-  final Employee employee;
-
-  const _EmployeesTableRow({super.key, required this.employee});
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+    final bloc = context.read<EmployeesBloc>();
+
     return Container(
-      constraints: const BoxConstraints(minHeight: 112),
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
-      decoration: const BoxDecoration(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Row(
-        textDirection: TextDirection.rtl,
+      child: Column(
         children: [
-          _BodyCell(employee.fullName, flex: 11, isBold: true),
-          _BodyCell(employee.userName, flex: 13, muted: true),
-          _BodyCell(employee.email, flex: 14, muted: true),
-          _BodyCell(employee.phoneNumber, flex: 10, muted: true),
-          _BodyCell(employee.department?.name ?? '-', flex: 10),
           Expanded(
-            flex: 9,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  employee.role?.name ?? '-',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
+            child: SfDataGridTheme(
+              data: const SfDataGridThemeData(
+                headerColor: Color(0xffF0EFE7),
+                gridLineColor: AppColors.border,
+              ),
+              child: SfDataGrid(
+                source: _dataSource,
+                rowHeight: 72,
+                headerRowHeight: 56,
+                // يربط الجدول بالـ pager. الخادم يرسل صفحة واحدة (= limit)،
+                // لذا نعرض كل الصفوف الواصلة.
+                rowsPerPage: state.limit,
+                gridLinesVisibility: GridLinesVisibility.horizontal,
+                headerGridLinesVisibility: GridLinesVisibility.horizontal,
+                columnWidthMode: ColumnWidthMode.fill,
+                columns: _columns,
               ),
             ),
           ),
-          Expanded(
-            flex: 8,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: EmployeeStatusBadge(isActive: employee.isActive),
-            ),
-          ),
-          Expanded(
-            flex: 16,
-            child: _ActionsCell(employee: employee),
+          DataPagerWidget(
+            dataSource: _dataSource,
+            pageNumber: state.page,
+            pageSize: state.limit,
+            total: state.total,
+            onPageChanged: (page) => bloc.add(LoadEmployees(page: page)),
+            onPageSizeChanged: (size) =>
+                bloc.add(LoadEmployees(page: 1, limit: size)),
           ),
         ],
       ),
     );
   }
-}
 
-class _HeaderCell extends StatelessWidget {
-  final String text;
-  final int flex;
-  final bool alignCenter;
-
-  const _HeaderCell(
-    this.text, {
-    required this.flex,
-    this.alignCenter = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        text,
-        textAlign: alignCenter ? TextAlign.center : TextAlign.right,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-      ),
-    );
-  }
-}
-
-class _BodyCell extends StatelessWidget {
-  final String text;
-  final int flex;
-  final bool muted;
-  final bool isBold;
-
-  const _BodyCell(
-    this.text, {
-    required this.flex,
-    this.muted = false,
-    this.isBold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.right,
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: muted ? AppColors.textSecondary : AppColors.textPrimary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-              height: 1.45,
-            ),
-      ),
-    );
-  }
-}
-
-class _ActionsCell extends StatelessWidget {
-  final Employee employee;
-
-  const _ActionsCell({required this.employee});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      textDirection: TextDirection.rtl,
-      children: [
-        EmployeeActionButton(
-          icon: Icons.visibility_outlined,
-          backgroundColor: AppColors.lightPrimary,
-          iconColor: AppColors.primary,
-          onTap: () => showEmployeeDetails(context, employee),
+  List<GridColumn> get _columns => [
+        buildGridColumn(columnName: 'name', label: 'اسم الموظف'),
+        buildGridColumn(columnName: 'userName', label: 'اسم المستخدم'),
+        buildGridColumn(columnName: 'email', label: 'البريد الإلكتروني'),
+        buildGridColumn(columnName: 'phone', label: 'الهاتف', width: 130),
+        buildGridColumn(columnName: 'department', label: 'الدائرة'),
+        buildGridColumn(columnName: 'role', label: 'الدور'),
+        buildGridColumn(
+          columnName: 'status',
+          label: 'الحالة',
+          width: 120,
+          alignment: Alignment.center,
         ),
-        const SizedBox(width: 6),
-        EmployeeActionButton(
-          icon: Icons.edit_outlined,
-          backgroundColor: AppColors.inputBackground,
-          iconColor: AppColors.secondary,
-          onTap: () => showEmployeeEditor(context, employee),
+        buildGridColumn(
+          columnName: 'actions',
+          label: 'الإجراءات',
+          width: 140,
+          alignment: Alignment.center,
         ),
-      ],
-    );
-  }
+      ];
 }

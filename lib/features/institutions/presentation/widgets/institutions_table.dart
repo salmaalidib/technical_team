@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:syncfusion_flutter_core/theme.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/table/grid_column.dart';
 import '../../domain/entities/institution.dart';
 import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
+import 'institutions_data_source.dart';
 
+/// جدول المؤسسات مبني على [SfDataGrid]. عرض كامل بدون ترقيم؛ البحث على جهة
+/// العميل يُعيد بناء مصدر البيانات بالقائمة المُرشَّحة.
 class InstitutionsTable extends StatefulWidget {
   const InstitutionsTable({super.key});
+
+  /// ارتفاع منطقة الشبكة (الجدول داخل صفحة قابلة للتمرير عمودياً).
+  static const double gridHeight = 520;
 
   @override
   State<InstitutionsTable> createState() => _InstitutionsTableState();
@@ -36,47 +45,33 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tableWidth =
-            constraints.maxWidth < 1000 ? 1000.0 : constraints.maxWidth;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: BlocBuilder<InstitutionsBloc, InstitutionsState>(
-                builder: (context, state) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _TableSearch(
-                        controller: _searchController,
-                        onChanged: (v) => setState(() => _query = v),
-                      ),
-                      const _TableHeader(),
-                      _buildBody(context, state),
-                    ],
-                  );
-                },
-              ),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
-        );
-      },
+        ],
+      ),
+      child: BlocBuilder<InstitutionsBloc, InstitutionsState>(
+        builder: (context, state) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _TableSearch(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _query = v),
+              ),
+              _buildBody(context, state),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -113,11 +108,34 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ...List.generate(
-              items.length,
-              (i) => _InstitutionRow(number: '${i + 1}', institution: items[i]),
+            SizedBox(
+              height: InstitutionsTable.gridHeight,
+              child: SfDataGridTheme(
+                data: const SfDataGridThemeData(
+                  headerColor: Color(0xffF0EFE7),
+                  gridLineColor: AppColors.border,
+                ),
+                child: SfDataGrid(
+                  source: InstitutionsDataSource(institutions: items),
+                  rowHeight: 64,
+                  headerRowHeight: 56,
+                  gridLinesVisibility: GridLinesVisibility.horizontal,
+                  headerGridLinesVisibility: GridLinesVisibility.horizontal,
+                  columnWidthMode: ColumnWidthMode.fill,
+                  columns: [
+                    buildGridColumn(
+                      columnName: 'number',
+                      label: '#',
+                      width: 80,
+                    ),
+                    buildGridColumn(columnName: 'name', label: 'اسم المؤسسة'),
+                    buildGridColumn(
+                        columnName: 'parent', label: 'المؤسسة الأم'),
+                    buildGridColumn(columnName: 'location', label: 'الموقع'),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
             _TableFooter(
               shown: items.length,
               total: state.institutions.length,
@@ -169,69 +187,6 @@ class _TableSearch extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TableHeader extends StatelessWidget {
-  const _TableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      color: const Color(0xffF0EFE7),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: const Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          SizedBox(width: 70, child: Text('#', style: _headerStyle)),
-          Expanded(flex: 3, child: Text('اسم المؤسسة', style: _headerStyle)),
-          Expanded(flex: 3, child: Text('المؤسسة الأم', style: _headerStyle)),
-          Expanded(flex: 2, child: Text('الموقع', style: _headerStyle)),
-        ],
-      ),
-    );
-  }
-}
-
-class _InstitutionRow extends StatelessWidget {
-  final String number;
-  final Institution institution;
-
-  const _InstitutionRow({required this.number, required this.institution});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          SizedBox(width: 70, child: Text(number, style: _cellStyle)),
-          Expanded(flex: 3, child: Text(institution.name, style: _cellStyle)),
-          Expanded(
-            flex: 3,
-            child: Text(
-              institution.parentName ?? '-',
-              style: _cellStyle.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              institution.locationName ?? '-',
-              style: _cellStyle.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -295,15 +250,3 @@ class _TableFooter extends StatelessWidget {
     );
   }
 }
-
-const TextStyle _headerStyle = TextStyle(
-  color: AppColors.textPrimary,
-  fontSize: 15,
-  fontWeight: FontWeight.w800,
-);
-
-const TextStyle _cellStyle = TextStyle(
-  color: AppColors.textPrimary,
-  fontSize: 15,
-  fontWeight: FontWeight.w600,
-);

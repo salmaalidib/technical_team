@@ -55,6 +55,8 @@ dependencies:
   cryptography: ^2.7.0
   file_picker: ^8.1.7
   url_launcher: ^6.3.1
+  syncfusion_flutter_datagrid: ^31.2.12
+  syncfusion_flutter_core: ^31.2.12
 
 dev_dependencies:
   flutter_test:

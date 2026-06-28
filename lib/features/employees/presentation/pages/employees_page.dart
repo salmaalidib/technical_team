@@ -9,7 +9,6 @@ import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
 import '../widgets/employees_header.dart';
-import '../widgets/employees_pagination.dart';
 import '../widgets/employees_search_card.dart';
 import '../widgets/employees_table.dart';
 
@@ -54,19 +53,15 @@ class _EmployeesPageState extends State<EmployeesPage> {
         child: Container(
           color: const Color(0xffF0EFE7),
           padding: const EdgeInsets.fromLTRB(40, 28, 40, 30),
-          child: const SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                EmployeesHeader(),
-                SizedBox(height: 28),
-                EmployeesSearchCard(),
-                SizedBox(height: 24),
-                _EmployeesBody(),
-                SizedBox(height: 20),
-                EmployeesPagination(),
-              ],
-            ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              EmployeesHeader(),
+              SizedBox(height: 28),
+              EmployeesSearchCard(),
+              SizedBox(height: 24),
+              Expanded(child: _EmployeesBody()),
+            ],
           ),
         ),
       ),
@@ -103,7 +98,7 @@ class _EmployeesBody extends StatelessWidget {
             if (state.employees.isEmpty) {
               return const _EmptyState();
             }
-            return EmployeesTable(employees: state.employees);
+            return EmployeesTable(state: state);
         }
       },
     );

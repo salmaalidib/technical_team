@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
+import '../../../../core/services/key_generation_service.dart';
+import '../../../../core/services/key_storage_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/employee.dart';
 import '../bloc/employees_bloc.dart';
@@ -38,7 +41,11 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
   final _confirmPassword = TextEditingController();
   final _pin = TextEditingController();
   final _confirmPin = TextEditingController();
-  final _publicKey = TextEditingController();
+
+  // المفتاح العام المُولَّد حديثاً (إن طلب المستخدم توليد مفتاح جديد). يبقى
+  // null ما لم يُولَّد، فلا يُرسل أي تغيير للمفاتيح.
+  String? _generatedPublicKey;
+  bool _generatingKey = false;
 
   late bool _isActive;
 
@@ -81,7 +88,6 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
     _confirmPassword.dispose();
     _pin.dispose();
     _confirmPin.dispose();
-    _publicKey.dispose();
     super.dispose();
   }
 
@@ -151,10 +157,10 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
       data['confirm_pin'] = pin;
     }
 
-    // المفتاح العام
-    final publicKey = _publicKey.text.trim();
-    if (publicKey.isNotEmpty) {
-      data['public_key'] = publicKey;
+    // المفتاح العام — يُرسل فقط إن وُلّد مفتاح جديد عبر زر التوليد.
+    final newKey = _generatedPublicKey;
+    if (newKey != null && newKey.isNotEmpty) {
+      data['public_key'] = newKey;
     }
 
     // إعادة التعيين — الثلاثي معاً
@@ -174,6 +180,54 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
     }
 
     return data;
+  }
+
+  /// يولّد زوج مفاتيح جديداً، يحفظ المفتاح الخاص (مشفّراً بالـ PIN) على مجلد
+  /// خارجي، ويحتفظ بالمفتاح العام لإرساله مع الحفظ. يتطلب إدخال PIN جديد
+  /// (6 أرقام) لتشفير المفتاح الخاص، تماماً كما في شاشة الإنشاء.
+  Future<void> _generateNewKey() async {
+    final pin = _pin.text.trim();
+    if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
+      _showMessage(
+        'لتوليد مفتاح جديد أدخل رمز PIN جديداً (6 أرقام) في قسم الأمان أولاً، '
+        'فهو يُستخدم لتشفير المفتاح الخاص.',
+      );
+      return;
+    }
+    if (pin != _confirmPin.text.trim()) {
+      _showMessage('رمز PIN وتأكيده غير متطابقين');
+      return;
+    }
+
+    setState(() => _generatingKey = true);
+    try {
+      final keys = await getIt<KeyGenerationService>().generateKeys();
+
+      final directoryPath =
+          await getIt<KeyStorageService>().pickExternalDirectory();
+      if (directoryPath == null) {
+        _showMessage('لم يتم اختيار مجلد لحفظ المفتاح الخاص');
+        return;
+      }
+
+      await getIt<KeyStorageService>().saveEmployeeKeys(
+        directoryPath: directoryPath,
+        userName: _e.userName,
+        privateKey: keys.privateKey,
+        publicKey: keys.publicKey,
+        pin: pin,
+      );
+
+      if (!mounted) return;
+      setState(() => _generatedPublicKey = keys.publicKey);
+      _showMessage('تم توليد مفتاح جديد وحفظ المفتاح الخاص. سيُحدَّث المفتاح '
+          'العام عند الحفظ.');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _generatingKey = false);
+    }
   }
 
   void _submit(BuildContext context) {
@@ -278,11 +332,18 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
                                 ? null
                                 : (v) {
                                     setState(() => _reassign = v);
+                                    if (!v) return;
                                     final orgId = _e.organization?.id;
-                                    if (v && orgId != null) {
-                                      context
-                                          .read<EmployeesBloc>()
-                                          .add(LoadEmployeeDepartments(orgId));
+                                    final bloc = context.read<EmployeesBloc>();
+                                    if (orgId != null) {
+                                      bloc.add(LoadEmployeeDepartments(orgId));
+                                    }
+                                    // حمّل أدوار القسم الحالي أيضاً حتى يظهر
+                                    // الدور المُعيَّن مسبقاً في قائمة الأدوار،
+                                    // لا القسم فقط.
+                                    final deptId = _e.department?.id;
+                                    if (deptId != null) {
+                                      bloc.add(LoadEmployeeRoles(deptId));
                                     }
                                   },
                           ),
@@ -358,11 +419,11 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
                                 label: 'تأكيد PIN'),
                           ),
                           const SizedBox(height: 16),
-                          _Field(
-                            controller: _publicKey,
-                            label: 'مفتاح عام جديد (Public Key)',
-                            hint: 'الصق المفتاح العام الجديد عند الحاجة',
-                            ltr: true,
+                          _PublicKeySection(
+                            generated: _generatedPublicKey != null,
+                            generating: _generatingKey,
+                            onGenerate:
+                                submitting ? null : () => _generateNewKey(),
                           ),
                           if (_touched) const SizedBox(height: 4),
                         ],
@@ -526,13 +587,11 @@ class _Field extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
-  final bool ltr;
 
   const _Field({
     required this.controller,
     required this.label,
     this.hint,
-    this.ltr = false,
   });
 
   @override
@@ -550,8 +609,8 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          textDirection: ltr ? TextDirection.ltr : TextDirection.rtl,
-          textAlign: ltr ? TextAlign.left : TextAlign.right,
+          textDirection: TextDirection.rtl,
+          textAlign: TextAlign.right,
           decoration: InputDecoration(
             hintText: hint,
             hintTextDirection: TextDirection.rtl,
@@ -612,6 +671,102 @@ class _Dropdown extends StatelessWidget {
           onChanged: onChanged,
         ),
       ],
+    );
+  }
+}
+
+/// قسم المفتاح العام: عبارة توضّح أنه سيتولّد public key جديد، وزر للتوليد.
+/// التوليد يحفظ المفتاح الخاص خارجياً ويُرسل العام عند الحفظ.
+class _PublicKeySection extends StatelessWidget {
+  final bool generated;
+  final bool generating;
+  final VoidCallback? onGenerate;
+
+  const _PublicKeySection({
+    required this.generated,
+    required this.generating,
+    required this.onGenerate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.vpn_key_outlined,
+                  color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'المفتاح العام (Public Key)',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'عند توليد مفتاح جديد سيتم إنشاء مفتاح عام جديد للموظف، وحفظ المفتاح '
+            'الخاص (مشفّراً برمز PIN الجديد) على مجلد خارجي. اتركه دون توليد '
+            'لإبقاء المفتاح الحالي.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.6,
+                ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              SizedBox(
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: generating ? null : onGenerate,
+                  icon: generating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 20),
+                  label: Text(generated
+                      ? 'إعادة توليد مفتاح جديد'
+                      : 'توليد مفتاح جديد'),
+                ),
+              ),
+              const SizedBox(width: 14),
+              if (generated)
+                const Row(
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        color: AppColors.primary, size: 20),
+                    SizedBox(width: 6),
+                    Text(
+                      'تم توليد مفتاح جديد',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
