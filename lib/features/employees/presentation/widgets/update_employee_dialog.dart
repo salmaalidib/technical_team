@@ -47,6 +47,10 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
   String? _generatedPublicKey;
   bool _generatingKey = false;
 
+  // قسم الأمان مخفيٌّ افتراضياً مثل قسم إعادة التعيين. عند تفعيله تُولَّد كلمة
+  // مرور و PIN جديدان تلقائياً (كما في الإنشاء).
+  bool _changeSecurity = false;
+
   late bool _isActive;
 
   // التعيين الإداري — يُملأ فقط إن أراد المستخدم تغييره.
@@ -155,6 +159,15 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
       }
       data['pin'] = pin;
       data['confirm_pin'] = pin;
+
+      // أي تغيير للـ PIN يستوجب مفتاحاً جديداً: المفتاح الخاص القديم مشفّر
+      // بالـ PIN القديم، فلا يُفكّ بالـ PIN الجديد. نمنع الحفظ ما لم يُولَّد
+      // مفتاح جديد (يُحفظ مشفّراً بالـ PIN الجديد على الفلاشة).
+      if (_generatedPublicKey == null) {
+        _showMessage('غيّرت رمز PIN، لذا يجب توليد مفتاح جديد أولاً '
+            '(المفتاح الخاص يُحفظ مشفّراً بالـ PIN الجديد).');
+        return null;
+      }
     }
 
     // المفتاح العام — يُرسل فقط إن وُلّد مفتاح جديد عبر زر التوليد.
@@ -182,7 +195,39 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
     return data;
   }
 
-  /// يولّد زوج مفاتيح جديداً، يحفظ المفتاح الخاص (مشفّراً بالـ PIN) على مجلد
+  /// يفعّل/يلغي قسم الأمان. عند التفعيل يُولّد كلمة مرور و PIN جديدين تلقائياً
+  /// (مثل الإنشاء) ليكونا جاهزين لتشفير المفتاح الخاص عند توليده. عند الإلغاء
+  /// تُمسح كل قيم الأمان فلا يُرسل أي تغيير.
+  void _toggleSecurity(bool enabled) {
+    setState(() {
+      _changeSecurity = enabled;
+      if (enabled) {
+        final storage = getIt<KeyStorageService>();
+        final pin = storage.generatePin();
+        final password = storage.generatePassword();
+        _pin.text = pin;
+        _confirmPin.text = pin;
+        _password.text = password;
+        _confirmPassword.text = password;
+      } else {
+        _pin.clear();
+        _confirmPin.clear();
+        _password.clear();
+        _confirmPassword.clear();
+        _generatedPublicKey = null;
+      }
+    });
+  }
+
+  /// يُبطل المفتاح المُولَّد عند أي تعديل لاحق للـ PIN، لأن المفتاح حُفظ مشفّراً
+  /// بالـ PIN السابق ولم يعد مطابقاً. هكذا يُجبَر المستخدم على إعادة التوليد.
+  void _onPinChanged(String _) {
+    if (_generatedPublicKey != null) {
+      setState(() => _generatedPublicKey = null);
+    }
+  }
+
+  /// يولّد زوج مفاتيح جديداً, يحفظ المفتاح الخاص (مشفّراً بالـ PIN) على مجلد
   /// خارجي، ويحتفظ بالمفتاح العام لإرساله مع الحفظ. يتطلب إدخال PIN جديد
   /// (6 أرقام) لتشفير المفتاح الخاص، تماماً كما في شاشة الإنشاء.
   Future<void> _generateNewKey() async {
@@ -393,38 +438,45 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
                           const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: 22),
 
-                          // ===== الأمان (اختياري) =====
-                          const _SectionTitle(
-                            icon: Icons.lock_outline_rounded,
-                            title: 'الأمان (اتركها فارغة لعدم التغيير)',
+                          // ===== الأمان (مخفي افتراضياً) =====
+                          _SecurityToggle(
+                            value: _changeSecurity,
+                            onChanged:
+                                submitting ? null : (v) => _toggleSecurity(v),
                           ),
-                          const SizedBox(height: 18),
-                          _Row(
-                            first: _Field(
-                                controller: _password,
-                                label: 'كلمة مرور جديدة',
-                                hint: '6 أحرف على الأقل'),
-                            second: _Field(
-                                controller: _confirmPassword,
-                                label: 'تأكيد كلمة المرور'),
-                          ),
-                          const SizedBox(height: 16),
-                          _Row(
-                            first: _Field(
-                                controller: _pin,
-                                label: 'رمز PIN جديد',
-                                hint: '6 أرقام'),
-                            second: _Field(
-                                controller: _confirmPin,
-                                label: 'تأكيد PIN'),
-                          ),
-                          const SizedBox(height: 16),
-                          _PublicKeySection(
-                            generated: _generatedPublicKey != null,
-                            generating: _generatingKey,
-                            onGenerate:
-                                submitting ? null : () => _generateNewKey(),
-                          ),
+                          if (_changeSecurity) ...[
+                            const SizedBox(height: 14),
+                            const _SecurityNotice(),
+                            const SizedBox(height: 18),
+                            _Row(
+                              first: _Field(
+                                  controller: _password,
+                                  label: 'كلمة المرور الجديدة',
+                                  hint: 'مُولّدة تلقائياً'),
+                              second: _Field(
+                                  controller: _confirmPassword,
+                                  label: 'تأكيد كلمة المرور'),
+                            ),
+                            const SizedBox(height: 16),
+                            _Row(
+                              first: _Field(
+                                  controller: _pin,
+                                  label: 'رمز PIN الجديد',
+                                  hint: 'مُولّد تلقائياً',
+                                  onChanged: _onPinChanged),
+                              second: _Field(
+                                  controller: _confirmPin,
+                                  label: 'تأكيد PIN',
+                                  onChanged: _onPinChanged),
+                            ),
+                            const SizedBox(height: 16),
+                            _PublicKeySection(
+                              generated: _generatedPublicKey != null,
+                              generating: _generatingKey,
+                              onGenerate:
+                                  submitting ? null : () => _generateNewKey(),
+                            ),
+                          ],
                           if (_touched) const SizedBox(height: 4),
                         ],
                       ),
@@ -587,11 +639,13 @@ class _Field extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
+  final ValueChanged<String>? onChanged;
 
   const _Field({
     required this.controller,
     required this.label,
     this.hint,
+    this.onChanged,
   });
 
   @override
@@ -609,6 +663,7 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          onChanged: onChanged,
           textDirection: TextDirection.rtl,
           textAlign: TextAlign.right,
           decoration: InputDecoration(
@@ -675,7 +730,73 @@ class _Dropdown extends StatelessWidget {
   }
 }
 
-/// قسم المفتاح العام: عبارة توضّح أنه سيتولّد public key جديد، وزر للتوليد.
+/// مفتاح إظهار قسم الأمان (مخفي افتراضياً مثل إعادة التعيين).
+class _SecurityToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const _SecurityToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.lock_outline_rounded,
+            color: AppColors.primary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'تغيير الأمان (كلمة المرور / PIN / المفتاح)',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ),
+        Switch(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+}
+
+/// رسالة توضّح ما سيحدث عند تفعيل قسم الأمان.
+class _SecurityNotice extends StatelessWidget {
+  const _SecurityNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.lightPrimary,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'عند تفعيل هذا القسم تم توليد كلمة مرور ورمز PIN جديدين تلقائياً. '
+              'بما أن الـ PIN تغيّر، يجب توليد مفتاح جديد قبل الحفظ — سيُحفظ '
+              'المفتاح الخاص مشفّراً بالـ PIN الجديد على مجلد خارجي (فلاشة).',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    height: 1.6,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// قسم المفتاح العام: عبارة توضّح أنه سيتولّد public key جديد, وزر للتوليد.
 /// التوليد يحفظ المفتاح الخاص خارجياً ويُرسل العام عند الحفظ.
 class _PublicKeySection extends StatelessWidget {
   final bool generated;
@@ -726,7 +847,10 @@ class _PublicKeySection extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 14),
-          Row(
+          Wrap(
+            spacing: 14,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               SizedBox(
                 height: 46,
@@ -747,9 +871,9 @@ class _PublicKeySection extends StatelessWidget {
                       : 'توليد مفتاح جديد'),
                 ),
               ),
-              const SizedBox(width: 14),
               if (generated)
                 const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_outline,
                         color: AppColors.primary, size: 20),

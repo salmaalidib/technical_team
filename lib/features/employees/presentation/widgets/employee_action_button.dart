@@ -16,20 +16,26 @@ class EmployeeActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          color: iconColor,
-          size: 20,
+    // نستخدم GestureDetector (وليس InkWell) لأن MouseRegion الداخلي لـ InkWell
+    // يتعارض مع تتبّع الماوس داخل خلايا SfDataGrid ويُطلق assertion في
+    // mouse_tracker أثناء الـ hover. SystemMouseCursors.click يُبقي مؤشّر اليد.
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: iconColor,
+            size: 20,
+          ),
         ),
       ),
     );
