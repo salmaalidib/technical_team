@@ -334,7 +334,7 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
         const SizedBox(height: 24),
         _PrimaryButton(
           label: 'رفع واستخراج الحقول',
-          icon: Icons.arrow_back_rounded,
+          icon: Icons.arrow_forward_rounded,
           submitting: submitting,
           onPressed: _submitStep1,
         ),
@@ -486,7 +486,7 @@ class _Header extends StatelessWidget {
           if (canBack)
             IconButton(
               onPressed: onBack,
-              icon: const Icon(Icons.arrow_forward_rounded,
+              icon: const Icon(Icons.arrow_back_rounded,
                   color: AppColors.textPrimary),
               tooltip: 'رجوع',
             ),

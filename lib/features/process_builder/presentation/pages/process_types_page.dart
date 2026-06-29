@@ -83,7 +83,8 @@ class _Header extends StatelessWidget {
       runSpacing: 16,
       children: [
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               textDirection: TextDirection.rtl,
@@ -321,7 +322,7 @@ class _TypeTile extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const Icon(Icons.chevron_left,
+                  const Icon(Icons.chevron_right,
                       size: 20, color: AppColors.primary),
                 ],
               ),

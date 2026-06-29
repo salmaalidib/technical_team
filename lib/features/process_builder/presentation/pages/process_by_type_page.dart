@@ -37,10 +37,16 @@ class _ProcessByTypeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
 
-    void openCreate() => context.push(
-          '/transactions/create',
-          extra: {'typeId': typeId, 'typeName': typeName},
-        );
+    // Defer to a microtask so the push happens after the current frame's
+    // mouse-tracker phase, avoiding Flutter's desktop MouseTracker assertion
+    // when navigating away from the hovered button.
+    void openCreate() {
+      final router = GoRouter.of(context);
+      Future.microtask(() => router.push(
+            '/transactions/create',
+            extra: {'typeId': typeId, 'typeName': typeName},
+          ));
+    }
 
     return Container(
       color: const Color(0xffF0EFE7),
@@ -94,16 +100,18 @@ class _Header extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_forward_rounded,
+                child: const Icon(Icons.arrow_back_rounded,
                     size: 22, color: AppColors.textPrimary),
               ),
             ),
             const SizedBox(width: 12),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   typeName ?? 'معاملات النوع',
+                  textAlign: TextAlign.right,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w800,

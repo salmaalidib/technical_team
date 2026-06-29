@@ -120,7 +120,7 @@ class _Header extends StatelessWidget {
             child: Icon(
               isExpanded
                   ? Icons.keyboard_arrow_down_rounded
-                  : Icons.chevron_left_rounded,
+                  : Icons.chevron_right_rounded,
               color: AppColors.primary,
               size: 28,
             ),

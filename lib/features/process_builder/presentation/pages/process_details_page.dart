@@ -95,7 +95,7 @@ class _BackBar extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_forward_rounded,
+            icon: const Icon(Icons.arrow_back_rounded,
                 color: AppColors.primary),
             tooltip: 'رجوع',
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:technical_team/core/di/injection.dart';
 import 'package:technical_team/core/error/pointer_hit_test_guard.dart';
@@ -45,6 +46,16 @@ class TechnicalTeamApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: dotenv.env['APP_NAME'] ?? 'Technical Team',
       theme: AppTheme.lightTheme,
+      locale: const Locale('ar'),
+      supportedLocales: const [
+        Locale('ar'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: AppRouter.router,
     );
   }

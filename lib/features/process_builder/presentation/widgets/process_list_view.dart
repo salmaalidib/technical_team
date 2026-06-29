@@ -130,14 +130,40 @@ class ProcessListView extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async => _reload(context),
-      child: ListView.separated(
-        padding: const EdgeInsets.only(bottom: 24),
-        itemCount: _count(state),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) => _card(context, state, i),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Responsive: aim for 3 wide columns, dropping to 2 then 1 as the
+          // available width shrinks so card text/buttons never get crushed.
+          final width = constraints.maxWidth;
+          final columns = width >= 1000
+              ? 3
+              : width >= 640
+                  ? 2
+                  : 1;
+
+          return GridView.builder(
+            padding: const EdgeInsets.only(bottom: 24),
+            itemCount: _count(state),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              // Uniform card height across the grid, regardless of whether a
+              // card carries a footer (action buttons) or a plain
+              // "view details" row.
+              mainAxisExtent: _hasFooter ? 220 : 175,
+            ),
+            itemBuilder: (context, i) => _card(context, state, i),
+          );
+        },
       ),
     );
   }
+
+  /// The "review" and "missing config" tabs render a footer with action
+  /// buttons, so their cards are taller than the plain "all" tab cards.
+  bool get _hasFooter =>
+      tab == ProcessListTab.review || tab == ProcessListTab.missingConfig;
 
   Widget _card(BuildContext context, ProcessListState state, int i) {
     switch (tab) {
@@ -213,7 +239,10 @@ class _ReviewItemCard extends StatelessWidget {
       footer: Row(
         textDirection: TextDirection.rtl,
         children: [
+          // The approve label is far longer than "رفض"; give it more width so
+          // it doesn't ellipsize in narrow grid cells.
           Expanded(
+            flex: 2,
             child: _ActionButton(
               label: 'موافقة على النشر',
               icon: Icons.check_rounded,
@@ -224,7 +253,7 @@ class _ReviewItemCard extends StatelessWidget {
                   : () => _confirmAndReview(context, approve: true),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: _ActionButton(
               label: 'رفض',
@@ -343,13 +372,21 @@ class _ActionButton extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           )
         : Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 18),
               const SizedBox(width: 6),
-              Text(label,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
+                      fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
             ],
           );
 
@@ -361,6 +398,11 @@ class _ActionButton extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: color,
                 side: BorderSide(color: color),
+                // Tight padding + min size so the label fits in narrow grid
+                // cells without overflowing the button width.
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -372,6 +414,9 @@ class _ActionButton extends StatelessWidget {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -415,45 +460,54 @@ class _CardShell extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          if (subtitle != null && subtitle!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              subtitle!,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          Wrap(spacing: 8, runSpacing: 8, children: badges),
-                        ],
+                // Top block flexes to fill the fixed grid-cell height so that
+                // the footer / "view details" row lines up along the bottom.
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.chevron_left,
-                        color: AppColors.textSecondary),
-                  ],
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Wrap(spacing: 8, runSpacing: 8, children: badges),
+                    ],
+                  ),
                 ),
-                if (footer != null) ...[
-                  const SizedBox(height: 14),
-                  const Divider(height: 1, color: AppColors.border),
-                  const SizedBox(height: 12),
-                  footer!,
-                ],
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 12),
+                // "View details" affordance — replaces the old corner chevron.
+                if (footer != null)
+                  footer!
+                else
+                  const Text(
+                    'عرض التفاصيل',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
               ],
             ),
           ),
