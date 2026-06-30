@@ -1,52 +1,37 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 
 import '../active_org/active_organization_cubit.dart';
 import '../di/injection.dart';
 import '../router/app_router.dart';
 import '../services/api_const.dart';
+import '../services/token_refresh_service.dart';
 import '../storage/secure_storage_service.dart';
 
 /// Attaches the access token to every request and transparently refreshes
 /// it when the backend answers 401.
 ///
 /// Refresh flow (mirrors `POST /api/auth/refresh`):
-///   1. On 401, call `/api/auth/refresh` with the stored refresh token.
-///   2. On success, persist the new token pair and replay the failed request
-///      (and any other requests that hit 401 while the refresh was in flight).
+///   1. On 401, ask [TokenRefreshService] to refresh.
+///   2. On success, replay the failed request (the service has already
+///      persisted the new token pair; [onRequest] re-attaches it).
 ///   3. On failure, wipe the stored tokens and bounce to `/login`.
 ///
-/// A single in-flight refresh is shared via [_refreshCompleter] so concurrent
-/// 401s trigger exactly one refresh call (the queue), then all retry.
+/// The single in-flight coalescing now lives in [TokenRefreshService], shared
+/// with [PushSocket], so a 401 here and a socket reconnect can't double-refresh.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Dio dio,
     required SecureStorageService storage,
+    required TokenRefreshService refreshService,
   })  : _dio = dio,
         _storage = storage,
-        // Bare Dio with no interceptors → used only for the refresh call so it
-        // can never recurse back into this interceptor.
-        _refreshDio = Dio(
-          BaseOptions(
-            baseUrl: dio.options.baseUrl,
-            connectTimeout: dio.options.connectTimeout,
-            receiveTimeout: dio.options.receiveTimeout,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          ),
-        );
+        _refreshService = refreshService;
 
   final Dio _dio;
-  final Dio _refreshDio;
   final SecureStorageService _storage;
+  final TokenRefreshService _refreshService;
 
   static const _endPoints = EndPoints();
-
-  /// Non-null while a refresh is in flight; completes with `true` on success.
-  Completer<bool>? _refreshCompleter;
 
   bool _isAuthFlowPath(String path) =>
       path.contains(_endPoints.login) ||
@@ -85,7 +70,7 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    final refreshed = await _refreshTokens();
+    final refreshed = await _refreshService.refresh();
     if (!refreshed) {
       // Refresh failed → session is over. clear() also wipes the persisted
       // active-org id; reset the cubit's in-memory state too so a re-login as
@@ -109,67 +94,6 @@ class AuthInterceptor extends Interceptor {
     } catch (e) {
       if (e is DioException) return handler.next(e);
       return handler.next(err);
-    }
-  }
-
-  /// Refreshes the token pair, coalescing concurrent callers onto one request.
-  Future<bool> _refreshTokens() {
-    // A refresh is already running — wait for its result (the queue).
-    final inFlight = _refreshCompleter;
-    if (inFlight != null) return inFlight.future;
-
-    final completer = Completer<bool>();
-    _refreshCompleter = completer;
-
-    _performRefresh().then((ok) {
-      completer.complete(ok);
-    }).catchError((_) {
-      completer.complete(false);
-    }).whenComplete(() {
-      _refreshCompleter = null;
-    });
-
-    return completer.future;
-  }
-
-  Future<bool> _performRefresh() async {
-    final refreshToken = await _storage.getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      return false;
-    }
-
-    try {
-      final response = await _refreshDio.post(
-        '/${_endPoints.refresh}',
-        data: {'refreshToken': refreshToken},
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = response.data;
-        // Tolerate both the nested `{ data: { token, refreshToken } }` shape
-        // used by the rest of the auth responses and a flat
-        // `{ token, refreshToken }` payload, so a backend tweak to the refresh
-        // envelope can't silently break the refresh flow.
-        final tokens = (body is Map && body['data'] is Map)
-            ? body['data'] as Map
-            : (body is Map ? body : const {});
-        final newToken = tokens['token'] as String?;
-        final newRefreshToken = tokens['refreshToken'] as String?;
-
-        if (newToken != null &&
-            newToken.isNotEmpty &&
-            newRefreshToken != null &&
-            newRefreshToken.isNotEmpty) {
-          await _storage.saveTokens(
-            token: newToken,
-            refreshToken: newRefreshToken,
-          );
-          return true;
-        }
-      }
-      return false;
-    } on DioException {
-      return false;
     }
   }
 }

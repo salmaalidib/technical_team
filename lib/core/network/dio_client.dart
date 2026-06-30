@@ -3,13 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
+import '../services/token_refresh_service.dart';
 import '../storage/secure_storage_service.dart';
 import 'auth_interceptor.dart';
 
 class DioClient {
   DioClient._();
 
-  static Dio create(SecureStorageService storage) {
+  static Dio create(
+    SecureStorageService storage,
+    TokenRefreshService refreshService,
+  ) {
     final dio = Dio(
       BaseOptions(
         baseUrl: dotenv.env['BASE_URL'] ?? '',
@@ -24,7 +28,11 @@ class DioClient {
 
     // Attaches the access token + transparently refreshes it on 401.
     dio.interceptors.add(
-      AuthInterceptor(dio: dio, storage: storage),
+      AuthInterceptor(
+        dio: dio,
+        storage: storage,
+        refreshService: refreshService,
+      ),
     );
 
     // Only log full request/response bodies in debug builds — otherwise the
