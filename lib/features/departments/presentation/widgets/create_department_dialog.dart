@@ -11,7 +11,16 @@ import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
 
 class CreateDepartmentDialog extends StatefulWidget {
-  const CreateDepartmentDialog({super.key});
+  /// When opened inside a level, the new department inherits this parent and
+  /// the parent picker is replaced by a fixed, read-only field.
+  final int? fixedParentId;
+  final String? fixedParentName;
+
+  const CreateDepartmentDialog({
+    super.key,
+    this.fixedParentId,
+    this.fixedParentName,
+  });
 
   @override
   State<CreateDepartmentDialog> createState() => _CreateDepartmentDialogState();
@@ -23,8 +32,12 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
   // per-form selection.
   late final int? _organizationId =
       getIt<ActiveOrganizationCubit>().activeOrgId;
-  int? _parentId;
+  // The parent is inherited silently from the current drill-down level (null
+  // at root). No picker is shown.
+  late final int? _parentId = widget.fixedParentId;
   bool _touched = false;
+
+  bool get _parentLocked => widget.fixedParentId != null;
 
   @override
   void dispose() {
@@ -65,13 +78,10 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
       },
       builder: (context, state) {
         final submitting = state.formStatus == FormStatus.submitting;
-
-        // Parent options = departments inside the chosen organization.
-        final parentOptions = {
-          for (final d in state.departments)
-            if (_organizationId == null || d.organizationId == _organizationId)
-              d.id: d.name,
-        };
+        final title = _parentLocked ? 'إضافة شعبة جديدة' : 'إنشاء قسم جديد';
+        final nameLabel = _parentLocked ? 'اسم الشعبة *' : 'اسم القسم *';
+        final nameHint =
+            _parentLocked ? 'أدخل اسم الشعبة...' : 'أدخل اسم القسم...';
 
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -85,37 +95,30 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Header(onClose: () => Navigator.pop(context)),
+                  _Header(title: title, onClose: () => Navigator.pop(context)),
                   const Divider(height: 1, color: AppColors.border),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(28, 26, 28, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _Label('اسم القسم *'),
+                        _Label(nameLabel),
                         const SizedBox(height: 8),
                         _TextInput(
                           controller: _nameController,
-                          hint: 'أدخل اسم القسم...',
+                          hint: nameHint,
                           errorText:
                               _touched && _nameController.text.trim().isEmpty
                                   ? 'هذا الحقل مطلوب'
                                   : null,
-                        ),
-                        const SizedBox(height: 20),
-                        const _Label('القسم الأب (اختياري)'),
-                        const SizedBox(height: 8),
-                        _IdDropdown(
-                          hint: 'اختر القسم الأب...',
-                          value: _parentId,
-                          items: parentOptions,
-                          onChanged: (v) => setState(() => _parentId = v),
                         ),
                         const SizedBox(height: 26),
                         const Divider(height: 1, color: AppColors.border),
                         const SizedBox(height: 18),
                         _Actions(
                           submitting: submitting,
+                          saveLabel:
+                              _parentLocked ? 'حفظ الشعبة' : 'حفظ القسم',
                           onSave: () => _submit(context),
                           onCancel: () => Navigator.pop(context),
                         ),
@@ -133,9 +136,10 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
 }
 
 class _Header extends StatelessWidget {
+  final String title;
   final VoidCallback onClose;
 
-  const _Header({required this.onClose});
+  const _Header({required this.title, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -143,9 +147,9 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
       child: Row(
         children: [
-          const Text(
-            'إنشاء قسم جديد',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: AppColors.primary,
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -232,79 +236,15 @@ class _TextInput extends StatelessWidget {
   }
 }
 
-class _IdDropdown extends StatelessWidget {
-  final String hint;
-  final int? value;
-  final Map<int, String> items;
-  final ValueChanged<int?> onChanged;
-
-  const _IdDropdown({
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<int>(
-      value: items.containsKey(value) ? value : null,
-      isExpanded: true,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-      ),
-      hint: Text(
-        hint,
-        textAlign: TextAlign.right,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-      ),
-      items: items.entries
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.key,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  e.value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: onChanged,
-    );
-  }
-}
-
 class _Actions extends StatelessWidget {
   final bool submitting;
+  final String saveLabel;
   final VoidCallback onSave;
   final VoidCallback onCancel;
 
   const _Actions({
     required this.submitting,
+    required this.saveLabel,
     required this.onSave,
     required this.onCancel,
   });
@@ -335,10 +275,10 @@ class _Actions extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
-                      'حفظ القسم',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  : Text(
+                      saveLabel,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
                     ),
             ),
           ),
