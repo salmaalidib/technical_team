@@ -4,6 +4,7 @@ class AppColors {
   AppColors._();
 
   static const Color primary = Color(0xff25624F);
+  
 
   static const Color secondary = Color(0xffB8A47C);
 
@@ -18,7 +19,7 @@ class AppColors {
   static const Color error = Color(0xffEB2222);
 
   static const Color lightPrimary = Color(0xffEAF3F0);
-
+  static const Color white = Colors.white;
   static const Color border = Color(0xffE5E7EB);
   static const Color inputBackground = Color(0xffECE8DC);
 }

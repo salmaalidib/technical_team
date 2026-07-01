@@ -50,7 +50,6 @@ dependencies:
   pretty_dio_logger: ^1.4.0
   flutter_svg: ^2.1.0
   responsive_framework: ^1.5.1
-  google_fonts: ^6.3.0
   flutter_dotenv: ^6.0.1
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.2
@@ -59,7 +58,7 @@ dependencies:
   url_launcher: ^6.3.1
   syncfusion_flutter_datagrid: ^31.2.12
   syncfusion_flutter_core: ^31.2.12
-
+  animate_do: ^4.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -90,14 +89,22 @@ flutter:
   fonts:
     - family: Cairo
       fonts:
+        - asset: assets/fonts/Cairo-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Cairo-Light.ttf
+          weight: 300
         - asset: assets/fonts/Cairo-Regular.ttf
           weight: 400
         - asset: assets/fonts/Cairo-Medium.ttf
           weight: 500
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/Cairo-Bold.ttf
           weight: 700
         - asset: assets/fonts/Cairo-ExtraBold.ttf
-          weight: 800 
+          weight: 800
+        - asset: assets/fonts/Cairo-Black.ttf
+          weight: 900
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
