@@ -16,8 +16,6 @@ class InstitutionsDataSource extends DataGridSource {
         DataGridCell<int>(columnName: 'number', value: i + 1),
         DataGridCell<String>(columnName: 'name', value: inst.name),
         DataGridCell<String>(
-            columnName: 'parent', value: inst.parentName ?? '-'),
-        DataGridCell<String>(
             columnName: 'location', value: inst.locationName ?? '-'),
       ]);
     });
@@ -32,8 +30,7 @@ class InstitutionsDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
       cells: row.getCells().map<Widget>((cell) {
-        final muted = cell.columnName == 'parent' ||
-            cell.columnName == 'location';
+        final muted = cell.columnName == 'location';
         return Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

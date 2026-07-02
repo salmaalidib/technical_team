@@ -36,7 +36,7 @@ class _EmployeesSearchCardState extends State<EmployeesSearchCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -50,7 +50,7 @@ class _EmployeesSearchCardState extends State<EmployeesSearchCard> {
         ],
       ),
       child: SizedBox(
-        height: 58,
+        height: 50,
         child: TextField(
           controller: _controller,
           onChanged: _onChanged,

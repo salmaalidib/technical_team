@@ -37,10 +37,7 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
   List<Institution> _filter(List<Institution> all) {
     final q = _query.trim();
     if (q.isEmpty) return all;
-    return all
-        .where((i) =>
-            i.name.contains(q) || (i.parentName?.contains(q) ?? false))
-        .toList();
+    return all.where((i) => i.name.contains(q)).toList();
   }
 
   @override
@@ -129,8 +126,6 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
                       width: 80,
                     ),
                     buildGridColumn(columnName: 'name', label: 'اسم المؤسسة'),
-                    buildGridColumn(
-                        columnName: 'parent', label: 'المؤسسة الأم'),
                     buildGridColumn(columnName: 'location', label: 'الموقع'),
                   ],
                 ),

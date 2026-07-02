@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../domain/usecases/create_institution_usecase.dart';
+import '../../domain/usecases/create_location_usecase.dart';
 import '../../domain/usecases/get_institutions_usecase.dart';
 import '../../domain/usecases/get_locations_usecase.dart';
 import 'institutions_event.dart';
@@ -12,14 +13,17 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
   final GetInstitutionsUseCase getInstitutions;
   final GetLocationsUseCase getLocations;
   final CreateInstitutionUseCase createInstitution;
+  final CreateLocationUseCase createLocation;
 
   InstitutionsBloc({
     required this.getInstitutions,
     required this.getLocations,
     required this.createInstitution,
+    required this.createLocation,
   }) : super(const InstitutionsState()) {
     on<LoadInstitutions>(_onLoad);
     on<CreateInstitutionRequested>(_onCreate);
+    on<CreateLocationRequested>(_onCreateLocation);
   }
 
   Future<void> _onLoad(
@@ -67,7 +71,6 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
 
     final result = await createInstitution(
       name: event.name,
-      parentId: event.parentId,
       locationId: event.locationId,
     );
 
@@ -79,6 +82,40 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
       (_) async {
         emit(state.copyWith(formStatus: FormStatus.success));
         add(const LoadInstitutions());
+      },
+    );
+  }
+
+  Future<void> _onCreateLocation(
+    CreateLocationRequested event,
+    Emitter<InstitutionsState> emit,
+  ) async {
+    emit(state.copyWith(
+      locationFormStatus: FormStatus.submitting,
+      locationFormError: null,
+    ));
+
+    final result = await createLocation(
+      name: event.name,
+      typeLocationId: event.typeLocationId,
+    );
+
+    await result.fold(
+      (failure) async => emit(state.copyWith(
+        locationFormStatus: FormStatus.failure,
+        locationFormError: failure.message,
+      )),
+      (created) async {
+        // Refresh the locations list so the new one is available in the
+        // dropdown. A failure to reload shouldn't fail the create.
+        final locationsResult = await getLocations();
+        final locations = locationsResult.getOrElse(
+          () => [...state.locations, created],
+        );
+        emit(state.copyWith(
+          locationFormStatus: FormStatus.success,
+          locations: locations,
+        ));
       },
     );
   }

@@ -13,18 +13,30 @@ class LoadInstitutions extends InstitutionsEvent {
   const LoadInstitutions();
 }
 
-/// Submits a new institution. [parentId] / [locationId] are optional.
+/// Submits a new institution. [locationId] is optional.
 class CreateInstitutionRequested extends InstitutionsEvent {
   final String name;
-  final int? parentId;
   final int? locationId;
 
   const CreateInstitutionRequested({
     required this.name,
-    this.parentId,
     this.locationId,
   });
 
   @override
-  List<Object?> get props => [name, parentId, locationId];
+  List<Object?> get props => [name, locationId];
+}
+
+/// Submits a new location.
+class CreateLocationRequested extends InstitutionsEvent {
+  final String name;
+  final int typeLocationId;
+
+  const CreateLocationRequested({
+    required this.name,
+    required this.typeLocationId,
+  });
+
+  @override
+  List<Object?> get props => [name, typeLocationId];
 }

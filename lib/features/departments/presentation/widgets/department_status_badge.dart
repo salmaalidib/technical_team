@@ -1,0 +1,30 @@
+import 'package:flutter/material.dart';
+
+import '../../../../shared/theme/app_colors.dart';
+
+/// شارة حالة القسم (مفعّل / معطّل) — بنفس أسلوب شارة حالة الموظفين.
+class DepartmentStatusBadge extends StatelessWidget {
+  final bool isActive;
+
+  const DepartmentStatusBadge({super.key, required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.lightPrimary : const Color(0xffFDECEC),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        isActive ? 'مفعّل' : 'معطّل',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: isActive ? AppColors.primary : AppColors.error,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}

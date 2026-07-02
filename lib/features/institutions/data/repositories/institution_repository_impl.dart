@@ -55,6 +55,31 @@ class InstitutionRepositoryImpl implements InstitutionRepository {
   }
 
   @override
+  Future<Either<Failure, LocationOption>> createLocation({
+    required String name,
+    required int typeLocationId,
+    int? parentId,
+  }) async {
+    final result = await remote.createLocation({
+      'name': name.trim(),
+      'typeLocation_id': typeLocationId,
+      if (parentId != null) 'parent_id': parentId,
+    });
+    return result.fold<Either<Failure, LocationOption>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            LocationOptionModel.fromJson(_payload(body) as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة استجابة الخادم.'));
+        }
+      },
+    );
+  }
+
+  @override
   Future<Either<Failure, Institution>> createInstitution({
     required String name,
     int? parentId,
