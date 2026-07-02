@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTextStyles {
-  static TextStyle heading = GoogleFonts.cairo(
+  static const String fontFamily = 'Cairo';
+  static const TextStyle heading = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
   );
 
-  static TextStyle body = GoogleFonts.cairo(
+  static const TextStyle body = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
   );
