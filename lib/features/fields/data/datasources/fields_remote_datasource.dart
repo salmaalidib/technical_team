@@ -12,9 +12,24 @@ class FieldsRemoteDataSource {
 
   static const _ep = EndPoints();
 
+  /// Builds the `?page=&limit=&search=` query map for a paginated list GET.
+  static Map<String, dynamic> _pageQuery(int page, int limit, String? search) {
+    final q = <String, dynamic>{'page': '$page', 'limit': '$limit'};
+    if (search != null && search.trim().isNotEmpty) q['search'] = search.trim();
+    return q;
+  }
+
   // ── text fields ───────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getTextFields() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.textFields);
+  Future<Either<Failure, dynamic>> getTextFields({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.textFields,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createTextField(
     Map<String, dynamic> body,
@@ -23,8 +38,16 @@ class FieldsRemoteDataSource {
           method: ApiMethod.post, endPoint: _ep.textFields, body: body);
 
   // ── radio groups ──────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getRadioGroups() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.radioGroups);
+  Future<Either<Failure, dynamic>> getRadioGroups({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.radioGroups,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createRadioGroup(
     Map<String, dynamic> body,
@@ -33,8 +56,16 @@ class FieldsRemoteDataSource {
           method: ApiMethod.post, endPoint: _ep.radioGroups, body: body);
 
   // ── text dropdowns ────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getTextDropdowns() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.textDropdowns);
+  Future<Either<Failure, dynamic>> getTextDropdowns({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.textDropdowns,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createTextDropdown(
     Map<String, dynamic> body,
@@ -43,8 +74,16 @@ class FieldsRemoteDataSource {
           method: ApiMethod.post, endPoint: _ep.textDropdowns, body: body);
 
   // ── check lists ───────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getCheckLists() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.checkLists);
+  Future<Either<Failure, dynamic>> getCheckLists({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.checkLists,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createCheckList(
     Map<String, dynamic> body,
@@ -53,8 +92,16 @@ class FieldsRemoteDataSource {
           method: ApiMethod.post, endPoint: _ep.checkLists, body: body);
 
   // ── date pickers ──────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getDatePickers() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.datePickers);
+  Future<Either<Failure, dynamic>> getDatePickers({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.datePickers,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createDatePicker(
     Map<String, dynamic> body,
@@ -63,8 +110,16 @@ class FieldsRemoteDataSource {
           method: ApiMethod.post, endPoint: _ep.datePickers, body: body);
 
   // ── file pickers ──────────────────────────────────────────────────────────
-  Future<Either<Failure, dynamic>> getFilePickers() =>
-      api.makeRequest(method: ApiMethod.get, endPoint: _ep.filePickers);
+  Future<Either<Failure, dynamic>> getFilePickers({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) =>
+      api.makeRequest(
+        method: ApiMethod.get,
+        endPoint: _ep.filePickers,
+        queryParameters: _pageQuery(page, limit, search),
+      );
 
   Future<Either<Failure, dynamic>> createFilePicker(
     Map<String, dynamic> body,

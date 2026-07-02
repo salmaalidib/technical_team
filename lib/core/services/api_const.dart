@@ -46,9 +46,10 @@ class EndPoints {
 
   // ===== typeProcess (bearer token required) =====
   String get typeProcesses => 'api/typeProcess'; // GET list · POST create
-  String typeProcessById(Object id) =>
+  String  typeProcessById(Object id) =>
       'api/typeProcess/$id'; // PUT update is_active
-
+  String get typeProcessByAll =>
+      'api/typeProcess/all';
   // ===== process definitions / builder (المسؤول التقني) =====
   String get processDefinitionCreate =>
       'api/process_definitions/create'; // POST multipart (BPMN + meta)

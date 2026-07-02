@@ -99,6 +99,8 @@ flutter:
     - env/dev.env
     # أيقونة شريط النظام (tray) — على Windows يجب أن تكون ملف .ico حقيقي.
     - assets/icons/tray_icon.ico
+    # على macOS/Linux يُستخدَم ملف .png (انظر TrayService._otherIcon).
+    - assets/icons/tray_icon.png
   fonts:
     - family: Cairo
       fonts:

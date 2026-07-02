@@ -4,7 +4,6 @@ import 'package:technical_team/features/departments/presentation/pages/departmen
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../../features/fields/presentation/pages/fields_page.dart';
 import '../../features/institutions/presentation/pages/institutions_page.dart';
 import '../../features/roles/presentation/pages/roles_page.dart';
 import '../../features/type_processes/presentation/pages/type_processes_page.dart';
@@ -93,12 +92,6 @@ class AppRouter {
             path: '/type-processes',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: TypeProcessesPage(),
-            ),
-          ),
-          GoRoute(
-            path: '/fields',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: FieldsPage(),
             ),
           ),
           GoRoute(

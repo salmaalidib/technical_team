@@ -3,15 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/searchable_field_dropdown.dart';
 import '../../../fields/domain/entities/field_type.dart';
-import '../../../fields/presentation/bloc/fields_bloc.dart';
-import '../../../fields/presentation/bloc/fields_state.dart';
-import '../../../fields/presentation/widgets/create_field_dialog.dart';
-import '../../data/mappers/widget_config_mapper.dart';
 import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
-import '../../domain/entities/widget_config.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
@@ -558,52 +554,27 @@ const _dynTypes = <(FieldType, String, String)>[
   (FieldType.filePicker, 'file_picker', 'منتقي ملفات'),
 ];
 
-List<WidgetConfig> _libraryFrom(FieldsState f) => [
-      ...f.textFields.map(WidgetConfigMapper.fromTextField),
-      ...f.textDropdowns.map(WidgetConfigMapper.fromTextDropdown),
-      ...f.radioGroups.map(WidgetConfigMapper.fromRadioGroup),
-      ...f.checkLists.map(WidgetConfigMapper.fromCheckList),
-      ...f.datePickers.map(WidgetConfigMapper.fromDatePicker),
-      ...f.filePickers.map(WidgetConfigMapper.fromFilePicker),
-    ];
-
+/// One searchable, paginated multi-select dropdown per field type. Each block
+/// keeps the selected widgets as chips below its dropdown.
 class _DynamicFieldsEditor extends StatelessWidget {
   final StageConfigDraft draft;
   const _DynamicFieldsEditor({required this.draft});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FieldsBloc, FieldsState>(
-      buildWhen: (p, c) =>
-          p.loadStatus != c.loadStatus ||
-          p.textFields != c.textFields ||
-          p.textDropdowns != c.textDropdowns ||
-          p.radioGroups != c.radioGroups ||
-          p.checkLists != c.checkLists ||
-          p.datePickers != c.datePickers ||
-          p.filePickers != c.filePickers,
-      builder: (context, fieldsState) {
-        final library = _libraryFrom(fieldsState);
-        final loading = fieldsState.loadStatus == RequestStatus.loading;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final (type, backendType, title) in _dynTypes) ...[
-              _FieldTypeBlock(
-                draft: draft,
-                fieldType: type,
-                backendType: backendType,
-                title: title,
-                options:
-                    library.where((w) => w.widgetType == backendType).toList(),
-                loading: loading,
-              ),
-              const SizedBox(height: 14),
-            ],
-          ],
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (type, backendType, title) in _dynTypes) ...[
+          _FieldTypeBlock(
+            draft: draft,
+            fieldType: type,
+            backendType: backendType,
+            title: title,
+          ),
+          const SizedBox(height: 14),
+        ],
+      ],
     );
   }
 }
@@ -613,16 +584,12 @@ class _FieldTypeBlock extends StatelessWidget {
   final FieldType fieldType;
   final String backendType;
   final String title;
-  final List<WidgetConfig> options;
-  final bool loading;
 
   const _FieldTypeBlock({
     required this.draft,
     required this.fieldType,
     required this.backendType,
     required this.title,
-    required this.options,
-    required this.loading,
   });
 
   @override
@@ -637,22 +604,13 @@ class _FieldTypeBlock extends StatelessWidget {
       children: [
         _MiniLabel('$title  (${selected.length})'),
         const SizedBox(height: 6),
-        Row(
-          textDirection: TextDirection.rtl,
-          children: [
-            Expanded(
-              child: _MultiSelectDropdown(
-                hint: 'اختر $title...',
-                options: options,
-                selectedIds: selectedIds,
-                loading: loading,
-                onToggle: (w, sel) =>
-                    bloc.add(StageWidgetToggled(draft.stage.id, w, sel)),
-              ),
-            ),
-            const SizedBox(width: 8),
-            _AddButton(onTap: () => _createField(context, fieldType)),
-          ],
+        SearchableFieldDropdown(
+          type: fieldType,
+          title: title,
+          mode: FieldDropdownMode.multi,
+          selectedIds: selectedIds,
+          onToggle: (w, sel) =>
+              bloc.add(StageWidgetToggled(draft.stage.id, w, sel)),
         ),
         if (selected.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -671,188 +629,6 @@ class _FieldTypeBlock extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-
-  Future<void> _createField(BuildContext context, FieldType type) async {
-    final fieldsBloc = context.read<FieldsBloc>();
-    await showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
-      builder: (_) => BlocProvider.value(
-        value: fieldsBloc,
-        child: CreateFieldDialog(type: type),
-      ),
-    );
-    // FieldsBloc reloads the created type automatically; it then appears in
-    // this type's dropdown for the user to link.
-  }
-}
-
-/// A dropdown that opens a checkbox list (multi-select) anchored under the
-/// field. Stays open while toggling; selected items also render as chips
-/// outside. Handles large lists via an internal scroll view.
-class _MultiSelectDropdown extends StatelessWidget {
-  final String hint;
-  final List<WidgetConfig> options;
-  final Set<String> selectedIds;
-  final bool loading;
-  final void Function(WidgetConfig widget, bool selected) onToggle;
-
-  const _MultiSelectDropdown({
-    required this.hint,
-    required this.options,
-    required this.selectedIds,
-    required this.loading,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final count = selectedIds.length;
-    return PopupMenuButton<void>(
-      tooltip: hint,
-      enabled: !loading,
-      position: PopupMenuPosition.under,
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 360),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      itemBuilder: (context) {
-        // A live copy so checkboxes reflect toggles while the menu stays open.
-        final localSelected = {...selectedIds};
-        return [
-          PopupMenuItem<void>(
-            enabled: false,
-            padding: EdgeInsets.zero,
-            child: StatefulBuilder(
-              builder: (context, setLocal) {
-                if (options.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'لا توجد عناصر — أنشئ واحداً عبر زر +',
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
-                    ),
-                  );
-                }
-                return ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 320),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final w in options)
-                          InkWell(
-                            onTap: () {
-                              final nowSelected =
-                                  !localSelected.contains(w.widgetId);
-                              if (nowSelected) {
-                                localSelected.add(w.widgetId);
-                              } else {
-                                localSelected.remove(w.widgetId);
-                              }
-                              onToggle(w, nowSelected);
-                              setLocal(() {});
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              child: Row(
-                                textDirection: TextDirection.rtl,
-                                children: [
-                                  Checkbox(
-                                    value: localSelected.contains(w.widgetId),
-                                    activeColor: AppColors.primary,
-                                    visualDensity: VisualDensity.compact,
-                                    onChanged: (v) {
-                                      final sel = v ?? false;
-                                      if (sel) {
-                                        localSelected.add(w.widgetId);
-                                      } else {
-                                        localSelected.remove(w.widgetId);
-                                      }
-                                      onToggle(w, sel);
-                                      setLocal(() {});
-                                    },
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      w.label,
-                                      textAlign: TextAlign.right,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ];
-      },
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          textDirection: TextDirection.rtl,
-          children: [
-            Expanded(
-              child: Text(
-                count == 0 ? hint : '$count محدد',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: count == 0
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: count == 0 ? FontWeight.normal : FontWeight.w600,
-                ),
-              ),
-            ),
-            if (loading)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: AppColors.textPrimary),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
-      ),
     );
   }
 }
