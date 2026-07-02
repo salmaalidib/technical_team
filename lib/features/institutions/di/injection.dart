@@ -5,6 +5,7 @@ import '../data/datasources/institution_remote_data_source.dart';
 import '../data/repositories/institution_repository_impl.dart';
 import '../domain/repositories/institution_repository.dart';
 import '../domain/usecases/create_institution_usecase.dart';
+import '../domain/usecases/create_location_usecase.dart';
 import '../domain/usecases/get_institutions_usecase.dart';
 import '../domain/usecases/get_locations_usecase.dart';
 import '../presentation/bloc/institutions_bloc.dart';
@@ -40,11 +41,18 @@ Future<void> setupInstitutionsInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<CreateLocationUseCase>()) {
+    getIt.registerLazySingleton<CreateLocationUseCase>(
+      () => CreateLocationUseCase(getIt<InstitutionRepository>()),
+    );
+  }
+
   getIt.registerFactory<InstitutionsBloc>(
     () => InstitutionsBloc(
       getInstitutions: getIt<GetInstitutionsUseCase>(),
       getLocations: getIt<GetLocationsUseCase>(),
       createInstitution: getIt<CreateInstitutionUseCase>(),
+      createLocation: getIt<CreateLocationUseCase>(),
     ),
   );
 }

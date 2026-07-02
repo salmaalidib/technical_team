@@ -8,20 +8,32 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
-import 'add_location_dialog.dart';
 
-class CreateInstitutionDialog extends StatefulWidget {
-  const CreateInstitutionDialog({super.key});
+/// Small dialog to add a new location, opened from the location picker inside
+/// the create-institution dialog. Reuses the same [InstitutionsBloc].
+///
+/// There is no dedicated "list location types" endpoint, so the type options
+/// are derived from the types already present on the loaded locations.
+class AddLocationDialog extends StatefulWidget {
+  const AddLocationDialog({super.key});
 
   @override
-  State<CreateInstitutionDialog> createState() =>
-      _CreateInstitutionDialogState();
+  State<AddLocationDialog> createState() => _AddLocationDialogState();
 }
 
-class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
+class _AddLocationDialogState extends State<AddLocationDialog> {
   final _nameController = TextEditingController();
-  int? _locationId;
+  int? _typeId;
   bool _nameTouched = false;
+  bool _typeTouched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to the only/first known location type when there is exactly one.
+    final types = _typeItems(context.read<InstitutionsBloc>().state);
+    if (types.length == 1) _typeId = types.keys.first;
+  }
 
   @override
   void dispose() {
@@ -29,51 +41,53 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
-    final name = _nameController.text.trim();
-    setState(() => _nameTouched = true);
-    if (name.isEmpty) return;
-
-    context.read<InstitutionsBloc>().add(
-          CreateInstitutionRequested(
-            name: name,
-            locationId: _locationId,
-          ),
-        );
+  /// `{ typeId: typeName }` derived from the loaded locations.
+  Map<int, String> _typeItems(InstitutionsState state) {
+    final map = <int, String>{};
+    for (final l in state.locations) {
+      if (l.typeId != null) {
+        map[l.typeId!] = l.typeName ?? 'نوع #${l.typeId}';
+      }
+    }
+    return map;
   }
 
-  /// Opens the "add location" dialog, sharing this dialog's [InstitutionsBloc]
-  /// so the created location lands in the same state and dropdown.
-  void _openAddLocation(BuildContext context) {
-    final bloc = context.read<InstitutionsBloc>();
-    showDialog<void>(
-      context: context,
-      builder: (_) => BlocProvider.value(
-        value: bloc,
-        child: const AddLocationDialog(),
-      ),
-    );
+  void _submit(BuildContext context) {
+    final name = _nameController.text.trim();
+    setState(() {
+      _nameTouched = true;
+      _typeTouched = true;
+    });
+    if (name.isEmpty || _typeId == null) return;
+
+    context.read<InstitutionsBloc>().add(
+          CreateLocationRequested(
+            name: name,
+            typeLocationId: _typeId!,
+          ),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<InstitutionsBloc, InstitutionsState>(
-      listenWhen: (p, c) => p.formStatus != c.formStatus,
+      listenWhen: (p, c) => p.locationFormStatus != c.locationFormStatus,
       listener: (context, state) {
-        if (state.formStatus == FormStatus.success) {
-          AppSnackBar.show(context, message: 'تم إنشاء المؤسسة بنجاح');
+        if (state.locationFormStatus == FormStatus.success) {
+          AppSnackBar.show(context, message: 'تم إضافة الموقع بنجاح');
           Navigator.of(context).pop();
-        } else if (state.formStatus == FormStatus.failure) {
+        } else if (state.locationFormStatus == FormStatus.failure) {
           AppSnackBar.show(
             context,
-            message: state.formError ?? 'تعذّر إنشاء المؤسسة',
+            message: state.locationFormError ?? 'تعذّر إضافة الموقع',
             isError: true,
           );
         }
       },
       builder: (context, state) {
         final submitting =
-            state.formStatus == FormStatus.submitting;
+            state.locationFormStatus == FormStatus.submitting;
+        final typeItems = _typeItems(state);
 
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -83,54 +97,46 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: SizedBox(
-              width: 620,
+              width: 520,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _DialogHeader(onClose: () => Navigator.pop(context)),
+                  _Header(onClose: () => Navigator.pop(context)),
                   const Divider(height: 1, color: AppColors.border),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(28, 28, 28, 18),
+                    padding: const EdgeInsets.fromLTRB(28, 24, 28, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _DialogSubtitle(),
-                        const SizedBox(height: 30),
-                        const _FieldLabel('اسم المؤسسة *'),
+                        const _FieldLabel('اسم الموقع *'),
                         const SizedBox(height: 8),
                         _TextInput(
                           controller: _nameController,
-                          hint: 'أدخل اسم المؤسسة...',
+                          hint: 'أدخل اسم الموقع...',
                           errorText: _nameTouched &&
                                   _nameController.text.trim().isEmpty
                               ? 'هذا الحقل مطلوب'
                               : null,
                         ),
                         const SizedBox(height: 22),
-                        Row(
-                          children: [
-                            const _FieldLabel('الموقع (اختياري)'),
-                            const Spacer(),
-                            _AddLocationButton(
-                              onTap: () => _openAddLocation(context),
-                            ),
-                          ],
-                        ),
+                        const _FieldLabel('نوع الموقع *'),
                         const SizedBox(height: 8),
                         AppIdDropdown(
-                          hint: state.locations.isEmpty
-                              ? 'لا توجد مواقع — أضف موقعًا'
-                              : 'اختر الموقع...',
-                          value: _locationId,
-                          items: {
-                            for (final l in state.locations) l.id: l.name,
-                          },
-                          onChanged: (v) => setState(() => _locationId = v),
+                          hint: 'اختر نوع الموقع...',
+                          value: _typeId,
+                          items: typeItems,
+                          onChanged: (v) => setState(() {
+                            _typeId = v;
+                            _typeTouched = true;
+                          }),
+                          errorText: _typeTouched && _typeId == null
+                              ? 'هذا الحقل مطلوب'
+                              : null,
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 26),
                         const Divider(height: 1, color: AppColors.border),
                         const SizedBox(height: 18),
-                        _DialogActions(
+                        _Actions(
                           submitting: submitting,
                           onSave: () => _submit(context),
                           onCancel: () => Navigator.pop(context),
@@ -148,22 +154,25 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
   }
 }
 
-class _DialogHeader extends StatelessWidget {
+class _Header extends StatelessWidget {
   final VoidCallback onClose;
 
-  const _DialogHeader({required this.onClose});
+  const _Header({required this.onClose});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         children: [
+          const Icon(Icons.add_location_alt_outlined,
+              color: AppColors.primary, size: 24),
+          const SizedBox(width: 10),
           const Text(
-            'إنشاء مؤسسة جديدة',
+            'إضافة موقع جديد',
             style: TextStyle(
               color: AppColors.primary,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -172,40 +181,21 @@ class _DialogHeader extends StatelessWidget {
             onTap: onClose,
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              width: 38,
-              height: 38,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.close_rounded,
-                size: 24,
+                size: 22,
                 color: AppColors.textPrimary,
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DialogSubtitle extends StatelessWidget {
-  const _DialogSubtitle();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.apartment_outlined, color: AppColors.primary, size: 25),
-        SizedBox(width: 10),
-        Text(
-          'قم بإدخال بيانات المؤسسة الجديدة',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
-        ),
-      ],
     );
   }
 }
@@ -224,45 +214,6 @@ class _FieldLabel extends StatelessWidget {
         color: AppColors.textPrimary,
         fontSize: 15,
         fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-/// Small pill button beside the location label that opens the add-location
-/// dialog. Kept compact so it reads as a secondary action.
-class _AddLocationButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _AddLocationButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.inputBackground,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primary),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
-            SizedBox(width: 4),
-            Text(
-              'إضافة موقع',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -292,7 +243,8 @@ class _TextInput extends StatelessWidget {
           color: AppColors.textSecondary,
           fontSize: 15,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.border),
@@ -310,12 +262,12 @@ class _TextInput extends StatelessWidget {
   }
 }
 
-class _DialogActions extends StatelessWidget {
+class _Actions extends StatelessWidget {
   final bool submitting;
   final VoidCallback onSave;
   final VoidCallback onCancel;
 
-  const _DialogActions({
+  const _Actions({
     required this.submitting,
     required this.onSave,
     required this.onCancel,
@@ -327,7 +279,7 @@ class _DialogActions extends StatelessWidget {
       children: [
         Expanded(
           child: SizedBox(
-            height: 48,
+            height: 46,
             child: ElevatedButton(
               onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
@@ -348,7 +300,7 @@ class _DialogActions extends StatelessWidget {
                       ),
                     )
                   : const Text(
-                      'حفظ المؤسسة',
+                      'حفظ الموقع',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -360,7 +312,7 @@ class _DialogActions extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: SizedBox(
-            height: 48,
+            height: 46,
             child: TextButton(
               onPressed: submitting ? null : onCancel,
               style: TextButton.styleFrom(

@@ -91,7 +91,7 @@ class EndPoints {
   String get filePickers => 'api/file-pickers'; // GET list · POST create
 
   // ===== location (bearer token required) =====
-  String get locations => 'api/location'; // GET list
+  String get locations => 'api/location'; // GET list · POST create
 
   // ===== employee registration =====
 String get registerEmployee => 'api/auth/register/employee/';
