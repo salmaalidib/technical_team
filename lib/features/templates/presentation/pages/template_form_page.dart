@@ -7,7 +7,6 @@ import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../fields/presentation/bloc/fields_bloc.dart';
-import '../../../fields/presentation/bloc/fields_event.dart';
 import '../../../process_builder/domain/entities/widget_config.dart';
 import '../../../type_docs/presentation/bloc/type_docs_bloc.dart';
 import '../../../type_docs/presentation/bloc/type_docs_event.dart';
@@ -52,10 +51,8 @@ class TemplateFormPage extends StatelessWidget {
           create: (_) => getIt<TypeDocsBloc>()..add(const LoadTypeDocs()),
         ),
         // Field library for the dynamic-fields picker (same source the stage
-        // customization step uses).
-        BlocProvider(
-          create: (_) => getIt<FieldsBloc>()..add(const LoadAllFields()),
-        ),
+        // customization step uses). Each dropdown loads its page lazily on open.
+        BlocProvider(create: (_) => getIt<FieldsBloc>()),
       ],
       child: _TemplateFormView(template: template),
     );

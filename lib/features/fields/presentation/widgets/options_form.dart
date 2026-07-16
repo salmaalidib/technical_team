@@ -22,7 +22,9 @@ class OptionsForm extends StatefulWidget {
 
 class _OptionsFormState extends State<OptionsForm> {
   final _label = TextEditingController();
-  final _opts = OptionsManager();
+  // Radio options carry a Camunda key the user types; dropdown keeps key=value.
+  late final _opts =
+      OptionsManager(withKeys: widget.type == FieldType.radioGroup);
   bool _isRequired = false;
   bool _touched = false;
 

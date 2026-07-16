@@ -99,11 +99,6 @@ class AppSidebar extends StatelessWidget {
                   route: '/roles',
                 ),
                 _SidebarItem(
-                  icon: Icons.storage_outlined,
-                  title: 'الحقول والملفات',
-                  route: '/fields',
-                ),
-                _SidebarItem(
                   icon: Icons.description_outlined,
                   title: 'قوالب المستندات',
                   route: '/templates',

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/models/paginated_result.dart';
 import '../../domain/entities/check_list_entity.dart';
 import '../../domain/entities/date_picker_entity.dart';
 import '../../domain/entities/file_picker_entity.dart';
@@ -25,18 +26,29 @@ class FieldsRepositoryImpl implements FieldsRepository {
   static dynamic _payload(dynamic body) =>
       body is Map<String, dynamic> ? body['data'] : body;
 
-  /// Maps the `data` array of a list response into entities, converting any
-  /// shape mismatch into a [ServerFailure] carrying [errorMessage].
-  static Either<Failure, List<T>> _parseList<T>(
+  /// Maps a paginated list response (`data: { items: [...], pagination: {...} }`)
+  /// into a [Paginated] of entities. Falls back to treating `data` itself as a
+  /// bare list (legacy shape) so it stays compatible if the envelope changes.
+  static Either<Failure, Paginated<T>> _parsePaginated<T>(
     dynamic body,
     T Function(Map<String, dynamic>) fromJson,
     String errorMessage,
   ) {
     try {
-      final list = (_payload(body) as List)
+      final data = _payload(body);
+      final rawItems = data is Map<String, dynamic>
+          ? (data['items'] as List)
+          : (data as List);
+      final items = rawItems
           .map((e) => fromJson(e as Map<String, dynamic>))
           .toList();
-      return Right(list);
+
+      final meta = data is Map<String, dynamic> && data['pagination'] is Map
+          ? PageMeta.fromJson(
+              (data['pagination'] as Map).cast<String, dynamic>())
+          : PageMeta.empty;
+
+      return Right(Paginated<T>(items: items, meta: meta));
     } catch (_) {
       return Left(ServerFailure(errorMessage));
     }
@@ -56,11 +68,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── text fields ───────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<TextFieldEntity>>> getTextFields() async {
-    final result = await remote.getTextFields();
+  Future<Either<Failure, Paginated<TextFieldEntity>>> getTextFields({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getTextFields(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<TextFieldEntity>(
+      (data) => _parsePaginated<TextFieldEntity>(
           data, TextFieldModel.fromJson, 'تعذّر قراءة قائمة حقول النص.'),
     );
   }
@@ -78,11 +95,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── radio groups ──────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<RadioGroupEntity>>> getRadioGroups() async {
-    final result = await remote.getRadioGroups();
+  Future<Either<Failure, Paginated<RadioGroupEntity>>> getRadioGroups({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getRadioGroups(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<RadioGroupEntity>(
+      (data) => _parsePaginated<RadioGroupEntity>(
           data, RadioGroupModel.fromJson, 'تعذّر قراءة قائمة الاختيار الواحد.'),
     );
   }
@@ -100,11 +122,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── text dropdowns ────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<TextDropdownEntity>>> getTextDropdowns() async {
-    final result = await remote.getTextDropdowns();
+  Future<Either<Failure, Paginated<TextDropdownEntity>>> getTextDropdowns({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getTextDropdowns(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<TextDropdownEntity>(
+      (data) => _parsePaginated<TextDropdownEntity>(
           data, TextDropdownModel.fromJson, 'تعذّر قراءة قائمة المنسدل.'),
     );
   }
@@ -122,11 +149,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── check lists ───────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<CheckListEntity>>> getCheckLists() async {
-    final result = await remote.getCheckLists();
+  Future<Either<Failure, Paginated<CheckListEntity>>> getCheckLists({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getCheckLists(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<CheckListEntity>(
+      (data) => _parsePaginated<CheckListEntity>(
           data, CheckListModel.fromJson, 'تعذّر قراءة قائمة الاختيار المتعدد.'),
     );
   }
@@ -144,11 +176,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── date pickers ──────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<DatePickerEntity>>> getDatePickers() async {
-    final result = await remote.getDatePickers();
+  Future<Either<Failure, Paginated<DatePickerEntity>>> getDatePickers({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getDatePickers(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<DatePickerEntity>(
+      (data) => _parsePaginated<DatePickerEntity>(
           data, DatePickerModel.fromJson, 'تعذّر قراءة قائمة منتقي التاريخ.'),
     );
   }
@@ -166,11 +203,16 @@ class FieldsRepositoryImpl implements FieldsRepository {
 
   // ── file pickers ──────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, List<FilePickerEntity>>> getFilePickers() async {
-    final result = await remote.getFilePickers();
+  Future<Either<Failure, Paginated<FilePickerEntity>>> getFilePickers({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getFilePickers(page: page, limit: limit, search: search);
     return result.fold(
       Left.new,
-      (data) => _parseList<FilePickerEntity>(
+      (data) => _parsePaginated<FilePickerEntity>(
           data, FilePickerModel.fromJson, 'تعذّر قراءة قائمة منتقي الملفات.'),
     );
   }

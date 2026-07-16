@@ -19,6 +19,17 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
   static dynamic _payload(dynamic body) =>
       body is Map<String, dynamic> ? body['data'] : body;
 
+  /// Extracts the list of items from a (possibly) paginated list response.
+  /// The backend now returns `data: { items: [...], pagination: {...} }`, but
+  /// this also accepts a bare `data: [...]` for backward compatibility.
+  static List _listPayload(dynamic body) {
+    final data = _payload(body);
+    if (data is Map<String, dynamic> && data['items'] is List) {
+      return data['items'] as List;
+    }
+    return data as List;
+  }
+
   @override
   Future<Either<Failure, List<DocTemplate>>> getTemplates() async {
     final result = await remote.getTemplates();
@@ -26,7 +37,7 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
       (failure) => Left(failure),
       (body) {
         try {
-          final list = (_payload(body) as List)
+          final list = _listPayload(body)
               .map((e) => DocTemplateModel.fromJson(e as Map<String, dynamic>))
               .toList();
           return Right(list);

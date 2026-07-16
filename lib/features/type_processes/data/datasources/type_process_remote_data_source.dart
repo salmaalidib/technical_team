@@ -17,7 +17,7 @@ class TypeProcessRemoteDataSource {
   Future<Either<Failure, dynamic>> getTypeProcesses() {
     return api.makeRequest(
       method: ApiMethod.get,
-      endPoint: _endPoints.typeProcesses,
+      endPoint: _endPoints.typeProcessByAll,
     );
   }
 
