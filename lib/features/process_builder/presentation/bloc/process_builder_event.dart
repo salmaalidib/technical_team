@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/notification_action_config.dart';
+import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/entities/widget_config.dart';
 
 abstract class ProcessBuilderEvent extends Equatable {
@@ -111,6 +112,16 @@ class StageExpansionToggled extends ProcessBuilderEvent {
   List<Object?> get props => [stageId];
 }
 
+
+/// Toggles who executes a USER_TASK: a specific employee (org/dept/role
+/// cascade) or the transaction owner (citizen — a fixed role, no cascade).
+class StageAssigneeTypeChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final AssigneeType assigneeType;
+  const StageAssigneeTypeChanged(this.stageId, this.assigneeType);
+  @override
+  List<Object?> get props => [stageId, assigneeType];
+}
 
 class StageOrgChanged extends ProcessBuilderEvent {
   final int stageId;

@@ -25,7 +25,7 @@ class AuthResponseModel extends AuthResponse {
 
   return AuthResponseModel(
     user: UserModel.fromJson(user),
-    roles: List<int>.from(data['roles'] ?? []),
+    roles: [],
     token: data['token'] ?? '',
     refreshToken: data['refreshToken'] ?? '',
   );

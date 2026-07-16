@@ -257,21 +257,36 @@ class _UserTaskEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<ProcessBuilderBloc>();
     final stageId = draft.stage.id;
+    final isEmployee = draft.assigneeType == AssigneeType.employee;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // assignment cascade (dept → role). The organization is the user's
-        // active one, seeded into the draft — no per-stage picker.
+        // Who executes the stage: a specific employee (org/dept/role cascade)
+        // or the transaction owner (citizen — a fixed role, no cascade).
         const WizardLabel('التعيين — من ينفّذ المرحلة *'),
         const SizedBox(height: 8),
-        const _MiniLabel('القسم / الدائرة'),
-        const SizedBox(height: 6),
-        _DepartmentDropdown(state: state, draft: draft),
+        _AssigneeToggle(
+          assigneeType: draft.assigneeType,
+          onChanged: (t) => bloc.add(StageAssigneeTypeChanged(stageId, t)),
+        ),
         const SizedBox(height: 12),
-        const _MiniLabel('الدور'),
-        const SizedBox(height: 6),
-        _RoleDropdown(state: state, draft: draft),
+        // Employee → dept/role cascade. Organization is the user's active one,
+        // seeded into the draft — no per-stage picker.
+        if (isEmployee) ...[
+          const _MiniLabel('القسم / الدائرة'),
+          const SizedBox(height: 6),
+          _DepartmentDropdown(state: state, draft: draft),
+          const SizedBox(height: 12),
+          const _MiniLabel('الدور'),
+          const SizedBox(height: 6),
+          _RoleDropdown(state: state, draft: draft),
+        ] else
+          const Text(
+            'ستُسند هذه المرحلة إلى صاحب المعاملة (المواطن).',
+            textAlign: TextAlign.right,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
         const SizedBox(height: 22),
 
         // dynamic fields — one multi-select dropdown per type + add button
@@ -291,36 +306,36 @@ class _UserTaskEditor extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _TemplatePicker(state: state, draft: draft),
-        const SizedBox(height: 20),
+      ],
+    );
+  }
+}
 
-        // digital signature
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.inputBackground.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
+/// Toggle for the USER_TASK assignee: a specific employee (org/dept/role
+/// cascade) vs the transaction owner (citizen). Mirrors [_RecipientToggle].
+class _AssigneeToggle extends StatelessWidget {
+  final AssigneeType assigneeType;
+  final ValueChanged<AssigneeType> onChanged;
+  const _AssigneeToggle({required this.assigneeType, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        Expanded(
+          child: _RecipientChip(
+            label: 'موظف (دور محدد)',
+            selected: assigneeType == AssigneeType.employee,
+            onTap: () => onChanged(AssigneeType.employee),
           ),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              const Expanded(
-                child: Text(
-                  'يتطلب توقيعاً رقمياً',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Switch.adaptive(
-                value: draft.requiresSignature,
-                activeColor: AppColors.primary,
-                onChanged: (v) => bloc.add(StageSignatureToggled(stageId, v)),
-              ),
-            ],
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _RecipientChip(
+            label: 'صاحب المعاملة (مواطن)',
+            selected: assigneeType == AssigneeType.citizen,
+            onTap: () => onChanged(AssigneeType.citizen),
           ),
         ),
       ],

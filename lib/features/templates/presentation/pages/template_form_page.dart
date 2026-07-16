@@ -278,14 +278,25 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
                     Expanded(
                       child: SingleChildScrollView(
                         padding:
-                            EdgeInsets.fromLTRB(horizontal, 8, horizontal, 28),
+                            EdgeInsets.fromLTRB(horizontal, 8, horizontal, 20),
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 820),
                             child: _step == 1
-                                ? _buildStep1(submitting)
-                                : _buildStep2(context, state, submitting),
+                                ? _buildStep1()
+                                : _buildStep2(context, state),
                           ),
+                        ),
+                      ),
+                    ),
+                    // Sticky footer: the primary action stays pinned to the
+                    // bottom while only the fields above scroll.
+                    _FooterBar(
+                      horizontal: horizontal,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 820),
+                          child: _buildFooter(context, state, submitting),
                         ),
                       ),
                     ),
@@ -298,7 +309,7 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
     );
   }
 
-  Widget _buildStep1(bool submitting) {
+  Widget _buildStep1() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -328,13 +339,6 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        _PrimaryButton(
-          label: 'رفع واستخراج الحقول',
-          icon: Icons.arrow_forward_rounded,
-          submitting: submitting,
-          onPressed: _submitStep1,
-        ),
       ],
     );
   }
@@ -342,7 +346,6 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
   Widget _buildStep2(
     BuildContext context,
     TemplatesState state,
-    bool submitting,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -392,16 +395,32 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
             retryTemplateId: _isEdit ? _templateId : null,
           ),
         ),
-        const SizedBox(height: 24),
-        _PrimaryButton(
-          label: 'حفظ القالب',
-          icon: Icons.check_rounded,
-          submitting: submitting,
-          onPressed: state.extractStatus == RequestStatus.success
-              ? () => _submitStep2(state.extractedFields)
-              : null,
-        ),
       ],
+    );
+  }
+
+  /// The sticky footer button for the current step. Sits below the scrollable
+  /// fields so it stays pinned to the bottom of the page.
+  Widget _buildFooter(
+    BuildContext context,
+    TemplatesState state,
+    bool submitting,
+  ) {
+    if (_step == 1) {
+      return _PrimaryButton(
+        label: 'رفع واستخراج الحقول',
+        icon: Icons.arrow_forward_rounded,
+        submitting: submitting,
+        onPressed: _submitStep1,
+      );
+    }
+    return _PrimaryButton(
+      label: 'حفظ القالب',
+      icon: Icons.check_rounded,
+      submitting: submitting,
+      onPressed: state.extractStatus == RequestStatus.success
+          ? () => _submitStep2(state.extractedFields)
+          : null,
     );
   }
 }
@@ -559,6 +578,27 @@ class _Section extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+/// Pinned bottom bar hosting the primary action. Matches the page background
+/// with a subtle top divider so it reads as a footer above the scroll area.
+class _FooterBar extends StatelessWidget {
+  final double horizontal;
+  final Widget child;
+
+  const _FooterBar({required this.horizontal, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(horizontal, 12, horizontal, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xffF0EFE7),
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: child,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/admin_process_item.dart';
@@ -203,7 +204,10 @@ class ProcessBuilderRepositoryImpl implements ProcessBuilderRepository {
               _payload(body) as Map<String, dynamic>,
             ),
           );
-        } catch (_) {
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('getProcessDetails parse error: $e\n$st');
+          }
           return const Left(ServerFailure('تعذّر قراءة تفاصيل العملية.'));
         }
       },

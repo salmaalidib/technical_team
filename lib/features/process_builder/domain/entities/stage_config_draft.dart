@@ -4,6 +4,14 @@ import 'notification_action_config.dart';
 import 'process_stage.dart';
 import 'widget_config.dart';
 
+/// Who executes a USER_TASK: a specific [employee] (org/dept/role cascade) or
+/// the transaction owner [citizen] (no cascade — a fixed citizen role).
+enum AssigneeType { employee, citizen }
+
+/// The role_id sent for a citizen-assigned USER_TASK. The backend uses it as
+/// the applicant/citizen role; org/dept are null in that case.
+const int kCitizenRoleId = 2;
+
 /// The in-progress customization of one stage (step 4). Converted to the
 /// backend `stages[]` entry on submit.
 ///
@@ -13,7 +21,12 @@ import 'widget_config.dart';
 class StageConfigDraft extends Equatable {
   final ProcessStage stage;
 
-  /// Assignment (USER_TASK only).
+  /// Who executes this USER_TASK (employee cascade vs citizen). Defaults to
+  /// [AssigneeType.employee] so existing behaviour is unchanged.
+  final AssigneeType assigneeType;
+
+  /// Assignment (USER_TASK only). For a citizen assignee these stay null and
+  /// the request uses [kCitizenRoleId] as the role.
   final int? organizationId;
   final int? departmentId;
   final int? roleId;
@@ -47,6 +60,7 @@ class StageConfigDraft extends Equatable {
 
   const StageConfigDraft({
     required this.stage,
+    this.assigneeType = AssigneeType.employee,
     this.organizationId,
     this.departmentId,
     this.roleId,
@@ -74,6 +88,8 @@ class StageConfigDraft extends Equatable {
     // Already-saved stages are complete by definition (and not re-submitted).
     if (locked) return true;
     if (stage.isUserTask) {
+      // A citizen assignee needs no org/dept/role — it ships a fixed role.
+      if (assigneeType == AssigneeType.citizen) return true;
       return organizationId != null &&
           departmentId != null &&
           roleId != null;
@@ -88,6 +104,7 @@ class StageConfigDraft extends Equatable {
   }
 
   StageConfigDraft copyWith({
+    AssigneeType? assigneeType,
     int? organizationId,
     int? departmentId,
     int? roleId,
@@ -104,6 +121,7 @@ class StageConfigDraft extends Equatable {
   }) {
     return StageConfigDraft(
       stage: stage,
+      assigneeType: assigneeType ?? this.assigneeType,
       organizationId: organizationId ?? this.organizationId,
       departmentId: clearDepartment ? null : (departmentId ?? this.departmentId),
       roleId: clearRole ? null : (roleId ?? this.roleId),
@@ -149,11 +167,14 @@ class StageConfigDraft extends Equatable {
     };
 
     if (stage.isUserTask) {
+      // Citizen assignee → no org/dept, fixed citizen role. Employee assignee →
+      // the picked org/dept/role cascade.
+      final isCitizen = assigneeType == AssigneeType.citizen;
       entry['assignments'] = [
         {
-          'organization_id': organizationId,
-          'department_id': departmentId,
-          'role_id': roleId,
+          'organization_id': isCitizen ? null : organizationId,
+          'department_id': isCitizen ? null : departmentId,
+          'role_id': isCitizen ? kCitizenRoleId : roleId,
         }
       ];
     }
@@ -179,6 +200,7 @@ class StageConfigDraft extends Equatable {
   @override
   List<Object?> get props => [
         stage,
+        assigneeType,
         organizationId,
         departmentId,
         roleId,

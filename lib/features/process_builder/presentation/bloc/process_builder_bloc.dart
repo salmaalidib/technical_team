@@ -57,6 +57,7 @@ class ProcessBuilderBloc
         emit(state.copyWith(fileBytes: e.bytes, fileName: e.fileName)));
     on<SubmitCreate>(_onSubmitCreate);
     on<StageExpansionToggled>(_onStageExpansionToggled);
+    on<StageAssigneeTypeChanged>(_onStageAssigneeType);
     on<StageOrgChanged>(_onStageOrg);
     on<StageDeptChanged>(_onStageDept);
     on<StageRoleChanged>(_onStageRole);
@@ -315,11 +316,14 @@ class ProcessBuilderBloc
     // USER_TASK uses its own assignment; a SERVICE_TASK with an employee-
     // recipient notification uses the notification cascade instead.
     if (draft.stage.isUserTask) {
-      if (draft.organizationId != null) {
-        await _fetchLeaves(draft.organizationId!, event.stageId, emit);
-      }
-      if (draft.departmentId != null) {
-        await _fetchRoles(draft.departmentId!, event.stageId, emit);
+      // A citizen assignee has no cascade to restore.
+      if (draft.assigneeType == AssigneeType.employee) {
+        if (draft.organizationId != null) {
+          await _fetchLeaves(draft.organizationId!, event.stageId, emit);
+        }
+        if (draft.departmentId != null) {
+          await _fetchRoles(draft.departmentId!, event.stageId, emit);
+        }
       }
     } else if (draft.hasNotification &&
         draft.notification.recipient == NotificationRecipient.employee) {
@@ -327,6 +331,47 @@ class ProcessBuilderBloc
     }
   }
 
+
+  /// Toggles a USER_TASK between an employee assignee (org/dept/role cascade)
+  /// and a citizen assignee (fixed role, no cascade). Mirrors
+  /// [_onNotificationRecipient]: switching to employee seeds the active org and
+  /// restores its cascade; switching to citizen just drops the cascade state.
+  Future<void> _onStageAssigneeType(
+    StageAssigneeTypeChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
+    final target = state.drafts[event.stageId];
+    if (target == null || !target.stage.isUserTask) return;
+
+    final toEmployee = event.assigneeType == AssigneeType.employee;
+    _updateDraft(event.stageId, emit, (d) {
+      var updated = d.copyWith(assigneeType: event.assigneeType);
+      // An employee assignee defaults to the active organization (no picker);
+      // seed it only when not already set so we don't clobber a prior choice.
+      if (toEmployee && updated.organizationId == null) {
+        updated = updated.copyWith(organizationId: _activeOrgId);
+      }
+      return updated;
+    });
+
+    // Reset the shared cascade state either way; for employee, reload it below.
+    emit(state.copyWith(
+      leafStatus: RequestStatus.initial,
+      leafDepartments: const [],
+      rolesStatus: RequestStatus.initial,
+      rolesByDepartment: const [],
+    ));
+
+    if (!toEmployee) return;
+
+    final draft = state.drafts[event.stageId];
+    if (draft?.organizationId != null) {
+      await _fetchLeaves(draft!.organizationId!, event.stageId, emit);
+    }
+    if (draft?.departmentId != null) {
+      await _fetchRoles(draft!.departmentId!, event.stageId, emit);
+    }
+  }
 
   Future<void> _onStageOrg(
     StageOrgChanged event,

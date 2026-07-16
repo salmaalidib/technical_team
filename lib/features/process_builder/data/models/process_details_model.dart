@@ -69,9 +69,19 @@ class ProcessDetailsModel extends ProcessDetails {
     return AssignmentRole(
       id: (r['id'] as num).toInt(),
       isActive: r['is_active'] == true,
-      department: r['department'] as String?,
-      organization: r['organization'] as String?,
+      department: _nameOf(r['department']),
+      organization: _nameOf(r['organization']),
     );
+  }
+
+  /// The backend returns `organization`/`department` either as a plain name
+  /// string or as an object `{ name: ... }` (or null). Normalize all three to
+  /// the name string.
+  static String? _nameOf(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is Map) return value['name'] as String?;
+    return null;
   }
 
   static ProcessValidation _validation(Map v) {

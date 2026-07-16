@@ -110,19 +110,25 @@ class WidgetConfigMapper {
   }
 
   static WidgetConfig fromFilePicker(FilePickerEntity e) {
+    final data = <String, dynamic>{
+      'id': e.idWidget,
+      'label': e.label,
+      'is_required': e.isRequired,
+      'max_size_mb': e.maxSizeMb,
+      'allowed_extensions': e.allowedExtensions,
+      'allow_multiple': e.allowMultiple,
+    };
+    // The backend requires type_doc_id to be a valid integer on every
+    // file_picker. It is mandatory when the field is created, so it should
+    // always be present; guard against a legacy null just in case.
+    if (e.typeDocId != null) data['type_doc_id'] = e.typeDocId;
+
     return WidgetConfig(
       widgetType: 'file_picker',
       groupId: groupFilePicker,
       widgetId: e.idWidget,
       label: e.label,
-      data: {
-        'id': e.idWidget,
-        'label': e.label,
-        'is_required': e.isRequired,
-        'max_size_mb': e.maxSizeMb,
-        'allowed_extensions': e.allowedExtensions,
-        'allow_multiple': e.allowMultiple,
-      },
+      data: data,
     );
   }
 }

@@ -54,20 +54,25 @@ class Step3PreviewStages extends StatelessWidget {
                 ),
               )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                reverse: true, // start from the right (RTL)
-                padding: const EdgeInsets.only(bottom: 6),
-                child: IntrinsicHeight(
-                  child: Row(
-                    textDirection: TextDirection.rtl,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < stages.length; i++) ...[
-                        _StageCard(stage: stages[i], order: i + 1),
-                        if (i < stages.length - 1) const _Connector(),
+              // RTL scroll view: the scroll "start" edge is the right, so a set
+              // of cards narrower than the viewport hugs the right edge (no gap
+              // on the right) and overflow scrolls leftward.
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      textDirection: TextDirection.rtl,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < stages.length; i++) ...[
+                          _StageCard(stage: stages[i], order: i + 1),
+                          if (i < stages.length - 1) const _Connector(),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
