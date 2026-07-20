@@ -69,4 +69,25 @@ class AuthRepositoryImpl implements AuthRepository {
       },
     );
   }
+
+  @override
+  Future<Either<Failure, Unit>> logout() async {
+    final refreshToken = await storage.getRefreshToken();
+
+    // A missing refresh token already means there is no revocable server
+    // session. Treat it as a successful local logout.
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await storage.clear();
+      return const Right(unit);
+    }
+
+    final result = await remote.logout(refreshToken);
+    return result.fold<Future<Either<Failure, Unit>>>(
+      (failure) async => Left(failure),
+      (_) async {
+        await storage.clear();
+        return const Right(unit);
+      },
+    );
+  }
 }

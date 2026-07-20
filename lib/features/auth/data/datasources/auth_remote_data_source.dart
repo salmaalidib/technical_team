@@ -42,4 +42,12 @@ class AuthRemoteDataSource {
       },
     );
   }
+
+  Future<Either<Failure, dynamic>> logout(String refreshToken) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.logout,
+      body: {'refreshToken': refreshToken},
+    );
+  }
 }

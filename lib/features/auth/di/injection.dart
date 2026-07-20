@@ -6,6 +6,7 @@ import '../data/repositories/auth_repository_impl.dart';
 
 import '../domain/repositories/auth_repository.dart';
 import '../domain/usecases/login_usecase.dart';
+import '../domain/usecases/logout_usecase.dart';
 import '../domain/usecases/verify_otp_usecase.dart';
 
 import '../presentation/bloc/login/login_bloc.dart';
@@ -38,6 +39,12 @@ Future<void> setupAuthInjection() async {
   if (!getIt.isRegistered<VerifyOtpUseCase>()) {
     getIt.registerLazySingleton<VerifyOtpUseCase>(
       () => VerifyOtpUseCase(getIt<AuthRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<LogoutUseCase>()) {
+    getIt.registerLazySingleton<LogoutUseCase>(
+      () => LogoutUseCase(getIt<AuthRepository>()),
     );
   }
 

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/active_org/active_organization_cubit.dart';
+import '../../core/di/injection.dart';
+import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_snackbar.dart';
 
-class AppSidebar extends StatelessWidget {
+class AppSidebar extends StatefulWidget {
   final double width;
 
   const AppSidebar({
@@ -12,9 +16,63 @@ class AppSidebar extends StatelessWidget {
   });
 
   @override
+  State<AppSidebar> createState() => _AppSidebarState();
+}
+
+class _AppSidebarState extends State<AppSidebar> {
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('تسجيل الخروج'),
+          content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('تسجيل الخروج'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    setState(() => _isLoggingOut = true);
+
+    final result = await getIt<LogoutUseCase>()();
+    if (!mounted) return;
+
+    await result.fold(
+      (failure) async {
+        setState(() => _isLoggingOut = false);
+        AppSnackBar.show(
+          context,
+          message: failure.message,
+          isError: true,
+        );
+      },
+      (_) async {
+        await getIt<ActiveOrganizationCubit>().clear();
+        if (!mounted) return;
+        context.go('/login');
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
+      width: widget.width,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -124,6 +182,54 @@ class AppSidebar extends StatelessWidget {
                   route: '/settings',
                 ),
               ],
+            ),
+          ),
+          const Divider(height: 1, thickness: 1.2, color: AppColors.border),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            child: InkWell(
+              onTap: _isLoggingOut ? null : _logout,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    if (_isLoggingOut)
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: AppColors.error,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.logout_rounded,
+                        size: 22,
+                        color: AppColors.error,
+                      ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Text(
+                        'تسجيل الخروج',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

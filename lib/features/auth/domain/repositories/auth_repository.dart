@@ -14,4 +14,6 @@ abstract class AuthRepository {
     required String sessionId,
     required String otp,
   });
+
+  Future<Either<Failure, Unit>> logout();
 }
