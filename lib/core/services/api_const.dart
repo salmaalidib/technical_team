@@ -13,7 +13,7 @@ class EndPoints {
   const EndPoints();
 
   // ===== auth — password + OTP flow (2 steps) =====
-  String get login => 'api/auth/login'; // step 1 → session_id + sends OTP
+  String get login => 'api/auth/login/technical-officer'; // step 1 → session_id + sends OTP
   String get verifyLoginOtp =>
       'api/auth/verify-otp/login'; // step 2 → token + refreshToken + user + roles
 

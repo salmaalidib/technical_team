@@ -57,7 +57,11 @@ class AuthRepositoryImpl implements AuthRepository {
           );
 
           return Right(authResponse);
-        } catch (_) {
+        } catch (e, st) {
+          // TEMP DIAGNOSTIC: surface the swallowed error so we can see WHY a
+          // 200 response still fails login (suspected: keychain saveTokens).
+          // ignore: avoid_print
+          print('[verifyOtp] swallowed error: $e\n$st');
           return const Left(
             ServerFailure('تعذّر إكمال تسجيل الدخول، يرجى المحاولة لاحقًا.'),
           );

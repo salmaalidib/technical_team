@@ -28,6 +28,10 @@ ApiService {
     Map<String, dynamic>? headers,
   }) async {
     try {
+      // TEMP-TRACE: log every outgoing request to spot duplicate API calls.
+      // ignore: avoid_print
+      print('🌐 API ${method.value} $endPoint '
+          '${queryParameters ?? ''} @ ${DateTime.now().toIso8601String()}');
       // Per-request options only — never mutate the shared Dio's global
       // options/headers, since every feature reuses the same instance.
       final response = await _dio.request(

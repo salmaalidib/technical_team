@@ -4,8 +4,10 @@ import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
+import '../../../departments/domain/entities/leaf_department.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
+import '../../../roles/domain/entities/role_by_department.dart';
 import '../../../roles/domain/usecases/get_roles_by_department_usecase.dart';
 import '../../../templates/domain/usecases/get_templates_usecase.dart';
 import '../../../type_processes/domain/usecases/get_type_processes_usecase.dart';
@@ -79,6 +81,14 @@ class ProcessBuilderBloc
   /// everywhere instead of a per-form picker. Stages, notifications and the
   /// create payload all default to it; the org dropdowns are hidden.
   int? get _activeOrgId => getIt<ActiveOrganizationCubit>().activeOrgId;
+
+  /// Per-wizard caches for the assignee cascade. The department/role lists for a
+  /// given org/dept never change during one wizard session, yet every stage-card
+  /// expansion used to re-fetch them — with ~10 stages sharing one organization
+  /// that was dozens of duplicate requests. Keyed by organizationId / departmentId,
+  /// they make each unique cascade a single network call for the whole wizard.
+  final Map<int, List<LeafDepartment>> _leavesCache = {};
+  final Map<int, List<RoleByDepartment>> _rolesCache = {};
 
   // ── bootstrap ───────────────────────────────────────────────────────────
   Future<void> _onInit(
@@ -738,6 +748,18 @@ class ProcessBuilderBloc
     int? Function(StageConfigDraft d)? organizationOf,
   }) async {
     final readOrg = organizationOf ?? (d) => d.organizationId;
+
+    // Serve from cache: the org's departments don't change mid-wizard, so a
+    // repeat expansion of any stage on the same org skips the network entirely.
+    final cached = _leavesCache[organizationId];
+    if (cached != null) {
+      emit(state.copyWith(
+        leafStatus: RequestStatus.success,
+        leafDepartments: cached,
+      ));
+      return;
+    }
+
     emit(state.copyWith(
       leafStatus: RequestStatus.loading,
       leafDepartments: const [],
@@ -758,10 +780,13 @@ class ProcessBuilderBloc
         leafStatus: RequestStatus.failure,
         actionError: failure.message,
       )),
-      (leaves) => emit(state.copyWith(
-        leafStatus: RequestStatus.success,
-        leafDepartments: leaves,
-      )),
+      (leaves) {
+        _leavesCache[organizationId] = leaves;
+        emit(state.copyWith(
+          leafStatus: RequestStatus.success,
+          leafDepartments: leaves,
+        ));
+      },
     );
   }
 
@@ -772,6 +797,17 @@ class ProcessBuilderBloc
     int? Function(StageConfigDraft d)? departmentOf,
   }) async {
     final readDept = departmentOf ?? (d) => d.departmentId;
+
+    // Serve from cache: the department's roles don't change mid-wizard.
+    final cached = _rolesCache[departmentId];
+    if (cached != null) {
+      emit(state.copyWith(
+        rolesStatus: RequestStatus.success,
+        rolesByDepartment: cached,
+      ));
+      return;
+    }
+
     emit(state.copyWith(
       rolesStatus: RequestStatus.loading,
       rolesByDepartment: const [],
@@ -791,10 +827,13 @@ class ProcessBuilderBloc
         rolesStatus: RequestStatus.failure,
         actionError: failure.message,
       )),
-      (roles) => emit(state.copyWith(
-        rolesStatus: RequestStatus.success,
-        rolesByDepartment: roles,
-      )),
+      (roles) {
+        _rolesCache[departmentId] = roles;
+        emit(state.copyWith(
+          rolesStatus: RequestStatus.success,
+          rolesByDepartment: roles,
+        ));
+      },
     );
   }
 

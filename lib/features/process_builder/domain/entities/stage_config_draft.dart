@@ -65,7 +65,7 @@ class StageConfigDraft extends Equatable {
     this.departmentId,
     this.roleId,
     this.widgets = const [],
-    this.requiresSignature = false,
+    this.requiresSignature = true,
     this.templateIds = const [],
     this.actions = const [],
     this.notification = const NotificationActionConfig(),
