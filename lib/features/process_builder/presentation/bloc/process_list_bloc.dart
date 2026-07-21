@@ -143,10 +143,13 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
           reviewActionSuccess: event.approve
               ? 'تمت الموافقة على المعاملة ونشرها'
               : 'تم رفض المعاملة',
-          // Optimistically drop the decided item from the review queue.
-          reviewQueue:
-              state.reviewQueue.where((p) => p.id != event.id).toList(),
         ));
+        // Refresh the server-side data so the decided item lands in its new
+        // bucket (an approved item moves to the "inactive" tab, a rejected one
+        // to the "rejected" tab) instead of just vanishing. Both the review
+        // queue and the missing-config list are reloaded.
+        add(const LoadReviewQueue());
+        add(const LoadMissingStageConfig());
       },
     );
   }

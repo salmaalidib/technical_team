@@ -42,10 +42,16 @@ class _ProcessByTypeView extends StatelessWidget {
     // when navigating away from the hovered button.
     void openCreate() {
       final router = GoRouter.of(context);
-      Future.microtask(() => router.push(
-            '/transactions/create',
-            extra: {'typeId': typeId, 'typeName': typeName},
-          ));
+      final bloc = context.read<ProcessListBloc>();
+      Future.microtask(() async {
+        final saved = await router.push<bool>(
+          '/transactions/create',
+          extra: {'typeId': typeId, 'typeName': typeName},
+        );
+        // The wizard returns `true` after a successful save — reload so the
+        // newly-created process shows up in this type's list.
+        if (saved == true) bloc.add(LoadProcessesByType(typeId));
+      });
     }
 
     return Container(

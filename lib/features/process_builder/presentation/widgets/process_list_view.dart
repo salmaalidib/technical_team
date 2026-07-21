@@ -12,12 +12,20 @@ import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import 'process_status_badges.dart';
 
-enum ProcessListTab { all, review, missingConfig }
+enum ProcessListTab { all, review, rejected, inactive, missingConfig }
 
-/// One tab body: a list of processes from one of three sources —
+/// One tab body: a list of processes from one of several sources —
 ///   * [all]           → `admin/type/{typeId}` (tapping a row opens details),
-///   * [review]        → `admin/review-queue` (approve / reject buttons),
+///   * [review]        → `admin/review-queue`, filtered to items awaiting
+///     publish (approve / reject buttons),
+///   * [rejected]      → `admin/review-queue`, filtered to rejected items,
+///   * [inactive]      → `admin/review-queue`, filtered to inactive items that
+///     are neither awaiting-publish nor rejected,
 ///   * [missingConfig] → `admin/missing-stage-config` (complete button → step 4).
+///
+/// The [review], [rejected] and [inactive] tabs are all backed by the same
+/// `reviewQueue` list, partitioned locally into mutually-exclusive buckets.
+/// A dedicated API can replace this client-side filtering later.
 class ProcessListView extends StatelessWidget {
   final ProcessListTab tab;
   final int typeId;
@@ -50,6 +58,8 @@ class ProcessListView extends StatelessWidget {
       case ProcessListTab.all:
         return s.allStatus;
       case ProcessListTab.review:
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
         return s.reviewStatus;
       case ProcessListTab.missingConfig:
         return s.missingStatus;
@@ -61,6 +71,8 @@ class ProcessListView extends StatelessWidget {
       case ProcessListTab.all:
         return s.allError;
       case ProcessListTab.review:
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
         return s.reviewError;
       case ProcessListTab.missingConfig:
         return s.missingError;
@@ -72,6 +84,8 @@ class ProcessListView extends StatelessWidget {
       case ProcessListTab.all:
         return p.allProcesses != c.allProcesses;
       case ProcessListTab.review:
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
         return p.reviewQueue != c.reviewQueue ||
             p.reviewActionStatus != c.reviewActionStatus;
       case ProcessListTab.missingConfig:
@@ -88,6 +102,8 @@ class ProcessListView extends StatelessWidget {
             : LoadProcessesByType(typeId));
         break;
       case ProcessListTab.review:
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
         bloc.add(const LoadReviewQueue());
         break;
       case ProcessListTab.missingConfig:
@@ -96,12 +112,42 @@ class ProcessListView extends StatelessWidget {
     }
   }
 
+  /// The [review], [rejected] and [inactive] tabs partition the same
+  /// `reviewQueue` list into mutually-exclusive buckets:
+  ///   * review   → not yet approved and not rejected (awaiting the approval
+  ///     decision — publish / reject buttons live here),
+  ///   * rejected → rejected,
+  ///   * inactive → inactive but not rejected (includes approved-yet-inactive
+  ///     items, which are done being reviewed and just not published/enabled).
+  List<ReviewQueueItem> _reviewItemsFor(ProcessListState s) {
+    switch (tab) {
+      case ProcessListTab.review:
+        return s.reviewQueue
+            .where((i) => !i.isApproved && !i.isActive && !_isRejected(i))
+            .toList();
+      case ProcessListTab.rejected:
+        return s.reviewQueue.where(_isRejected).toList();
+      case ProcessListTab.inactive:
+        return s.reviewQueue
+            .where((i) => i.isApproved && !i.isActive && !_isRejected(i))
+            .toList();
+      case ProcessListTab.all:
+      case ProcessListTab.missingConfig:
+        return const [];
+    }
+  }
+
+  static bool _isRejected(ReviewQueueItem i) =>
+      (i.status ?? '').toUpperCase() == 'REJECTED';
+
   int _count(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
         return s.allProcesses.length;
       case ProcessListTab.review:
-        return s.reviewQueue.length;
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
+        return _reviewItemsFor(s).length;
       case ProcessListTab.missingConfig:
         return s.missingItems.length;
     }
@@ -113,6 +159,10 @@ class ProcessListView extends StatelessWidget {
         return 'لا توجد معاملات لعرضها';
       case ProcessListTab.review:
         return 'لا توجد معاملات مكتملة بانتظار الاعتماد';
+      case ProcessListTab.rejected:
+        return 'لا توجد معاملات مرفوضة';
+      case ProcessListTab.inactive:
+        return 'لا توجد معاملات غير مفعّلة';
       case ProcessListTab.missingConfig:
         return 'لا توجد معاملات غير مكتملة';
     }
@@ -161,7 +211,8 @@ class ProcessListView extends StatelessWidget {
   }
 
   /// The "review" and "missing config" tabs render a footer with action
-  /// buttons, so their cards are taller than the plain "all" tab cards.
+  /// buttons, so their cards are taller than the plain "all"/"rejected"/
+  /// "inactive" tab cards.
   bool get _hasFooter =>
       tab == ProcessListTab.review || tab == ProcessListTab.missingConfig;
 
@@ -171,10 +222,14 @@ class ProcessListView extends StatelessWidget {
         return _AdminProcessCard(item: state.allProcesses[i]);
       case ProcessListTab.review:
         return _ReviewItemCard(
-          item: state.reviewQueue[i],
+          item: _reviewItemsFor(state)[i],
           actionStatus: state.reviewActionStatus,
           actingId: state.reviewActionId,
         );
+      case ProcessListTab.rejected:
+      case ProcessListTab.inactive:
+        // Same underlying item, but read-only: no publish/reject buttons.
+        return _ReadonlyReviewCard(item: _reviewItemsFor(state)[i]);
       case ProcessListTab.missingConfig:
         return _MissingItemCard(item: state.missingItems[i]);
     }
@@ -184,11 +239,21 @@ class ProcessListView extends StatelessWidget {
 void _openDetails(BuildContext context, int id) =>
     context.push('/transactions/$id');
 
-/// Opens the wizard in complete-mode (step 4) for an existing process.
-void _openComplete(BuildContext context, int id) => context.push(
-      '/transactions/create',
-      extra: {'existingProcessId': id},
-    );
+/// Opens the wizard in complete-mode (step 4) for an existing process. When the
+/// wizard reports a successful save, reload the review/missing lists so the
+/// completed process moves out of "missing config" into its new bucket.
+Future<void> _openComplete(BuildContext context, int id) async {
+  final bloc = context.read<ProcessListBloc>();
+  final saved = await context.push<bool>(
+    '/transactions/create',
+    extra: {'existingProcessId': id},
+  );
+  if (saved == true) {
+    bloc
+      ..add(const LoadMissingStageConfig())
+      ..add(const LoadReviewQueue());
+  }
+}
 
 /// Card for the "all" tab — backed by [AdminProcessItem].
 class _AdminProcessCard extends StatelessWidget {
@@ -309,6 +374,27 @@ class _ReviewItemCard extends StatelessWidget {
           .read<ProcessListBloc>()
           .add(ReviewProcessRequested(item.id, approve: approve));
     }
+  }
+}
+
+/// Card for the "rejected" and "inactive" tabs — same underlying review-queue
+/// item, but read-only: no publish/reject actions, just a tap-to-view row.
+class _ReadonlyReviewCard extends StatelessWidget {
+  final ReviewQueueItem item;
+
+  const _ReadonlyReviewCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return _CardShell(
+      onTap: () => _openDetails(context, item.id),
+      title: item.name,
+      subtitle: null,
+      badges: [
+        ApprovalBadge(approvalStatus: item.status, isApproved: item.isApproved),
+        ActiveBadge(isActive: item.isActive),
+      ],
+    );
   }
 }
 

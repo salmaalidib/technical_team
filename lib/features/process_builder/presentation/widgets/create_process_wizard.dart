@@ -76,8 +76,10 @@ class _WizardView extends StatefulWidget {
 class _WizardViewState extends State<_WizardView> {
   bool _showStep1Errors = false;
 
-  void _close(BuildContext context) =>
-      context.canPop() ? context.pop() : context.go('/transactions');
+  /// [saved] is passed back through `pop` so the host screen knows whether it
+  /// needs to reload its list (a new/updated process now exists).
+  void _close(BuildContext context, {bool saved = false}) =>
+      context.canPop() ? context.pop(saved) : context.go('/transactions');
 
   bool _step1Valid(ProcessBuilderState s) {
     final typeOk = s.isComplaint || s.typeTransId != null;
@@ -131,7 +133,7 @@ class _WizardViewState extends State<_WizardView> {
       listener: (context, state) {
         if (state.submitStatus == FormStatus.success) {
           AppSnackBar.show(context, message: 'تم حفظ تهيئة المراحل بنجاح');
-          if (context.mounted) _close(context);
+          if (context.mounted) _close(context, saved: true);
         } else if (state.submitStatus == FormStatus.failure) {
           AppSnackBar.show(context,
               message: state.submitError ?? 'تعذّر حفظ التهيئة', isError: true);

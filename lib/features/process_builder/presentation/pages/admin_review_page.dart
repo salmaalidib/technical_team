@@ -34,7 +34,7 @@ class _AdminReviewView extends StatelessWidget {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
 
     return DefaultTabController(
-      length: 2,
+      length: 4,
       child: BlocListener<ProcessListBloc, ProcessListState>(
         listenWhen: (p, c) =>
             (p.reviewActionSuccess != c.reviewActionSuccess &&
@@ -81,11 +81,14 @@ class _AdminReviewView extends StatelessWidget {
                   labelColor: AppColors.primary,
                   unselectedLabelColor: AppColors.textSecondary,
                   indicatorColor: AppColors.primary,
+                  labelPadding: EdgeInsets.symmetric(horizontal: 4),
                   labelStyle:
-                      TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   tabs: [
-                    Tab(text: 'مكتملة (للاعتماد)'),
                     Tab(text: 'غير مكتملة'),
+                    Tab(text: 'مكتملة (للاعتماد)'),
+                    Tab(text: 'غير المفعّلة'),
+                    Tab(text: 'المرفوضة'),
                   ],
                 ),
               ),
@@ -93,8 +96,10 @@ class _AdminReviewView extends StatelessWidget {
               const Expanded(
                 child: TabBarView(
                   children: [
-                    ProcessListView(tab: ProcessListTab.review),
                     ProcessListView(tab: ProcessListTab.missingConfig),
+                    ProcessListView(tab: ProcessListTab.review),
+                    ProcessListView(tab: ProcessListTab.inactive),
+                    ProcessListView(tab: ProcessListTab.rejected),
                   ],
                 ),
               ),
