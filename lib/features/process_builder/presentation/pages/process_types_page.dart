@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../type_processes/domain/entities/type_process.dart';
 import '../../../type_processes/presentation/bloc/type_processes_bloc.dart';
@@ -161,10 +162,7 @@ class _Body extends StatelessWidget {
         switch (state.status) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 80),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const AppSkeleton.cards();
           case RequestStatus.failure:
             return _ErrorState(
               message: state.error ?? 'حدث خطأ غير متوقع',

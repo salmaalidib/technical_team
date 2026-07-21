@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../domain/entities/doc_template.dart';
 import '../bloc/templates_bloc.dart';
 import '../bloc/templates_event.dart';
@@ -124,10 +125,7 @@ class _Body extends StatelessWidget {
         switch (state.status) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 80),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const AppSkeleton.cards();
           case RequestStatus.failure:
             return _ErrorState(
               message: state.error ?? 'حدث خطأ غير متوقع',

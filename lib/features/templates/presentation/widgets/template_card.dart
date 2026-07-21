@@ -4,7 +4,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/doc_template.dart';
 
 /// A single document-template card in the list grid: name, document type,
-/// version + field count, with an edit action.
+/// version + field count. Tapping the card opens its edit form.
 class TemplateCard extends StatelessWidget {
   final DocTemplate template;
   final VoidCallback onEdit;
@@ -18,90 +18,84 @@ class TemplateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fieldCount = template.config?.widgets.length ?? 0;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onEdit,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 22,
-                backgroundColor: AppColors.lightPrimary,
-                child: Icon(Icons.description_rounded,
-                    color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      template.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      template.typeDocName ?? 'نوع #${template.typeDocId}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Chip(
-                icon: Icons.dynamic_form_outlined,
-                label: '$fieldCount حقل',
+              Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppColors.lightPrimary,
+                    child: Icon(Icons.description_rounded,
+                        color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          template.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          template.typeDocName ?? 'نوع #${template.typeDocId}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              _Chip(
-                icon: Icons.history_rounded,
-                label: 'إصدار ${template.version}',
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _Chip(
+                    icon: Icons.dynamic_form_outlined,
+                    label: '$fieldCount حقل',
+                  ),
+                  const SizedBox(width: 8),
+                  _Chip(
+                    icon: Icons.history_rounded,
+                    label: 'إصدار ${template.version}',
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('تعديل'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

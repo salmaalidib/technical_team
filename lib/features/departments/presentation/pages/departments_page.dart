@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
@@ -90,8 +91,8 @@ class _DepartmentsBody extends StatelessWidget {
           case RequestStatus.initial:
           case RequestStatus.loading:
             return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 80),
-              child: Center(child: CircularProgressIndicator()),
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: AppSkeleton.table(columns: 5),
             );
           case RequestStatus.failure:
             return _ErrorState(

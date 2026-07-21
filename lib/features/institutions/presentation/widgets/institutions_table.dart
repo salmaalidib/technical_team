@@ -5,6 +5,7 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/table/grid_column.dart';
 import '../../domain/entities/institution.dart';
 import '../bloc/institutions_bloc.dart';
@@ -77,8 +78,8 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
       case RequestStatus.initial:
       case RequestStatus.loading:
         return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 60),
-          child: Center(child: CircularProgressIndicator()),
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: AppSkeleton.table(columns: 5),
         );
       case RequestStatus.failure:
         return _ErrorState(

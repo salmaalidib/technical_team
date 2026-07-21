@@ -5,6 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
@@ -85,8 +86,8 @@ class _EmployeesBody extends StatelessWidget {
           case RequestStatus.initial:
           case RequestStatus.loading:
             return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 80),
-              child: Center(child: CircularProgressIndicator()),
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: AppSkeleton.table(columns: 5),
             );
           case RequestStatus.failure:
             return _ErrorState(

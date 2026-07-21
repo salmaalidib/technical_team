@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../domain/entities/admin_process_item.dart';
 import '../../domain/entities/missing_config_item.dart';
 import '../../domain/entities/review_queue_item.dart';
@@ -40,7 +41,7 @@ class ProcessListView extends StatelessWidget {
         switch (_statusOf(state)) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return const Center(child: CircularProgressIndicator());
+            return AppSkeleton.cards(withFooter: _hasFooter);
           case RequestStatus.failure:
             return _ErrorState(
               message: _errorOf(state) ?? 'حدث خطأ غير متوقع',

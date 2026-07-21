@@ -6,6 +6,7 @@ import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 /// Shown once right after login. The user picks the organization they'll work
 /// in; the choice is persisted by [ActiveOrganizationCubit] and reused across
@@ -62,9 +63,7 @@ class _SelectOrganizationPageState extends State<SelectOrganizationPage> {
 
   Widget _body(BuildContext context, ActiveOrgState state) {
     if (state.status == RequestStatus.loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const AppSkeleton.list();
     }
 
     if (state.status == RequestStatus.failure) {

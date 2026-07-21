@@ -5,6 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../fields/presentation/bloc/fields_bloc.dart';
 import '../../../process_builder/domain/entities/widget_config.dart';
@@ -448,8 +449,8 @@ class _Step2Fields extends StatelessWidget {
       case RequestStatus.initial:
       case RequestStatus.loading:
         return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
-          child: Center(child: CircularProgressIndicator()),
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: AppSkeleton.list(itemCount: 5, rowHeight: 56),
         );
       case RequestStatus.failure:
         return Column(

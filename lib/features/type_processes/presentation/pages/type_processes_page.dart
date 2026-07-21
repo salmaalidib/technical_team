@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/type_processes_bloc.dart';
 import '../bloc/type_processes_event.dart';
@@ -71,10 +72,7 @@ class _TypeProcessesBody extends StatelessWidget {
         switch (state.status) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 80),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const AppSkeleton.cards();
           case RequestStatus.failure:
             return _ErrorState(
               message: state.error ?? 'حدث خطأ غير متوقع',

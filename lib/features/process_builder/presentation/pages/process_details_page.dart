@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../domain/entities/process_details.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
@@ -58,7 +59,7 @@ class _DetailsScaffold extends StatelessWidget {
                 switch (state.detailsStatus) {
                   case RequestStatus.initial:
                   case RequestStatus.loading:
-                    return const Center(child: CircularProgressIndicator());
+                    return const AppSkeleton.list(itemCount: 6);
                   case RequestStatus.failure:
                     return _ErrorState(
                       message: state.detailsError ?? 'حدث خطأ غير متوقع',

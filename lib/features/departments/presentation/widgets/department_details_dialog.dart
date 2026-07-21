@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../domain/entities/department.dart';
 import '../../domain/entities/department_overview.dart';
 import '../bloc/departments_bloc.dart';
@@ -62,8 +63,8 @@ class DepartmentDetailsDialog extends StatelessWidget {
                   builder: (context, state) {
                     if (state.loadingOverviews.contains(department.id)) {
                       return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 60),
-                        child: Center(child: CircularProgressIndicator()),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: AppSkeleton.list(itemCount: 5),
                       );
                     }
                     final overview = state.overviews[department.id];
