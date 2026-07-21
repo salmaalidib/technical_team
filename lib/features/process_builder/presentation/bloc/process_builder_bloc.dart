@@ -130,45 +130,53 @@ class ProcessBuilderBloc
     final templatesResult = await getTemplates();
     final detailsResult = await getProcessDetails(event.processId);
 
-    detailsResult.fold(
-      (failure) => emit(state.copyWith(
+    final details = detailsResult.fold((_) => null, (d) => d);
+    if (details == null) {
+      emit(state.copyWith(
         bootStatus: RequestStatus.failure,
-        createError: failure.message,
-      )),
-      (details) {
-        final stages =
-            details.stages.map(_toProcessStage).toList(growable: false);
+        createError: detailsResult.fold((f) => f.message, (_) => null),
+      ));
+      return;
+    }
 
-        final drafts = <int, StageConfigDraft>{
-          for (final s in details.stages) s.id: _draftFromDetailStage(s),
-        };
+    final stages = details.stages.map(_toProcessStage).toList(growable: false);
 
-        // Expand the first stage still needing configuration.
-        final firstMissing = details.stages.firstWhere(
-          (s) => !s.hasConfig,
-          orElse: () => details.stages.isNotEmpty
-              ? details.stages.first
-              : _placeholderDetail(),
-        );
+    final drafts = <int, StageConfigDraft>{
+      for (final s in details.stages) s.id: _draftFromDetailStage(s),
+    };
 
-        emit(state.copyWith(
-          bootStatus: RequestStatus.success,
-          organizations: orgsResult.getOrElse(() => const []),
-          templates: templatesResult.getOrElse(() => const []),
-          createdProcess: CreatedProcess(
-            id: details.process.id,
-            name: details.process.name,
-            code: details.process.code,
-            status: details.process.status,
-            stages: stages,
-          ),
-          drafts: drafts,
-          currentStep: 4,
-          expandedStageId: details.stages.isEmpty ? null : firstMissing.id,
-          clearExpanded: details.stages.isEmpty,
-        ));
-      },
+    // Expand the first stage still needing configuration.
+    final firstMissing = details.stages.firstWhere(
+      (s) => !s.hasConfig,
+      orElse: () => details.stages.isNotEmpty
+          ? details.stages.first
+          : _placeholderDetail(),
     );
+
+    emit(state.copyWith(
+      bootStatus: RequestStatus.success,
+      organizations: orgsResult.getOrElse(() => const []),
+      templates: templatesResult.getOrElse(() => const []),
+      createdProcess: CreatedProcess(
+        id: details.process.id,
+        name: details.process.name,
+        code: details.process.code,
+        status: details.process.status,
+        stages: stages,
+      ),
+      drafts: drafts,
+      currentStep: 4,
+      expandedStageId: details.stages.isEmpty ? null : firstMissing.id,
+      clearExpanded: details.stages.isEmpty,
+    ));
+
+    // Auto-expanded first-missing stage: load its cascade so its departments
+    // show immediately, without needing a close/re-open. Locked stages are
+    // read-only and _loadCascadeForStage no-ops on a citizen assignee.
+    final firstDraft = details.stages.isEmpty ? null : drafts[firstMissing.id];
+    if (firstDraft != null && !firstDraft.locked) {
+      await _loadCascadeForStage(firstMissing.id, firstDraft, emit);
+    }
   }
 
   static ProcessStage _toProcessStage(ProcessDetailStage s) => ProcessStage(
@@ -265,35 +273,43 @@ class ProcessBuilderBloc
       fileName: state.fileName!,
     );
 
-    result.fold(
-      (failure) => emit(state.copyWith(
+    final process = result.fold((_) => null, (p) => p);
+    if (process == null) {
+      emit(state.copyWith(
         createStatus: RequestStatus.failure,
-        createError: failure.message,
-      )),
-      (process) {
-        // Each stage defaults to the active organization (no per-stage picker).
-        final orgId = _activeOrgId;
-        final drafts = <int, StageConfigDraft>{
-          for (final s in process.stages)
-            s.id: StageConfigDraft(stage: s, organizationId: orgId),
-        };
-        // Expand the first customizable (user) stage by default.
-        final firstUser = process.stages.firstWhere(
-          (s) => s.isUserTask,
-          orElse: () =>
-              process.stages.isNotEmpty ? process.stages.first : _placeholder(),
-        );
+        createError: result.fold((f) => f.message, (_) => null),
+      ));
+      return;
+    }
 
-        emit(state.copyWith(
-          createStatus: RequestStatus.success,
-          createdProcess: process,
-          drafts: drafts,
-          expandedStageId: process.stages.isEmpty ? null : firstUser.id,
-          clearExpanded: process.stages.isEmpty,
-          currentStep: 3,
-        ));
-      },
+    // Each stage defaults to the active organization (no per-stage picker).
+    final orgId = _activeOrgId;
+    final drafts = <int, StageConfigDraft>{
+      for (final s in process.stages)
+        s.id: StageConfigDraft(stage: s, organizationId: orgId),
+    };
+    // Expand the first customizable (user) stage by default.
+    final firstUser = process.stages.firstWhere(
+      (s) => s.isUserTask,
+      orElse: () =>
+          process.stages.isNotEmpty ? process.stages.first : _placeholder(),
     );
+
+    emit(state.copyWith(
+      createStatus: RequestStatus.success,
+      createdProcess: process,
+      drafts: drafts,
+      expandedStageId: process.stages.isEmpty ? null : firstUser.id,
+      clearExpanded: process.stages.isEmpty,
+      currentStep: 3,
+    ));
+
+    // The first user stage is auto-expanded — load its cascade now so its
+    // departments show immediately, without needing a close/re-open.
+    final firstDraft = process.stages.isEmpty ? null : drafts[firstUser.id];
+    if (firstDraft != null) {
+      await _loadCascadeForStage(firstUser.id, firstDraft, emit);
+    }
   }
 
   // ── step 4: expand / collapse a stage card ──────────────────────────────
@@ -322,22 +338,32 @@ class ProcessBuilderBloc
     // Locked stages are read-only (no cascades to restore).
     if (draft == null || draft.locked) return;
 
-    // Re-fetch the cascade for whatever this stage already had selected. A
-    // USER_TASK uses its own assignment; a SERVICE_TASK with an employee-
-    // recipient notification uses the notification cascade instead.
+    await _loadCascadeForStage(event.stageId, draft, emit);
+  }
+
+  /// Loads the org/dept/role cascade for a freshly-expanded stage. A USER_TASK
+  /// uses its own assignment; a SERVICE_TASK with an employee-recipient
+  /// notification uses the notification cascade instead. Shared by the manual
+  /// expansion toggle and the auto-expansion after create / load-existing, so
+  /// the first (auto-opened) card shows its departments without a re-open.
+  Future<void> _loadCascadeForStage(
+    int stageId,
+    StageConfigDraft draft,
+    Emitter<ProcessBuilderState> emit,
+  ) async {
     if (draft.stage.isUserTask) {
       // A citizen assignee has no cascade to restore.
       if (draft.assigneeType == AssigneeType.employee) {
         if (draft.organizationId != null) {
-          await _fetchLeaves(draft.organizationId!, event.stageId, emit);
+          await _fetchLeaves(draft.organizationId!, stageId, emit);
         }
         if (draft.departmentId != null) {
-          await _fetchRoles(draft.departmentId!, event.stageId, emit);
+          await _fetchRoles(draft.departmentId!, stageId, emit);
         }
       }
     } else if (draft.hasNotification &&
         draft.notification.recipient == NotificationRecipient.employee) {
-      await _restoreNotificationCascade(event.stageId, emit);
+      await _restoreNotificationCascade(stageId, emit);
     }
   }
 

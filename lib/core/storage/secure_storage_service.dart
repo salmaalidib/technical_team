@@ -2,7 +2,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SecureStorageService {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  // macOS: the default Data Protection Keychain requires the
+  // keychain-access-groups entitlement, which the manually-signed Debug build
+  // cannot carry (errSecMissingEntitlement -34018 on every write). The legacy
+  // file-based login keychain needs no entitlement, so use it instead.
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+  );
 
   static const _tokenKey = "token";
   static const _refreshTokenKey = "refresh_token";
