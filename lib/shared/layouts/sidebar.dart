@@ -464,7 +464,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
   }
 }
 
-class _SidebarItem extends StatelessWidget {
+class _SidebarItem extends StatefulWidget {
   final IconData icon;
   final String title;
   final String route;
