@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'api_const.dart';
 import '../storage/secure_storage_service.dart';
@@ -69,6 +70,7 @@ class TokenRefreshService {
   Future<bool> _performRefresh() async {
     final refreshToken = await _storage.getRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) {
+      debugPrint('🔑 [TokenRefresh] لا يوجد refresh token مخزَّن — إلغاء.');
       return false;
     }
 
@@ -76,6 +78,11 @@ class TokenRefreshService {
       final response = await _refreshDio.post(
         '/${_endPoints.refresh}',
         data: {'refreshToken': refreshToken},
+      );
+
+      debugPrint(
+        '🔑 [TokenRefresh] استجابة ${response.statusCode} من '
+        '/${_endPoints.refresh}: ${response.data}',
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -97,11 +104,21 @@ class TokenRefreshService {
             token: newToken,
             refreshToken: newRefreshToken,
           );
+          debugPrint('🔑 [TokenRefresh] نجح التجديد وتم حفظ التوكن الجديد.');
           return true;
         }
+        debugPrint(
+          '🔑 [TokenRefresh] استجابة 200 لكن الحقول token/refreshToken '
+          'مفقودة أو فارغة في الجسم.',
+        );
       }
       return false;
-    } on DioException {
+    } on DioException catch (e) {
+      debugPrint(
+        '🔑 [TokenRefresh] فشل الطلب: ${e.type} — '
+        'status=${e.response?.statusCode} body=${e.response?.data} — '
+        '${e.message}',
+      );
       return false;
     }
   }

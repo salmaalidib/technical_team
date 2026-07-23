@@ -295,6 +295,13 @@ class _UserTaskEditor extends StatelessWidget {
         _DynamicFieldsEditor(draft: draft),
         const SizedBox(height: 20),
 
+        // gateway field — routes the BPMN flow in Camunda, kept separate and
+        // called out explicitly (see _GatewayFieldSection docs below).
+        const WizardLabel('حقل التوجيه (Exclusive Gateway)'),
+        const SizedBox(height: 12),
+        _GatewayFieldSection(draft: draft),
+        const SizedBox(height: 20),
+
         // linked document templates — feed run-time PDF generation
         const WizardLabel('قوالب الوثائق'),
         const SizedBox(height: 6),
@@ -306,7 +313,126 @@ class _UserTaskEditor extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _TemplatePicker(state: state, draft: draft),
+        const SizedBox(height: 20),
+        _IsAssignmentToggle(state: state, draft: draft),
       ],
+    );
+  }
+}
+
+/// Switch for `config_json.is_assignment`. Off by default (sent as `false`).
+/// Turning it ON is confirmed via a dialog first, because it overrides the
+/// fixed org/dept/role assignment above: the next stage will instead go to
+/// whoever the CURRENT stage's assignees choose at run-time.
+class _IsAssignmentToggle extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _IsAssignmentToggle({required this.state, required this.draft});
+
+  Future<void> _handleChanged(BuildContext context, bool value) async {
+    final bloc = context.read<ProcessBuilderBloc>();
+
+    if (!value) {
+      bloc.add(StageIsAssignmentToggled(draft.stage.id, false));
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'تنبيه هام قبل التفعيل',
+                textAlign: TextAlign.right,
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'تفعيل هذا الخيار سيُلغي التوجيه التلقائي للمرحلة القادمة إلى '
+          'الموظفين المحدَّدين مسبقاً (المؤسسة/القسم/الدور).\n\n'
+          'بدلاً من ذلك، سيصبح موظفو هذه المرحلة (أصحاب هذه الخطوة) هم من '
+          'يحدّدون يدوياً إلى أي جهة تذهب المرحلة القادمة، وذلك وقت تنفيذهم '
+          'للمعاملة.\n\n'
+          'هل أنت متأكد من رغبتك في المتابعة؟',
+          textAlign: TextAlign.right,
+          style: TextStyle(height: 1.6, fontSize: 13.5),
+        ),
+        actionsAlignment: MainAxisAlignment.start,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('نعم، تفعيل'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      bloc.add(StageIsAssignmentToggled(draft.stage.id, true));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'تعيين ديناميكي — يُحدَّد لاحقاً من هذه المرحلة',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'عند التفعيل: موظفو هذه المرحلة هم من يختارون وجهة '
+                  'المرحلة القادمة، بدل التوجيه التلقائي.',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Switch(
+            value: draft.isAssignment,
+            activeColor: Colors.red,
+            onChanged: (v) => _handleChanged(context, v),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -563,7 +689,6 @@ class _RoleDropdown extends StatelessWidget {
 const _dynTypes = <(FieldType, String, String)>[
   (FieldType.textField, 'text_field', 'حقل نص'),
   (FieldType.textDropdown, 'dropdown', 'قائمة منسدلة'),
-  (FieldType.radioGroup, 'radio_group', 'اختيار من متعدد'),
   (FieldType.checkList, 'check_list', 'قائمة تحقق'),
   (FieldType.datePicker, 'date_picker', 'منتقي تاريخ'),
   (FieldType.filePicker, 'file_picker', 'منتقي ملفات'),
@@ -639,6 +764,113 @@ class _FieldTypeBlock extends StatelessWidget {
                   label: w.label,
                   onRemove: () => bloc
                       .add(StageWidgetToggled(draft.stage.id, w, false)),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ════════════════════════ gateway field (Camunda routing) ════════════════════════
+
+/// The `radio_group` field is kept out of `_DynamicFieldsEditor` on purpose:
+/// unlike every other dynamic field (display-only, filled and stored), a
+/// `radio_group` marked as a gateway feeds `gateway_value` at submit time,
+/// which becomes the Camunda process variable an Exclusive Gateway evaluates
+/// to pick the next sequence flow. A wrong or missing option `key` here does
+/// not just mis-render a form — it silently mis-routes the entire
+/// transaction (approval sent down the rejection path, or the process
+/// engine finding no matching flow and stalling the case indefinitely).
+/// See `unifiedFormPayloadService.js` (findGatewayWidgetConfig /
+/// buildCamundaGatewayVariables) on the backend for how this value is
+/// consumed.
+class _GatewayFieldSection extends StatelessWidget {
+  final StageConfigDraft draft;
+  const _GatewayFieldSection({required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final selected =
+        draft.widgets.where((w) => w.widgetType == 'radio_group').toList();
+    final selectedIds = selected.map((w) => w.widgetId).toSet();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.red.withOpacity(0.4), width: 1.2),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            textDirection: TextDirection.rtl,
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.red, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'تنبيه هام — هذا الحقل يتحكم في مسار المعاملة بالكامل',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'اختيار المستخدم هنا يُستخدم مباشرة لتحديد الفرع التالي في '
+                      'مخطط سير العمل (Camunda). أي خطأ في مفاتيح الخيارات أو في '
+                      'تحديد هذا الحقل كبوابة قد يوجّه المعاملة إلى مسار خاطئ '
+                      'تماماً (مثال: موافقة تُرسَل كأنها رفض)، أو يجعل المعاملة '
+                      'عالقة بلا مسار على الإطلاق دون أي إشعار بالخطأ. '
+                      'تحقّق من الخيارات جيداً قبل الحفظ.',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12.5,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _MiniLabel('حقل التوجيه (Exclusive Gateway)  (${selected.length})'),
+        const SizedBox(height: 6),
+        SearchableFieldDropdown(
+          type: FieldType.radioGroup,
+          title: 'حقل التوجيه (Exclusive Gateway)',
+          mode: FieldDropdownMode.multi,
+          selectedIds: selectedIds,
+          onToggle: (w, sel) =>
+              bloc.add(StageWidgetToggled(draft.stage.id, w, sel)),
+        ),
+        if (selected.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            textDirection: TextDirection.rtl,
+            children: [
+              for (final w in selected)
+                _SelectedChip(
+                  label: w.label,
+                  onRemove: () =>
+                      bloc.add(StageWidgetToggled(draft.stage.id, w, false)),
                 ),
             ],
           ),

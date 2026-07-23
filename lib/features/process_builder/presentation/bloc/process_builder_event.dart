@@ -164,6 +164,19 @@ class StageSignatureToggled extends ProcessBuilderEvent {
   List<Object?> get props => [stageId, value];
 }
 
+/// Toggles dynamic routing (`config_json.is_assignment`) for a USER_TASK.
+/// When true, the org/dept/role assignment is dropped and the destination is
+/// chosen at run-time by whoever completes the previous stage — the UI must
+/// confirm this with the user before turning it on (see step4's confirmation
+/// dialog), since it overrides the fixed assignment made for this stage.
+class StageIsAssignmentToggled extends ProcessBuilderEvent {
+  final int stageId;
+  final bool value;
+  const StageIsAssignmentToggled(this.stageId, this.value);
+  @override
+  List<Object?> get props => [stageId, value];
+}
+
 /// Links/unlinks a document template to a USER_TASK stage (config_json.template).
 class StageTemplateToggled extends ProcessBuilderEvent {
   final int stageId;

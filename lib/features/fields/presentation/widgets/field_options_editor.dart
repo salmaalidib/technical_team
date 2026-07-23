@@ -104,17 +104,61 @@ class OptionsEditor extends StatelessWidget {
         ),
         if (errorText != null) DialogErrorText(errorText!),
         if (manager.withKeys)
-          const Padding(
-            padding: EdgeInsets.only(top: 6, bottom: 4),
-            child: Text(
-              'المفتاح (key) يجب أن يطابق تماماً اسم المتغيّر في Camunda، '
-              'وإلا لن تُربط قيمة الخيار بالعملية.',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                height: 1.4,
-              ),
+          Container(
+            margin: const EdgeInsets.only(top: 6, bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withOpacity(0.35)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textDirection: TextDirection.rtl,
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: Colors.red, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: RichText(
+                    textAlign: TextAlign.right,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'تنبيه: ',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: 'هذا الحقل هو بوابة قرار (Exclusive Gateway) في '
+                              'مخطط Camunda. المفتاح (key) الذي تكتبه هنا يجب أن '
+                              'يطابق حرفياً القيمة المستخدَمة في شرط التوجيه '
+                              '(Condition Expression) على مخرج البوابة، مثل ',
+                        ),
+                        const TextSpan(
+                          text: '\${value == "approved"}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: '. أي اختلاف — ولو بحرف أو مسافة — سيجعل '
+                              'Camunda لا يجد مساراً مطابقاً، فتُوجَّه المعاملة '
+                              'خطأً أو تتوقف بلا أي إشعار بالمشكلة.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         const SizedBox(height: 8),

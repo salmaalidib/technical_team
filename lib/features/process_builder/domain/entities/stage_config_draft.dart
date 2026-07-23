@@ -36,6 +36,13 @@ class StageConfigDraft extends Equatable {
 
   final bool requiresSignature;
 
+  /// When true, this stage does NOT use a pre-assigned org/dept/role — the
+  /// employee who completes the PREVIOUS stage picks the destination at
+  /// run-time (`POST /complete`). Serializes to `config_json.is_assignment`
+  /// and forces `assignments` to a single all-null entry (the backend
+  /// rejects anything else once this flag is on).
+  final bool isAssignment;
+
   /// Linked document templates (USER_TASK only). Serializes to
   /// `config_json.template = [{ template_id }]`; the citizen fills these in at
   /// run-time, creating the `document_instance` a later GENERATE_PDF consumes.
@@ -66,6 +73,7 @@ class StageConfigDraft extends Equatable {
     this.roleId,
     this.widgets = const [],
     this.requiresSignature = true,
+    this.isAssignment = false,
     this.templateIds = const [],
     this.actions = const [],
     this.notification = const NotificationActionConfig(),
@@ -88,6 +96,8 @@ class StageConfigDraft extends Equatable {
     // Already-saved stages are complete by definition (and not re-submitted).
     if (locked) return true;
     if (stage.isUserTask) {
+      // Dynamic routing needs no org/dept/role — it's picked at run-time.
+      if (isAssignment) return true;
       // A citizen assignee needs no org/dept/role — it ships a fixed role.
       if (assigneeType == AssigneeType.citizen) return true;
       return organizationId != null &&
@@ -112,6 +122,7 @@ class StageConfigDraft extends Equatable {
     bool clearRole = false,
     List<WidgetConfig>? widgets,
     bool? requiresSignature,
+    bool? isAssignment,
     List<int>? templateIds,
     List<String>? actions,
     NotificationActionConfig? notification,
@@ -127,6 +138,7 @@ class StageConfigDraft extends Equatable {
       roleId: clearRole ? null : (roleId ?? this.roleId),
       widgets: widgets ?? this.widgets,
       requiresSignature: requiresSignature ?? this.requiresSignature,
+      isAssignment: isAssignment ?? this.isAssignment,
       templateIds: templateIds ?? this.templateIds,
       actions: actions ?? this.actions,
       notification: notification ?? this.notification,
@@ -153,6 +165,7 @@ class StageConfigDraft extends Equatable {
 
     if (stage.isUserTask) {
       configJson['requires_digital_signature'] = requiresSignature;
+      configJson['is_assignment'] = isAssignment;
     }
 
     if (stage.isServiceTask && actions.isNotEmpty) {
@@ -167,16 +180,29 @@ class StageConfigDraft extends Equatable {
     };
 
     if (stage.isUserTask) {
-      // Citizen assignee → no org/dept, fixed citizen role. Employee assignee →
-      // the picked org/dept/role cascade.
-      final isCitizen = assigneeType == AssigneeType.citizen;
-      entry['assignments'] = [
-        {
-          'organization_id': isCitizen ? null : organizationId,
-          'department_id': isCitizen ? null : departmentId,
-          'role_id': isCitizen ? kCitizenRoleId : roleId,
-        }
-      ];
+      if (isAssignment) {
+        // Dynamic routing: the backend requires every assignment entry to be
+        // null when is_assignment is true — the destination is picked at
+        // run-time by whoever completes the previous stage.
+        entry['assignments'] = [
+          {
+            'organization_id': null,
+            'department_id': null,
+            'role_id': null,
+          }
+        ];
+      } else {
+        // Citizen assignee → no org/dept, fixed citizen role. Employee
+        // assignee → the picked org/dept/role cascade.
+        final isCitizen = assigneeType == AssigneeType.citizen;
+        entry['assignments'] = [
+          {
+            'organization_id': isCitizen ? null : organizationId,
+            'department_id': isCitizen ? null : departmentId,
+            'role_id': isCitizen ? kCitizenRoleId : roleId,
+          }
+        ];
+      }
     }
 
     return entry;
@@ -206,6 +232,7 @@ class StageConfigDraft extends Equatable {
         roleId,
         widgets,
         requiresSignature,
+        isAssignment,
         templateIds,
         actions,
         notification,

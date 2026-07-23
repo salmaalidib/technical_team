@@ -65,6 +65,7 @@ class ProcessBuilderBloc
     on<StageRoleChanged>(_onStageRole);
     on<StageWidgetToggled>(_onStageWidget);
     on<StageSignatureToggled>(_onStageSignature);
+    on<StageIsAssignmentToggled>(_onStageIsAssignment);
     on<StageTemplateToggled>(_onStageTemplate);
     on<StageActionToggled>(_onStageAction);
     on<StageNotificationMessageChanged>(_onNotificationMessage);
@@ -476,6 +477,14 @@ class ProcessBuilderBloc
   ) {
     _updateDraft(event.stageId, emit,
         (d) => d.copyWith(requiresSignature: event.value));
+  }
+
+  void _onStageIsAssignment(
+    StageIsAssignmentToggled event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(event.stageId, emit,
+        (d) => d.copyWith(isAssignment: event.value));
   }
 
   void _onStageTemplate(
