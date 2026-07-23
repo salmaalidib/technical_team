@@ -101,6 +101,10 @@ String get registerEmployee => 'api/auth/register/employee/';
   String get employees => 'api/employees'; // GET list (paginated + search)
   String employeeById(Object id) =>
       'api/employees/$id'; // GET one · PUT update
+
+  // ===== app updates (بلا مصادقة — انظر AppUpdateRemoteDataSource) =====
+  String get appUpdateSettings =>
+      'api/app-updates/settings'; // GET ?app=&platform=&current_version_code=
 }
 
 /// Base API configuration. The base url is read from the loaded environment

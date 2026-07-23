@@ -18,6 +18,7 @@ import '../../features/process_builder/presentation/pages/admin_review_page.dart
 import '../../features/process_builder/presentation/widgets/create_process_wizard.dart';
 import '../../features/templates/presentation/pages/templates_page.dart';
 import '../../features/settings/presentation/pages/sett_page.dart' as settings;
+import '../../features/app_update/presentation/pages/force_update_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -28,6 +29,14 @@ class AppRouter {
         path: '/splash',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SplashPage(),
+        ),
+      ),
+      // خارج الـ ShellRoute عمداً: تُعرض قبل تسجيل الدخول وبلا أي chrome
+      // (لا AppShell) — التحديث الإجباري يسبق كل شيء آخر.
+      GoRoute(
+        path: '/force-update',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: ForceUpdatePage(),
         ),
       ),
       GoRoute(

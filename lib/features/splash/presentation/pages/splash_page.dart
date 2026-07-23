@@ -9,6 +9,10 @@ import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../app_update/presentation/bloc/app_update_bloc.dart';
+import '../../../app_update/presentation/bloc/app_update_event.dart';
+import '../../../app_update/presentation/bloc/app_update_state.dart';
+import '../../../app_update/presentation/widgets/optional_update_dialog.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -47,18 +51,28 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   Future<void> _decideStartDestination() async {
     String? token;
+    final updateBloc = getIt<AppUpdateBloc>();
 
     try {
       final storage = getIt<SecureStorageService>();
 
       final results = await Future.wait([
         storage.getToken(),
+        _awaitUpdateCheck(updateBloc),
         Future<void>.delayed(const Duration(milliseconds: 2500)),
       ]);
 
       token = results.first as String?;
     } catch (_) {
       token = null;
+    }
+
+    if (!mounted) return;
+
+    // الإجباري يقاطع كل شيء آخر — لا دخول إلى /login أو /dashboard قبل التحديث.
+    if (updateBloc.state.forceUpdateEnabled && updateBloc.state.hasUpdate) {
+      context.go('/force-update');
+      return;
     }
 
     final hasToken = token != null && token.isNotEmpty;
@@ -79,6 +93,28 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     context.go(
       activeOrg.hasActiveOrg ? '/dashboard' : '/select-organization',
     );
+
+    // اختياري: يُعرض فوق الوجهة النهائية، بعد استقرار التنقّل، بلا حجب الإقلاع.
+    if (updateBloc.state.softUpdateEnabled &&
+        !updateBloc.state.forceUpdateEnabled &&
+        updateBloc.state.hasUpdate &&
+        mounted) {
+      final rootContext = context;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (rootContext.mounted) showOptionalUpdateDialog(rootContext);
+      });
+    }
+  }
+
+  /// فشل فحص التحديث (لا اتصال، خادم معطّل) يجب ألا يعطّل الإقلاع أبداً —
+  /// نبتلع أي خطأ هنا فقط لضمان أن Future.wait لا يفشل بسببه.
+  Future<void> _awaitUpdateCheck(AppUpdateBloc bloc) async {
+    try {
+      bloc.add(const CheckForUpdateRequested());
+      await bloc.stream.firstWhere(
+        (s) => s.phase != AppUpdatePhase.idle && s.phase != AppUpdatePhase.checking,
+      );
+    } catch (_) {}
   }
 
   @override

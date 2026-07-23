@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:window_manager/window_manager.dart';
@@ -11,6 +12,8 @@ import 'package:technical_team/core/services/notification_service.dart';
 import 'package:technical_team/core/services/push_socket.dart';
 import 'package:technical_team/core/services/tray_service.dart';
 
+import 'package:technical_team/features/app_update/di/injection.dart';
+import 'package:technical_team/features/app_update/presentation/bloc/app_update_bloc.dart';
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/departments/di/injection.dart';
 import 'package:technical_team/features/employees/di/injection.dart';
@@ -59,6 +62,7 @@ void main() async {
   await setupFieldsInjection();
   await setupEmployeesInjection();
   await setupProcessBuilderInjection();
+  await setupAppUpdateInjection();
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
   // → (3) فتح اتصال الـ socket. الاتصال يبقى حيًّا في الـ tray عند "إغلاق"
@@ -85,32 +89,39 @@ class TechnicalTeamApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: dotenv.env['APP_NAME'] ?? 'Technical Team',
-      theme: AppTheme.lightTheme,
-      locale: const Locale('ar'),
-      supportedLocales: const [
-        Locale('ar'),
-        Locale('en'),
-      ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      routerConfig: AppRouter.router,
-      // يُركَّب قرب جذر الشجرة فيبقى حيًّا طوال الجلسة: يعترض زر الإغلاق
-      // (إخفاء إلى الـ tray) ويدير قائمة شريط النظام. عند الخروج النهائي يُغلق
-      // اتصال الـ socket أولًا. على غير سطح المكتب يمرّر child كما هو.
-      builder: (context, child) {
-        final app = child ?? const SizedBox.shrink();
-        if (!_isDesktop) return app;
-        return TrayBootstrap(
-          onBeforeExit: () => getIt<PushSocket>().dispose(),
-          child: app,
-        );
-      },
+    return BlocProvider.value(
+      // عالمي على مستوى التطبيق (وليس محلياً كبقية الـ Blocs): يُستهلَك من
+      // splash و/force-update (خارج ShellRoute) ومن صفحة الإعدادات (داخله) —
+      // نفس نسخة الـ singleton يجب أن تبقى حيّة عبر كل هذه الوجهات كي لا
+      // تُفقَد حالة "جارٍ التحميل" عند التنقّل.
+      value: getIt<AppUpdateBloc>(),
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: dotenv.env['APP_NAME'] ?? 'Technical Team',
+        theme: AppTheme.lightTheme,
+        locale: const Locale('ar'),
+        supportedLocales: const [
+          Locale('ar'),
+          Locale('en'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        routerConfig: AppRouter.router,
+        // يُركَّب قرب جذر الشجرة فيبقى حيًّا طوال الجلسة: يعترض زر الإغلاق
+        // (إخفاء إلى الـ tray) ويدير قائمة شريط النظام. عند الخروج النهائي يُغلق
+        // اتصال الـ socket أولًا. على غير سطح المكتب يمرّر child كما هو.
+        builder: (context, child) {
+          final app = child ?? const SizedBox.shrink();
+          if (!_isDesktop) return app;
+          return TrayBootstrap(
+            onBeforeExit: () => getIt<PushSocket>().dispose(),
+            child: app,
+          );
+        },
+      ),
     );
   }
 }

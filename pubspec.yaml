@@ -60,6 +60,12 @@ dependencies:
   syncfusion_flutter_core: ^31.2.12
   animate_do: ^3.3.4
 
+  # ===== التحديث الذاتي داخل التطبيق (In-App Update) =====
+  # قراءة رقم إصدار التطبيق الحالي (build number) لمقارنته بما يرجعه الخادم.
+  package_info_plus: ^8.1.2
+  # تحديد مجلد مؤقت لحفظ ملف المثبت (.exe) قبل تشغيله.
+  path_provider: ^2.1.5
+
   # ===== نظام إشعارات Push على سطح مكتب Windows (بدون FCM) =====
   # طبقة العرض: توست Windows أصلي عبر WinRT. يتطلب Flutter SDK ≥ 3.38.1.
   flutter_local_notifications: ^22.0.1
