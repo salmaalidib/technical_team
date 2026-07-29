@@ -7,6 +7,11 @@ import 'package:equatable/equatable.dart';
 /// [id] is the assignment (link) id, used for toggling the status.
 class RoleAssignment extends Equatable {
   final int id;
+
+  /// Id of the `roles` row — distinct from [id], which is the link id.
+  /// The permission endpoints key off this one, not off [id].
+  final int roleId;
+
   final String roleName;
   final String roleCode;
   final int organizationId;
@@ -20,6 +25,7 @@ class RoleAssignment extends Equatable {
 
   const RoleAssignment({
     required this.id,
+    this.roleId = 0,
     required this.roleName,
     required this.roleCode,
     required this.organizationId,
@@ -33,6 +39,7 @@ class RoleAssignment extends Equatable {
   RoleAssignment copyWith({bool? isActive}) {
     return RoleAssignment(
       id: id,
+      roleId: roleId,
       roleName: roleName,
       roleCode: roleCode,
       organizationId: organizationId,
@@ -47,6 +54,7 @@ class RoleAssignment extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        roleId,
         roleName,
         roleCode,
         organizationId,

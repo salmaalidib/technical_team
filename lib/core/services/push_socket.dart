@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -149,19 +150,30 @@ class PushSocket {
     Uri uri;
     try {
       final base = Uri.parse(wsBase);
-      uri = (token != null && token.isNotEmpty)
-          ? base.replace(queryParameters: {
-              ...base.queryParameters,
-              'token': token,
-            })
-          : base;
+
+      // نضبط المنفذ صراحةً: مع مخطّط wss بلا منفذ يعيد Uri.port القيمة 0
+      // (المخطّط غير معروف لـ Uri)، فيحاول dart:io الاتصال بالمنفذ 0 ويفشل
+      // (على Windows بخطأ 10049). نشتقّه من المخطّط إن لم يُحدَّد في الرابط.
+      final explicitPort = base.hasPort
+          ? base.port
+          : (base.scheme == 'wss' || base.scheme == 'https' ? 443 : 80);
+
+      final queryParams = {
+        ...base.queryParameters,
+        if (token != null && token.isNotEmpty) 'token': token,
+      };
+
+      uri = base.replace(
+        port: explicitPort,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
     } catch (e) {
       debugPrint('[PushSocket] WS_URL غير صالح: $e');
       return;
     }
 
     try {
-      final channel = WebSocketChannel.connect(uri);
+      final channel = IOWebSocketChannel.connect(uri);
 
       // connect() لا يرمي عند الفشل — ننتظر ready لاكتشاف فشل المصافحة.
       await channel.ready;

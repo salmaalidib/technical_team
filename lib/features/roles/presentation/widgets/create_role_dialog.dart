@@ -11,6 +11,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/roles_bloc.dart';
 import '../bloc/roles_event.dart';
 import '../bloc/roles_state.dart';
+import 'permission_picker.dart';
 
 class CreateRoleDialog extends StatefulWidget {
   const CreateRoleDialog({super.key});
@@ -28,6 +29,10 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
   int? _departmentId;
   bool _touched = false;
 
+  /// Permissions ticked in the picker. Optional: an empty set creates the role
+  /// with no permissions, which they can add later by editing the role.
+  Set<int> _selectedPermissionIds = {};
+
   static final _codePattern = RegExp(r'^[A-Z0-9_]+$');
 
   @override
@@ -37,11 +42,14 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
     // department dropdown. Deferred to post-frame so the RolesBloc provided to
     // this dialog route is available.
     final orgId = _organizationId;
-    if (orgId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<RolesBloc>().add(LoadLeafDepartments(orgId));
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final bloc = context.read<RolesBloc>();
+      if (orgId != null) bloc.add(LoadLeafDepartments(orgId));
+      // Permission options don't depend on the organization, so they load
+      // regardless of whether one is active.
+      bloc.add(const LoadPermissions());
+    });
   }
 
   @override
@@ -78,6 +86,7 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
             code: _codeController.text.trim(),
             organizationId: orgId,
             departmentId: _departmentId!,
+            permissionIds: _selectedPermissionIds.toList(),
           ),
         );
   }
@@ -92,7 +101,14 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
       listenWhen: (p, c) => p.formStatus != c.formStatus,
       listener: (context, state) {
         if (state.formStatus == FormStatus.success) {
-          AppSnackBar.show(context, message: 'تم إنشاء الدور بنجاح');
+          // The role exists either way; a warning means only the permission
+          // links failed, so the dialog still closes.
+          final warning = state.partialWarning;
+          AppSnackBar.show(
+            context,
+            message: warning ?? 'تم إنشاء الدور بنجاح',
+            isError: warning != null,
+          );
           Navigator.of(context).pop();
         } else if (state.formStatus == FormStatus.failure) {
           AppSnackBar.show(
@@ -136,6 +152,16 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                             value: _departmentId,
                             showError: _touched && _departmentId == null,
                             onChanged: (v) => setState(() => _departmentId = v),
+                          ),
+                          const SizedBox(height: 24),
+                          const _Label('الصلاحيات (اختياري)'),
+                          const SizedBox(height: 8),
+                          PermissionPicker(
+                            status: state.permissionsStatus,
+                            permissions: state.permissions,
+                            selectedIds: _selectedPermissionIds,
+                            onChanged: (ids) =>
+                                setState(() => _selectedPermissionIds = ids),
                           ),
                           const SizedBox(height: 26),
                           const Divider(height: 1, color: AppColors.border),

@@ -1,12 +1,16 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../domain/entities/permission.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../../domain/entities/role_by_department.dart';
+import '../../domain/entities/role_permissions.dart';
 import '../../domain/repositories/role_repository.dart';
 import '../datasources/role_remote_data_source.dart';
+import '../models/permission_model.dart';
 import '../models/role_assignment_model.dart';
 import '../models/role_by_department_model.dart';
+import '../models/role_permissions_model.dart';
 
 class RoleRepositoryImpl implements RoleRepository {
   final RoleRemoteDataSource remote;
@@ -98,6 +102,84 @@ class RoleRepositoryImpl implements RoleRepository {
           return Right(list);
         } catch (_) {
           return const Left(ServerFailure('تعذّر قراءة أدوار القسم.'));
+        }
+      },
+    );
+  }
+
+  // ===== permissions =====
+
+  @override
+  Future<Either<Failure, List<Permission>>> getPermissions() async {
+    final result = await remote.getPermissions();
+    return result.fold<Either<Failure, List<Permission>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final list = (_payload(body) as List)
+              .map((e) => PermissionModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return Right(list);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة الصلاحيات.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, RolePermissions>> getRolePermissions({
+    required int organizationId,
+    required int departmentId,
+    required int roleId,
+  }) async {
+    final result = await remote.getRolePermissions(
+      organizationId: organizationId,
+      departmentId: departmentId,
+      roleId: roleId,
+    );
+    return result.fold<Either<Failure, RolePermissions>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            RolePermissionsModel.fromJson(
+                _payload(body) as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة صلاحيات الدور.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, RolePermissions>> saveRolePermissions({
+    required int organizationId,
+    required int departmentId,
+    required int roleId,
+    required List<int> permissionIds,
+    bool replace = false,
+  }) async {
+    final result = await remote.saveRolePermissions(
+      replace: replace,
+      body: {
+        'organization_id': organizationId,
+        'department_id': departmentId,
+        'role_id': roleId,
+        'permission_id': permissionIds,
+      },
+    );
+    return result.fold<Either<Failure, RolePermissions>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            RolePermissionsModel.fromJson(
+                _payload(body) as Map<String, dynamic>),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر حفظ صلاحيات الدور.'));
         }
       },
     );

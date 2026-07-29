@@ -44,6 +44,12 @@ class EndPoints {
   String rolesByDepartment(Object departmentId) =>
       'api/role/by-department/$departmentId'; // GET roles of a leaf department
 
+  // ===== permissions (bearer token required) =====
+  String get permissions =>
+      'api/auth/permissions'; // GET كل الصلاحيات (id + name + display_name)
+  String get rolePermissions =>
+      'api/auth/role-permissions'; // GET ?organization_id&department_id&role_id · POST إضافة · PUT استبدال كامل
+
   // ===== typeProcess (bearer token required) =====
   String get typeProcesses => 'api/typeProcess'; // GET list · POST create
   String  typeProcessById(Object id) =>

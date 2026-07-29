@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../bloc/roles_bloc.dart';
 import '../bloc/roles_event.dart';
+import 'edit_role_permissions_dialog.dart';
 
 class RoleCard extends StatelessWidget {
   final RoleAssignment role;
@@ -113,8 +114,50 @@ class _TopRow extends StatelessWidget {
             ],
           ),
         ),
+        _EditPermissionsButton(role: role),
         _StatusToggle(role: role, toggling: toggling),
       ],
+    );
+  }
+}
+
+/// Opens the edit-permissions dialog, reusing the card's [RolesBloc] so the
+/// dialog and the list share one state.
+///
+/// Hidden for global roles (no organization/department, e.g. the technical
+/// officer): the role-permissions endpoint resolves permissions by the full
+/// (org, dept, role) triple, so a role with org/dept = 0 can't be edited here.
+/// Those roles are seeded, not managed from this screen.
+class _EditPermissionsButton extends StatelessWidget {
+  final RoleAssignment role;
+
+  const _EditPermissionsButton({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    final isGlobalRole = role.organizationId <= 0 || role.departmentId <= 0;
+    if (isGlobalRole) return const SizedBox.shrink();
+
+    final bloc = context.read<RolesBloc>();
+
+    return IconButton(
+      tooltip: 'تعديل الصلاحيات',
+      icon: const Icon(Icons.tune_rounded,
+          size: 22, color: AppColors.textSecondary),
+      onPressed: () {
+        bloc.add(OpenEditPermissions(
+          organizationId: role.organizationId,
+          departmentId: role.departmentId,
+          roleId: role.roleId,
+        ));
+        showDialog(
+          context: context,
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: EditRolePermissionsDialog(role: role),
+          ),
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/entities/leaf_department.dart';
+import '../../domain/entities/permission.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../../domain/entities/role_by_department.dart';
 
@@ -26,6 +27,26 @@ class RolesState extends Equatable {
   final List<RoleByDepartment> rolesByDepartment;
   final int? byDeptId;
 
+  /// All permissions in the system: the create form's checkbox options.
+  final RequestStatus permissionsStatus;
+  final List<Permission> permissions;
+
+  /// Set when the role was created but attaching its permissions failed.
+  /// The role exists, so the dialog closes and this is surfaced as a warning
+  /// rather than a failure — retrying would only hit a 409 duplicate.
+  final String? partialWarning;
+
+  /// Edit-permissions dialog: loading the role's current permissions to
+  /// pre-check the boxes.
+  final RequestStatus editPermsStatus;
+
+  /// The permission ids the role already has when the edit dialog opens.
+  final Set<int> editInitialIds;
+
+  /// Submission of the edited permission set (PUT replace).
+  final FormStatus editFormStatus;
+  final String? editFormError;
+
   /// Ids whose status toggle is in flight.
   final Set<int> togglingIds;
 
@@ -44,6 +65,13 @@ class RolesState extends Equatable {
     this.byDeptStatus = RequestStatus.initial,
     this.rolesByDepartment = const [],
     this.byDeptId,
+    this.permissionsStatus = RequestStatus.initial,
+    this.permissions = const [],
+    this.partialWarning,
+    this.editPermsStatus = RequestStatus.initial,
+    this.editInitialIds = const {},
+    this.editFormStatus = FormStatus.idle,
+    this.editFormError,
     this.togglingIds = const {},
     this.actionError,
   });
@@ -60,6 +88,13 @@ class RolesState extends Equatable {
     RequestStatus? byDeptStatus,
     List<RoleByDepartment>? rolesByDepartment,
     int? byDeptId,
+    RequestStatus? permissionsStatus,
+    List<Permission>? permissions,
+    String? partialWarning,
+    RequestStatus? editPermsStatus,
+    Set<int>? editInitialIds,
+    FormStatus? editFormStatus,
+    String? editFormError,
     Set<int>? togglingIds,
     String? actionError,
   }) {
@@ -75,6 +110,14 @@ class RolesState extends Equatable {
       byDeptStatus: byDeptStatus ?? this.byDeptStatus,
       rolesByDepartment: rolesByDepartment ?? this.rolesByDepartment,
       byDeptId: byDeptId ?? this.byDeptId,
+      permissionsStatus: permissionsStatus ?? this.permissionsStatus,
+      permissions: permissions ?? this.permissions,
+      // One-shot, like actionError: cleared unless explicitly re-supplied.
+      partialWarning: partialWarning,
+      editPermsStatus: editPermsStatus ?? this.editPermsStatus,
+      editInitialIds: editInitialIds ?? this.editInitialIds,
+      editFormStatus: editFormStatus ?? this.editFormStatus,
+      editFormError: editFormError,
       togglingIds: togglingIds ?? this.togglingIds,
       actionError: actionError,
     );
@@ -93,6 +136,13 @@ class RolesState extends Equatable {
         byDeptStatus,
         rolesByDepartment,
         byDeptId,
+        permissionsStatus,
+        permissions,
+        partialWarning,
+        editPermsStatus,
+        editInitialIds,
+        editFormStatus,
+        editFormError,
         togglingIds,
         actionError,
       ];

@@ -6,8 +6,11 @@ import '../data/datasources/role_remote_data_source.dart';
 import '../data/repositories/role_repository_impl.dart';
 import '../domain/repositories/role_repository.dart';
 import '../domain/usecases/create_role_usecase.dart';
+import '../domain/usecases/get_permissions_usecase.dart';
+import '../domain/usecases/get_role_permissions_usecase.dart';
 import '../domain/usecases/get_roles_by_department_usecase.dart';
 import '../domain/usecases/get_roles_usecase.dart';
+import '../domain/usecases/save_role_permissions_usecase.dart';
 import '../domain/usecases/toggle_role_status_usecase.dart';
 import '../presentation/bloc/roles_bloc.dart';
 
@@ -51,6 +54,24 @@ Future<void> setupRolesInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetPermissionsUseCase>()) {
+    getIt.registerLazySingleton<GetPermissionsUseCase>(
+      () => GetPermissionsUseCase(getIt<RoleRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<GetRolePermissionsUseCase>()) {
+    getIt.registerLazySingleton<GetRolePermissionsUseCase>(
+      () => GetRolePermissionsUseCase(getIt<RoleRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<SaveRolePermissionsUseCase>()) {
+    getIt.registerLazySingleton<SaveRolePermissionsUseCase>(
+      () => SaveRolePermissionsUseCase(getIt<RoleRepository>()),
+    );
+  }
+
   getIt.registerFactory<RolesBloc>(
     () => RolesBloc(
       getRoles: getIt<GetRolesUseCase>(),
@@ -58,6 +79,9 @@ Future<void> setupRolesInjection() async {
       toggleStatus: getIt<ToggleRoleStatusUseCase>(),
       getLeafDepartments: getIt<GetLeafDepartmentsUseCase>(),
       getRolesByDepartment: getIt<GetRolesByDepartmentUseCase>(),
+      getPermissions: getIt<GetPermissionsUseCase>(),
+      saveRolePermissions: getIt<SaveRolePermissionsUseCase>(),
+      getRolePermissions: getIt<GetRolePermissionsUseCase>(),
     ),
   );
 }

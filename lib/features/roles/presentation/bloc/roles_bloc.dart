@@ -4,8 +4,11 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../domain/usecases/create_role_usecase.dart';
+import '../../domain/usecases/get_permissions_usecase.dart';
+import '../../domain/usecases/get_role_permissions_usecase.dart';
 import '../../domain/usecases/get_roles_by_department_usecase.dart';
 import '../../domain/usecases/get_roles_usecase.dart';
+import '../../domain/usecases/save_role_permissions_usecase.dart';
 import '../../domain/usecases/toggle_role_status_usecase.dart';
 import 'roles_event.dart';
 import 'roles_state.dart';
@@ -21,18 +24,33 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   /// fetch for it on open, so there's no org dropdown to load a list for.
   final GetLeafDepartmentsUseCase getLeafDepartments;
 
+  /// Permission options for the create form, and the second step that attaches
+  /// the chosen ones to the freshly created role.
+  final GetPermissionsUseCase getPermissions;
+  final SaveRolePermissionsUseCase saveRolePermissions;
+
+  /// Reads the permissions currently attached to a role, to pre-check the
+  /// boxes when the edit dialog opens.
+  final GetRolePermissionsUseCase getRolePermissions;
+
   RolesBloc({
     required this.getRoles,
     required this.createRole,
     required this.toggleStatus,
     required this.getLeafDepartments,
     required this.getRolesByDepartment,
+    required this.getPermissions,
+    required this.saveRolePermissions,
+    required this.getRolePermissions,
   }) : super(const RolesState()) {
     on<LoadRoles>(_onLoad);
     on<LoadLeafDepartments>(_onLoadLeaves);
+    on<LoadPermissions>(_onLoadPermissions);
     on<CreateRoleRequested>(_onCreate);
     on<ToggleRoleStatus>(_onToggle);
     on<LoadRolesByDepartment>(_onLoadByDepartment);
+    on<OpenEditPermissions>(_onOpenEditPermissions);
+    on<SaveEditedPermissions>(_onSaveEditedPermissions);
   }
 
   Future<void> _onLoad(LoadRoles event, Emitter<RolesState> emit) async {
@@ -82,6 +100,32 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
     );
   }
 
+  Future<void> _onLoadPermissions(
+    LoadPermissions event,
+    Emitter<RolesState> emit,
+  ) async {
+    emit(state.copyWith(permissionsStatus: RequestStatus.loading));
+
+    final result = await getPermissions();
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        permissionsStatus: RequestStatus.failure,
+        actionError: failure.message,
+      )),
+      (permissions) => emit(state.copyWith(
+        permissionsStatus: RequestStatus.success,
+        permissions: permissions,
+      )),
+    );
+  }
+
+  /// Creating a role with permissions is two requests: the role first, then the
+  /// permission links (which key off the returned `role_id`).
+  ///
+  /// If the second call fails the role still exists, so this reports success
+  /// with a warning instead of a failure — surfacing "failure" would invite a
+  /// retry that the backend rejects as a 409 duplicate.
   Future<void> _onCreate(
     CreateRoleRequested event,
     Emitter<RolesState> emit,
@@ -103,8 +147,34 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
         formStatus: FormStatus.failure,
         formError: failure.message,
       )),
-      (_) async {
-        emit(state.copyWith(formStatus: FormStatus.success));
+      (role) async {
+        String? warning;
+
+        if (event.permissionIds.isNotEmpty) {
+          if (role.roleId > 0) {
+            final linked = await saveRolePermissions(
+              organizationId: event.organizationId,
+              departmentId: event.departmentId,
+              roleId: role.roleId,
+              permissionIds: event.permissionIds,
+            );
+
+            warning = linked.fold(
+              (failure) => 'تم إنشاء الدور، لكن تعذّر ربط الصلاحيات '
+                  '(${failure.message}). أضفها لاحقاً من تعديل الدور.',
+              (_) => null,
+            );
+          } else {
+            // No role_id came back, so there is nothing to attach to.
+            warning = 'تم إنشاء الدور، لكن تعذّر ربط الصلاحيات لعدم توفّر '
+                'معرّف الدور. أضفها لاحقاً من تعديل الدور.';
+          }
+        }
+
+        emit(state.copyWith(
+          formStatus: FormStatus.success,
+          partialWarning: warning,
+        ));
         add(const LoadRoles());
       },
     );
@@ -163,6 +233,87 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
         byDeptStatus: RequestStatus.success,
         rolesByDepartment: roles,
       )),
+    );
+  }
+
+  /// Prepares the edit dialog: it needs the full permission list (the checkbox
+  /// options) and the role's current permissions (the pre-checked ids). Both
+  /// are fetched together; the shared `permissions` list is only reloaded if
+  /// it wasn't already fetched by the create form.
+  Future<void> _onOpenEditPermissions(
+    OpenEditPermissions event,
+    Emitter<RolesState> emit,
+  ) async {
+    emit(state.copyWith(
+      editPermsStatus: RequestStatus.loading,
+      editInitialIds: const {},
+      editFormStatus: FormStatus.idle,
+      editFormError: null,
+    ));
+
+    final needFullList = state.permissions.isEmpty ||
+        state.permissionsStatus != RequestStatus.success;
+
+    // Full list first (the checkbox options), only if not already loaded.
+    if (needFullList) {
+      final listResult = await getPermissions();
+      final failed = listResult.fold((f) => f.message, (_) => null);
+      if (failed != null) {
+        emit(state.copyWith(
+          editPermsStatus: RequestStatus.failure,
+          actionError: failed,
+        ));
+        return;
+      }
+      emit(state.copyWith(
+        permissionsStatus: RequestStatus.success,
+        permissions: listResult.getOrElse(() => const []),
+      ));
+    }
+
+    // Role's current permissions → pre-checked ids.
+    final currentResult = await getRolePermissions(
+      organizationId: event.organizationId,
+      departmentId: event.departmentId,
+      roleId: event.roleId,
+    );
+    currentResult.fold(
+      (failure) => emit(state.copyWith(
+        editPermsStatus: RequestStatus.failure,
+        actionError: failure.message,
+      )),
+      (rolePerms) => emit(state.copyWith(
+        editPermsStatus: RequestStatus.success,
+        editInitialIds: rolePerms.permissionIds.toSet(),
+      )),
+    );
+  }
+
+  /// Saves the edited set with PUT (full replace). An empty list is valid and
+  /// clears every permission.
+  Future<void> _onSaveEditedPermissions(
+    SaveEditedPermissions event,
+    Emitter<RolesState> emit,
+  ) async {
+    emit(state.copyWith(
+      editFormStatus: FormStatus.submitting,
+      editFormError: null,
+    ));
+
+    final result = await saveRolePermissions(
+      organizationId: event.organizationId,
+      departmentId: event.departmentId,
+      roleId: event.roleId,
+      permissionIds: event.permissionIds,
+      replace: true,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        editFormStatus: FormStatus.failure,
+        editFormError: failure.message,
+      )),
+      (_) => emit(state.copyWith(editFormStatus: FormStatus.success)),
     );
   }
 }
