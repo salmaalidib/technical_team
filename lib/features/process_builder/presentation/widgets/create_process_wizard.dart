@@ -24,6 +24,13 @@ const _stepTitles = [
   'تخصيص الخطوات',
 ];
 
+const _complaintStepTitles = [
+  'المعلومات الأساسية',
+  'رفع ملف سير العمل',
+  'معاينة الشكوى',
+  'تخصيص الخطوات',
+];
+
 /// Full page (not a dialog) that hosts the create-process wizard.
 /// [FieldsBloc] owns the field library (load + inline create); the
 /// [ProcessBuilderBloc] owns the wizard state and the per-stage selection.
@@ -36,11 +43,16 @@ class CreateProcessPage extends StatelessWidget {
   /// it loads its stages and jumps straight to step 4 (no create flow).
   final int? existingProcessId;
 
+  /// Complaint mode — set when opened from the complaints page. The created
+  /// process gets `is_complaint = true` and carries no process type.
+  final bool isComplaint;
+
   const CreateProcessPage({
     super.key,
     this.typeId,
     this.typeName,
     this.existingProcessId,
+    this.isComplaint = false,
   });
 
   @override
@@ -53,7 +65,7 @@ class CreateProcessPage extends StatelessWidget {
             if (existingProcessId != null) {
               bloc.add(LoadExistingForStageConfig(existingProcessId!));
             } else {
-              bloc.add(InitWizard(typeId: typeId));
+              bloc.add(InitWizard(typeId: typeId, isComplaint: isComplaint));
             }
             return bloc;
           },
@@ -78,8 +90,14 @@ class _WizardViewState extends State<_WizardView> {
 
   /// [saved] is passed back through `pop` so the host screen knows whether it
   /// needs to reload its list (a new/updated process now exists).
-  void _close(BuildContext context, {bool saved = false}) =>
-      context.canPop() ? context.pop(saved) : context.go('/transactions');
+  void _close(BuildContext context, {bool saved = false}) {
+    if (context.canPop()) {
+      context.pop(saved);
+    } else {
+      final isComplaint = context.read<ProcessBuilderBloc>().state.isComplaint;
+      context.go(isComplaint ? '/complaints' : '/transactions');
+    }
+  }
 
   bool _step1Valid(ProcessBuilderState s) {
     final typeOk = s.isComplaint || s.typeTransId != null;
@@ -151,6 +169,7 @@ class _WizardViewState extends State<_WizardView> {
               _Header(
                 onClose: () => _close(context),
                 completeMode: state.completeMode,
+                isComplaint: state.isComplaint,
               ),
               // The step indicator is for the create flow; complete-mode opens
               // straight at step 4 and has nothing to step through.
@@ -160,7 +179,8 @@ class _WizardViewState extends State<_WizardView> {
                   padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
                   child: WizardStepper(
                     currentStep: state.currentStep,
-                    titles: _stepTitles,
+                    titles:
+                        state.isComplaint ? _complaintStepTitles : _stepTitles,
                   ),
                 ),
               ],
@@ -254,7 +274,12 @@ class _Body extends StatelessWidget {
 class _Header extends StatelessWidget {
   final VoidCallback onClose;
   final bool completeMode;
-  const _Header({required this.onClose, this.completeMode = false});
+  final bool isComplaint;
+  const _Header({
+    required this.onClose,
+    this.completeMode = false,
+    this.isComplaint = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +304,11 @@ class _Header extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            completeMode ? 'إكمال تهيئة المعاملة' : 'إنشاء معاملة جديدة',
+            completeMode
+                ? 'إكمال تهيئة المعاملة'
+                : isComplaint
+                    ? 'إنشاء شكوى جديدة'
+                    : 'إنشاء معاملة جديدة',
             style: const TextStyle(
               color: AppColors.primary,
               fontSize: 24,

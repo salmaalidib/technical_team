@@ -192,6 +192,33 @@ class ProcessBuilderRepositoryImpl implements ProcessBuilderRepository {
   }
 
   @override
+  Future<Either<Failure, List<AdminProcessItem>>> getComplaintProcesses({
+    int page = 1,
+    int limit = 100,
+  }) async {
+    final result = await remote.getComplaintProcesses(page: page, limit: limit);
+
+    return result.fold<Either<Failure, List<AdminProcessItem>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            _items(_payload(body))
+                .map<AdminProcessItem>(
+                  (e) => AdminProcessItemModel.fromJson(
+                    e as Map<String, dynamic>,
+                  ),
+                )
+                .toList(),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة الشكاوى.'));
+        }
+      },
+    );
+  }
+
+  @override
   Future<Either<Failure, ProcessDetails>> getProcessDetails(int id) async {
     final result = await remote.getProcessDetails(id);
 

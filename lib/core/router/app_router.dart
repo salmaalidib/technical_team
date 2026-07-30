@@ -11,6 +11,7 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/select_organization/presentation/pages/select_organization_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
+import '../../features/process_builder/presentation/pages/complaints_page.dart';
 import '../../features/process_builder/presentation/pages/process_types_page.dart';
 import '../../features/process_builder/presentation/pages/process_by_type_page.dart';
 import '../../features/process_builder/presentation/pages/process_details_page.dart';
@@ -143,6 +144,18 @@ class AppRouter {
                 ),
               );
             },
+          ),
+          GoRoute(
+            path: '/complaints',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ComplaintsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/complaints/create',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CreateProcessPage(isComplaint: true),
+            ),
           ),
           GoRoute(
             path: '/transactions/type/:typeId',

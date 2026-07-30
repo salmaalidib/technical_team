@@ -60,6 +60,13 @@ abstract class ProcessBuilderRepository {
     int limit = 100,
   });
 
+  /// `GET /api/process_definitions/admin/complaints/all` — all complaint
+  /// processes (active + inactive).
+  Future<Either<Failure, List<AdminProcessItem>>> getComplaintProcesses({
+    int page = 1,
+    int limit = 100,
+  });
+
   /// `GET /api/process_definitions/{id}/details`.
   Future<Either<Failure, ProcessDetails>> getProcessDetails(int id);
 }

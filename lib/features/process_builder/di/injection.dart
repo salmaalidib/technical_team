@@ -11,6 +11,7 @@ import '../data/repositories/process_builder_repository_impl.dart';
 import '../domain/repositories/process_builder_repository.dart';
 import '../domain/usecases/configure_stages_usecase.dart';
 import '../domain/usecases/create_process_definition_usecase.dart';
+import '../domain/usecases/get_complaint_processes_usecase.dart';
 import '../domain/usecases/get_missing_stage_config_usecase.dart';
 import '../domain/usecases/get_process_details_usecase.dart';
 import '../domain/usecases/get_processes_by_type_usecase.dart';
@@ -55,6 +56,12 @@ Future<void> setupProcessBuilderInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetComplaintProcessesUseCase>()) {
+    getIt.registerLazySingleton<GetComplaintProcessesUseCase>(
+      () => GetComplaintProcessesUseCase(getIt<ProcessBuilderRepository>()),
+    );
+  }
+
   if (!getIt.isRegistered<GetReviewQueueUseCase>()) {
     getIt.registerLazySingleton<GetReviewQueueUseCase>(
       () => GetReviewQueueUseCase(getIt<ProcessBuilderRepository>()),
@@ -95,6 +102,7 @@ Future<void> setupProcessBuilderInjection() async {
   getIt.registerFactory<ProcessListBloc>(
     () => ProcessListBloc(
       getProcessesByType: getIt<GetProcessesByTypeUseCase>(),
+      getComplaintProcesses: getIt<GetComplaintProcessesUseCase>(),
       getReviewQueue: getIt<GetReviewQueueUseCase>(),
       getProcessDetails: getIt<GetProcessDetailsUseCase>(),
       getMissingStageConfig: getIt<GetMissingStageConfigUseCase>(),

@@ -96,6 +96,19 @@ class ProcessBuilderRemoteDataSource {
     );
   }
 
+  /// `GET /api/process_definitions/admin/complaints/all` — all complaint
+  /// processes (active + inactive).
+  Future<Either<Failure, dynamic>> getComplaintProcesses({
+    required int page,
+    required int limit,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _ep.processDefinitionComplaintsAll,
+      queryParameters: {'page': page, 'limit': limit},
+    );
+  }
+
   /// `GET /api/process_definitions/{id}/details` — full details + validation.
   Future<Either<Failure, dynamic>> getProcessDetails(int id) {
     return api.makeRequest(

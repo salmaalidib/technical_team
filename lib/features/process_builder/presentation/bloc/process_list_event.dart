@@ -22,6 +22,11 @@ class LoadProcessesByType extends ProcessListEvent {
   List<Object?> get props => [typeId];
 }
 
+/// Loads the complaints list (`admin/complaints/all` — active + inactive).
+class LoadComplaintProcesses extends ProcessListEvent {
+  const LoadComplaintProcesses();
+}
+
 /// Loads the "review queue" tab (`admin/review-queue`).
 class LoadReviewQueue extends ProcessListEvent {
   const LoadReviewQueue();

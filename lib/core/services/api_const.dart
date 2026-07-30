@@ -65,6 +65,8 @@ class EndPoints {
       'api/process_definitions/admin/missing-stage-config'; // GET processes with stages missing config
   String processDefinitionsByType(Object typeId) =>
       'api/process_definitions/admin/type/$typeId'; // GET all by type (0 = all), paginated
+  String get processDefinitionComplaintsAll =>
+      'api/process_definitions/admin/complaints/all'; // GET complaints (active + inactive), paginated
   String processDefinitionDetails(Object id) =>
       'api/process_definitions/$id/details'; // GET details + validation
   String processDefinitionReview(Object id) =>

@@ -13,10 +13,11 @@ import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import 'process_status_badges.dart';
 
-enum ProcessListTab { all, review, rejected, inactive, missingConfig }
+enum ProcessListTab { all, complaints, review, rejected, inactive, missingConfig }
 
 /// One tab body: a list of processes from one of several sources —
 ///   * [all]           → `admin/type/{typeId}` (tapping a row opens details),
+///   * [complaints]    → `admin/complaints/all` (same card as [all]),
 ///   * [review]        → `admin/review-queue`, filtered to items awaiting
 ///     publish (approve / reject buttons),
 ///   * [rejected]      → `admin/review-queue`, filtered to rejected items,
@@ -57,6 +58,7 @@ class ProcessListView extends StatelessWidget {
   RequestStatus _statusOf(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
         return s.allStatus;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
@@ -70,6 +72,7 @@ class ProcessListView extends StatelessWidget {
   String? _errorOf(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
         return s.allError;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
@@ -83,6 +86,7 @@ class ProcessListView extends StatelessWidget {
   bool _listChanged(ProcessListState p, ProcessListState c) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
         return p.allProcesses != c.allProcesses;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
@@ -101,6 +105,9 @@ class ProcessListView extends StatelessWidget {
         bloc.add(typeId == 0
             ? const LoadAllProcesses()
             : LoadProcessesByType(typeId));
+        break;
+      case ProcessListTab.complaints:
+        bloc.add(const LoadComplaintProcesses());
         break;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
@@ -133,6 +140,7 @@ class ProcessListView extends StatelessWidget {
             .where((i) => i.isApproved && !i.isActive && !_isRejected(i))
             .toList();
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
       case ProcessListTab.missingConfig:
         return const [];
     }
@@ -144,6 +152,7 @@ class ProcessListView extends StatelessWidget {
   int _count(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
         return s.allProcesses.length;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
@@ -158,6 +167,8 @@ class ProcessListView extends StatelessWidget {
     switch (tab) {
       case ProcessListTab.all:
         return 'لا توجد معاملات لعرضها';
+      case ProcessListTab.complaints:
+        return 'لا توجد شكاوى لعرضها';
       case ProcessListTab.review:
         return 'لا توجد معاملات مكتملة بانتظار الاعتماد';
       case ProcessListTab.rejected:
@@ -220,6 +231,7 @@ class ProcessListView extends StatelessWidget {
   Widget _card(BuildContext context, ProcessListState state, int i) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.complaints:
         return _AdminProcessCard(item: state.allProcesses[i]);
       case ProcessListTab.review:
         return _ReviewItemCard(

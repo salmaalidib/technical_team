@@ -17,10 +17,14 @@ abstract class ProcessBuilderEvent extends Equatable {
 class InitWizard extends ProcessBuilderEvent {
   final int? typeId;
 
-  const InitWizard({this.typeId});
+  /// The wizard's classification is fixed by its entry point: the complaints
+  /// page opens it with `true`, a transaction-type page with `false`.
+  final bool isComplaint;
+
+  const InitWizard({this.typeId, this.isComplaint = false});
 
   @override
-  List<Object?> get props => [typeId];
+  List<Object?> get props => [typeId, isComplaint];
 }
 
 class StepRequested extends ProcessBuilderEvent {
@@ -45,13 +49,6 @@ class NameChanged extends ProcessBuilderEvent {
   const NameChanged(this.name);
   @override
   List<Object?> get props => [name];
-}
-
-class ComplaintChanged extends ProcessBuilderEvent {
-  final bool isComplaint;
-  const ComplaintChanged(this.isComplaint);
-  @override
-  List<Object?> get props => [isComplaint];
 }
 
 class TypeChanged extends ProcessBuilderEvent {

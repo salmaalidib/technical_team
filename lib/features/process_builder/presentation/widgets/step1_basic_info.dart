@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../shared/theme/app_colors.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
@@ -25,19 +24,13 @@ class Step1BasicInfo extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // كونها معاملة أو شكوى
-            const WizardLabel('تصنيف *'),
-            const SizedBox(height: 8),
-            _ComplaintSelector(
-              isComplaint: state.isComplaint,
-              onChanged: (v) => bloc.add(ComplaintChanged(v)),
-            ),
-            const SizedBox(height: 20),
-
-            const WizardLabel('اسم المعاملة *'),
+            // التصنيف (معاملة أو شكوى) محسوم من نقطة الدخول، فلا يُختار هنا.
+            WizardLabel(state.isComplaint ? 'اسم الشكوى *' : 'اسم المعاملة *'),
             const SizedBox(height: 8),
             WizardTextInput(
-              hint: 'مثال: معاملة مدنية',
+              hint: state.isComplaint
+                  ? 'مثال: شكوى تأخر معاملة'
+                  : 'مثال: معاملة مدنية',
               onChanged: (v) => bloc.add(NameChanged(v)),
               errorText: showErrors && state.name.trim().isEmpty
                   ? 'هذا الحقل مطلوب'
@@ -120,72 +113,3 @@ class Step1BasicInfo extends StatelessWidget {
   }
 }
 
-class _ComplaintSelector extends StatelessWidget {
-  final bool isComplaint;
-  final ValueChanged<bool> onChanged;
-
-  const _ComplaintSelector({required this.isComplaint, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      textDirection: TextDirection.rtl,
-      children: [
-        Expanded(
-          child: _Segment(
-            label: 'معاملة',
-            selected: !isComplaint,
-            onTap: () => onChanged(false),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _Segment(
-            label: 'شكوى',
-            selected: isComplaint,
-            onTap: () => onChanged(true),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _Segment({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        height: 50,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : AppColors.textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}

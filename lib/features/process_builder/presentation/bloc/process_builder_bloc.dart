@@ -47,7 +47,6 @@ class ProcessBuilderBloc
     on<LoadExistingForStageConfig>(_onLoadExisting);
     on<StepRequested>(_onStep);
     on<NameChanged>((e, emit) => emit(state.copyWith(name: e.name)));
-    on<ComplaintChanged>(_onComplaintChanged);
     on<TypeChanged>((e, emit) => emit(state.copyWith(typeTransId: e.typeTransId)));
     on<OrganizationChanged>(
         (e, emit) => emit(state.copyWith(organizationId: e.organizationId)));
@@ -110,8 +109,11 @@ class ProcessBuilderBloc
       templates: templatesResult.getOrElse(() => const []),
       // The organization is the active one — no step-1 picker.
       organizationId: _activeOrgId,
+      // The classification comes from the entry point (complaints page vs.
+      // a transaction-type page) — there is no step-1 selector for it.
+      isComplaint: event.isComplaint,
       // Preselect the type the wizard was opened for (null = شكوى / unset).
-      typeTransId: event.typeId,
+      typeTransId: event.isComplaint ? null : event.typeId,
     ));
   }
 
@@ -223,17 +225,6 @@ class ProcessBuilderBloc
 
   void _onStep(StepRequested event, Emitter<ProcessBuilderState> emit) {
     emit(state.copyWith(currentStep: event.step));
-  }
-
-  void _onComplaintChanged(
-    ComplaintChanged event,
-    Emitter<ProcessBuilderState> emit,
-  ) {
-    // شكوى → no process type.
-    emit(state.copyWith(
-      isComplaint: event.isComplaint,
-      clearType: event.isComplaint,
-    ));
   }
 
   // ── create (step 2 → 3) ─────────────────────────────────────────────────

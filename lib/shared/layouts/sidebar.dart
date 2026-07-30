@@ -24,6 +24,7 @@ const _navItems = <_NavItem>[
   _NavItem(Icons.shield_outlined, 'الأدوار', '/roles'),
   _NavItem(Icons.group_outlined, 'الموظفين', '/employees'),
   _NavItem(Icons.account_tree_outlined, 'المعاملات', '/transactions'),
+  _NavItem(Icons.report_gmailerrorred_outlined, 'الشكاوى', '/complaints'),
   _NavItem(Icons.fact_check_outlined, 'اعتماد المعاملات', '/transactions/admin'),
   _NavItem(Icons.description_outlined, 'قوالب المستندات', '/templates'),
   // _NavItem(Icons.settings_outlined, 'الإعدادات', '/settings'),

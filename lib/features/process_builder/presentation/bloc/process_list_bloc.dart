@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/request_status.dart';
+import '../../domain/usecases/get_complaint_processes_usecase.dart';
 import '../../domain/usecases/get_missing_stage_config_usecase.dart';
 import '../../domain/usecases/get_process_details_usecase.dart';
 import '../../domain/usecases/get_processes_by_type_usecase.dart';
@@ -14,6 +15,7 @@ import 'process_list_state.dart';
 /// owns the create wizard).
 class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
   final GetProcessesByTypeUseCase getProcessesByType;
+  final GetComplaintProcessesUseCase getComplaintProcesses;
   final GetReviewQueueUseCase getReviewQueue;
   final GetProcessDetailsUseCase getProcessDetails;
   final GetMissingStageConfigUseCase getMissingStageConfig;
@@ -21,6 +23,7 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
 
   ProcessListBloc({
     required this.getProcessesByType,
+    required this.getComplaintProcesses,
     required this.getReviewQueue,
     required this.getProcessDetails,
     required this.getMissingStageConfig,
@@ -28,6 +31,7 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
   }) : super(const ProcessListState()) {
     on<LoadAllProcesses>(_onLoadAll);
     on<LoadProcessesByType>(_onLoadByType);
+    on<LoadComplaintProcesses>(_onLoadComplaints);
     on<LoadReviewQueue>(_onLoadReview);
     on<LoadMissingStageConfig>(_onLoadMissing);
     on<ReviewProcessRequested>(_onReviewProcess);
@@ -51,6 +55,29 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
     emit(state.copyWith(allStatus: RequestStatus.loading, allError: null));
 
     final result = await getProcessesByType(typeId: typeId);
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        allStatus: RequestStatus.failure,
+        allError: failure.message,
+      )),
+      (items) => emit(state.copyWith(
+        allStatus: RequestStatus.success,
+        allProcesses: items,
+        allError: null,
+      )),
+    );
+  }
+
+  /// Complaints reuse the `all*` state slots: each listing page owns its own
+  /// bloc instance, so the complaints page never races the by-type pages.
+  Future<void> _onLoadComplaints(
+    LoadComplaintProcesses event,
+    Emitter<ProcessListState> emit,
+  ) async {
+    emit(state.copyWith(allStatus: RequestStatus.loading, allError: null));
+
+    final result = await getComplaintProcesses();
 
     result.fold(
       (failure) => emit(state.copyWith(
