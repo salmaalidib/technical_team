@@ -35,14 +35,14 @@ class EndPoints {
   String departmentToggleStatus(Object id) =>
       'api/department/$id/toggle-status'; // PATCH is_active
   String departmentLeavesByOrg(Object orgId) =>
-      'api/department/by-organization/$orgId/leaves';
+      'api/department/admin/by-organization/$orgId/leaves';
 
   // ===== role (bearer token required) =====
   String get roles => 'api/role'; // GET list · POST create
   String roleToggleStatus(Object id) =>
       'api/role/$id/toggle-status'; // PATCH is_active
   String rolesByDepartment(Object departmentId) =>
-      'api/role/by-department/$departmentId'; // GET roles of a leaf department
+      'api/role/admin/by-department/$departmentId'; // GET roles of a leaf department
 
   // ===== permissions (bearer token required) =====
   String get permissions =>
