@@ -3,14 +3,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
+import '../bloc/process_list_state.dart';
 import '../widgets/process_list_view.dart';
 
 /// Processes belonging to a single type (`admin/type/{typeId}`), reached from
 /// the types grid. Hosts the "create transaction" button, which carries the
-/// type forward into the wizard.
+/// type forward into the wizard, and splits the type's processes into
+/// "فعّالة" / "غير فعّالة" tabs — both fed by the one `admin/type/{typeId}`
+/// response, with per-row activation through `PATCH admin/{id}/status`.
 class ProcessByTypePage extends StatelessWidget {
   final int typeId;
   final String? typeName;
@@ -54,18 +58,103 @@ class _ProcessByTypeView extends StatelessWidget {
       });
     }
 
-    return Container(
-      color: const Color(0xffF0EFE7),
-      padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return BlocListener<ProcessListBloc, ProcessListState>(
+      // One-shot feedback for the activate/deactivate action.
+      listenWhen: (p, c) => p.activeActionStatus != c.activeActionStatus,
+      listener: (context, state) {
+        final message = state.activeActionStatus == RequestStatus.failure
+            ? state.activeActionError
+            : state.activeActionStatus == RequestStatus.success
+                ? state.activeActionSuccess
+                : null;
+        if (message == null || message.isEmpty) return;
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(message, textAlign: TextAlign.right),
+              backgroundColor: state.activeActionStatus == RequestStatus.failure
+                  ? AppColors.error
+                  : AppColors.primary,
+            ),
+          );
+      },
+      child: DefaultTabController(
+        length: 2,
+        child: Container(
+          color: const Color(0xffF0EFE7),
+          padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Header(typeName: typeName, onCreate: openCreate),
+              const SizedBox(height: 20),
+              const _ActiveTabs(),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    ProcessListView(
+                      tab: ProcessListTab.activeOnly,
+                      typeId: typeId,
+                    ),
+                    ProcessListView(
+                      tab: ProcessListTab.inactiveOnly,
+                      typeId: typeId,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The "فعّالة" / "غير فعّالة" switcher. Both tabs read the same
+/// `admin/type/{typeId}` payload, partitioned locally on `is_active`.
+class _ActiveTabs extends StatelessWidget {
+  const _ActiveTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      // The parent Column stretches its children, so a Row with a min main-axis
+      // size is what keeps the pill box hugging its two tabs instead of
+      // spanning the full page width.
+      child: Row(
         children: [
-          _Header(typeName: typeName, onCreate: openCreate),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ProcessListView(
-              tab: ProcessListTab.all,
-              typeId: typeId,
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: AppColors.textSecondary,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 22),
+              labelStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              unselectedLabelStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(height: 42, text: 'المعاملات الفعّالة'),
+                Tab(height: 42, text: 'المعاملات غير الفعّالة'),
+              ],
             ),
           ),
         ],

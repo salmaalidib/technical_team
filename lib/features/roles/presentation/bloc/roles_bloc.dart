@@ -59,9 +59,10 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
       error: null,
       formStatus: FormStatus.idle,
       formError: null,
+      loadedOrgId: event.organizationId,
     ));
 
-    final rolesResult = await getRoles();
+    final rolesResult = await getRoles(event.organizationId);
 
     rolesResult.fold(
       (failure) => emit(state.copyWith(
@@ -106,7 +107,7 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   ) async {
     emit(state.copyWith(permissionsStatus: RequestStatus.loading));
 
-    final result = await getPermissions();
+    final result = await getPermissions(audience: event.audience);
 
     result.fold(
       (failure) => emit(state.copyWith(
@@ -175,7 +176,10 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
           formStatus: FormStatus.success,
           partialWarning: warning,
         ));
-        add(const LoadRoles());
+        // Reload the list the page is showing, not the org the role was created
+        // under — they are the same in practice, but the list must stay
+        // consistent with what was last loaded.
+        add(LoadRoles(state.loadedOrgId ?? event.organizationId));
       },
     );
   }

@@ -7,6 +7,7 @@ import '../../domain/usecases/get_process_details_usecase.dart';
 import '../../domain/usecases/get_processes_by_type_usecase.dart';
 import '../../domain/usecases/get_review_queue_usecase.dart';
 import '../../domain/usecases/review_process_usecase.dart';
+import '../../domain/usecases/update_process_active_status_usecase.dart';
 import 'process_list_event.dart';
 import 'process_list_state.dart';
 
@@ -20,6 +21,13 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
   final GetProcessDetailsUseCase getProcessDetails;
   final GetMissingStageConfigUseCase getMissingStageConfig;
   final ReviewProcessUseCase reviewProcess;
+  final UpdateProcessActiveStatusUseCase updateProcessActiveStatus;
+
+  /// Which list currently fills the `all*` slots, so the activate/deactivate
+  /// action can refresh exactly that source: a type id (`0` = all types), or
+  /// `null` when the complaints list is loaded.
+  int? _loadedTypeId;
+  bool _complaintsLoaded = false;
 
   ProcessListBloc({
     required this.getProcessesByType,
@@ -28,6 +36,7 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
     required this.getProcessDetails,
     required this.getMissingStageConfig,
     required this.reviewProcess,
+    required this.updateProcessActiveStatus,
   }) : super(const ProcessListState()) {
     on<LoadAllProcesses>(_onLoadAll);
     on<LoadProcessesByType>(_onLoadByType);
@@ -35,6 +44,7 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
     on<LoadReviewQueue>(_onLoadReview);
     on<LoadMissingStageConfig>(_onLoadMissing);
     on<ReviewProcessRequested>(_onReviewProcess);
+    on<SetProcessActiveRequested>(_onSetProcessActive);
     on<LoadProcessDetails>(_onLoadDetails);
   }
 
@@ -52,6 +62,9 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
     int typeId,
     Emitter<ProcessListState> emit,
   ) async {
+    _loadedTypeId = typeId;
+    _complaintsLoaded = false;
+
     emit(state.copyWith(allStatus: RequestStatus.loading, allError: null));
 
     final result = await getProcessesByType(typeId: typeId);
@@ -75,6 +88,9 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
     LoadComplaintProcesses event,
     Emitter<ProcessListState> emit,
   ) async {
+    _loadedTypeId = null;
+    _complaintsLoaded = true;
+
     emit(state.copyWith(allStatus: RequestStatus.loading, allError: null));
 
     final result = await getComplaintProcesses();
@@ -177,6 +193,56 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
         // queue and the missing-config list are reloaded.
         add(const LoadReviewQueue());
         add(const LoadMissingStageConfig());
+      },
+    );
+  }
+
+  /// Flips `is_active` for one process. The row is patched locally on success
+  /// so it jumps to the other tab immediately, then the source list is
+  /// re-fetched to pick up anything else the server changed.
+  Future<void> _onSetProcessActive(
+    SetProcessActiveRequested event,
+    Emitter<ProcessListState> emit,
+  ) async {
+    // Guard against a second toggle while one is in flight.
+    if (state.activeActionStatus == RequestStatus.loading) return;
+
+    emit(state.copyWith(
+      activeActionStatus: RequestStatus.loading,
+      activeActionId: event.id,
+      activeActionError: null,
+      activeActionSuccess: null,
+    ));
+
+    final result = await updateProcessActiveStatus(
+      id: event.id,
+      isActive: event.isActive,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        activeActionStatus: RequestStatus.failure,
+        activeActionError: failure.message,
+      )),
+      (_) {
+        emit(state.copyWith(
+          activeActionStatus: RequestStatus.success,
+          activeActionSuccess: event.isActive
+              ? 'تم تفعيل المعاملة'
+              : 'تم إلغاء تفعيل المعاملة',
+          allProcesses: [
+            for (final p in state.allProcesses)
+              p.processId == event.id
+                  ? p.copyWith(isActive: event.isActive)
+                  : p,
+          ],
+        ));
+
+        if (_complaintsLoaded) {
+          add(const LoadComplaintProcesses());
+        } else if (_loadedTypeId != null) {
+          add(LoadProcessesByType(_loadedTypeId!));
+        }
       },
     );
   }

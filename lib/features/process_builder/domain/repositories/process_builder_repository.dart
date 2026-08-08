@@ -53,6 +53,13 @@ abstract class ProcessBuilderRepository {
     required String decision, // APPROVE | REJECT
   });
 
+  /// `PATCH /api/process_definitions/admin/{id}/status` — activate/deactivate a
+  /// process (works for normal transactions and complaints alike).
+  Future<Either<Failure, void>> updateProcessActiveStatus({
+    required int id,
+    required bool isActive,
+  });
+
   /// `GET /api/process_definitions/admin/type/{id}` (`typeId` `0` = all types).
   Future<Either<Failure, List<AdminProcessItem>>> getProcessesByType({
     int typeId = 0,

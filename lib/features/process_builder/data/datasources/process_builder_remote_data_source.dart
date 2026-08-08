@@ -96,6 +96,19 @@ class ProcessBuilderRemoteDataSource {
     );
   }
 
+  /// `PATCH /api/process_definitions/admin/{id}/status` — `{ is_active }`.
+  /// Works for both normal and complaint processes.
+  Future<Either<Failure, dynamic>> updateProcessActiveStatus({
+    required int id,
+    required bool isActive,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.patch,
+      endPoint: _ep.processDefinitionStatus(id),
+      body: {'is_active': isActive},
+    );
+  }
+
   /// `GET /api/process_definitions/admin/complaints/all` — all complaint
   /// processes (active + inactive).
   Future<Either<Failure, dynamic>> getComplaintProcesses({

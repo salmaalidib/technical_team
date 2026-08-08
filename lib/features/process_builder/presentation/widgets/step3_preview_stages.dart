@@ -164,7 +164,7 @@ class _StageCard extends StatelessWidget {
             height: 44,
             child: Center(
               child: Text(
-                stage.name,
+                stage.displayName,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

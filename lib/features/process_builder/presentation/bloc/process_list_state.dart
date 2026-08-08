@@ -28,6 +28,12 @@ class ProcessListState extends Equatable {
   final String? reviewActionError; // one-shot
   final String? reviewActionSuccess; // one-shot
 
+  /// Activate/deactivate action (`admin/{id}/status`).
+  final RequestStatus activeActionStatus;
+  final int? activeActionId; // the process currently being toggled
+  final String? activeActionError; // one-shot
+  final String? activeActionSuccess; // one-shot
+
   /// Single-process details load.
   final RequestStatus detailsStatus;
   final ProcessDetails? details;
@@ -47,6 +53,10 @@ class ProcessListState extends Equatable {
     this.reviewActionId,
     this.reviewActionError,
     this.reviewActionSuccess,
+    this.activeActionStatus = RequestStatus.initial,
+    this.activeActionId,
+    this.activeActionError,
+    this.activeActionSuccess,
     this.detailsStatus = RequestStatus.initial,
     this.details,
     this.detailsError,
@@ -66,6 +76,10 @@ class ProcessListState extends Equatable {
     int? reviewActionId,
     String? reviewActionError,
     String? reviewActionSuccess,
+    RequestStatus? activeActionStatus,
+    int? activeActionId,
+    String? activeActionError,
+    String? activeActionSuccess,
     RequestStatus? detailsStatus,
     ProcessDetails? details,
     String? detailsError,
@@ -84,6 +98,10 @@ class ProcessListState extends Equatable {
       reviewActionId: reviewActionId,
       reviewActionError: reviewActionError,
       reviewActionSuccess: reviewActionSuccess,
+      activeActionStatus: activeActionStatus ?? this.activeActionStatus,
+      activeActionId: activeActionId,
+      activeActionError: activeActionError,
+      activeActionSuccess: activeActionSuccess,
       detailsStatus: detailsStatus ?? this.detailsStatus,
       details: details ?? this.details,
       detailsError: detailsError,
@@ -105,6 +123,10 @@ class ProcessListState extends Equatable {
         reviewActionId,
         reviewActionError,
         reviewActionSuccess,
+        activeActionStatus,
+        activeActionId,
+        activeActionError,
+        activeActionSuccess,
         detailsStatus,
         details,
         detailsError,

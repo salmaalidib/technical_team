@@ -9,7 +9,9 @@ class GetPermissionsUseCase {
 
   GetPermissionsUseCase(this.repository);
 
-  Future<Either<Failure, List<Permission>>> call() {
-    return repository.getPermissions();
+  Future<Either<Failure, List<Permission>>> call({
+    PermissionAudience audience = PermissionAudience.all,
+  }) {
+    return repository.getPermissions(audience: audience);
   }
 }

@@ -2,15 +2,12 @@ import 'package:equatable/equatable.dart';
 
 import 'notification_action_config.dart';
 import 'process_stage.dart';
+import 'stage_assignment_target.dart';
 import 'widget_config.dart';
 
-/// Who executes a USER_TASK: a specific [employee] (org/dept/role cascade) or
-/// the transaction owner [citizen] (no cascade — a fixed citizen role).
+/// Who executes a USER_TASK: specific [employee] roles (one or more org/dept/role
+/// targets) or the transaction owner [citizen] (no cascade — a fixed citizen role).
 enum AssigneeType { employee, citizen }
-
-/// The role_id sent for a citizen-assigned USER_TASK. The backend uses it as
-/// the applicant/citizen role; org/dept are null in that case.
-const int kCitizenRoleId = 2;
 
 /// The in-progress customization of one stage (step 4). Converted to the
 /// backend `stages[]` entry on submit.
@@ -21,13 +18,22 @@ const int kCitizenRoleId = 2;
 class StageConfigDraft extends Equatable {
   final ProcessStage stage;
 
-  /// Who executes this USER_TASK (employee cascade vs citizen). Defaults to
+  /// Who executes this USER_TASK (employee targets vs citizen). Defaults to
   /// [AssigneeType.employee] so existing behaviour is unchanged.
   final AssigneeType assigneeType;
 
-  /// Assignment (USER_TASK only). For a citizen assignee these stay null and
-  /// the request uses [kCitizenRoleId] as the role.
+  /// The committed dept/role targets of this USER_TASK. The backend takes an
+  /// array, so a stage may be assigned to several roles at once and every
+  /// matching employee sees the task. Empty for a citizen assignee (a single
+  /// all-null entry is sent instead) and for SERVICE_TASKs.
+  final List<StageAssignmentTarget> assignments;
+
+  /// The organization every target of this stage belongs to. It is the user's
+  /// active organization, seeded system-wide — there is no per-stage picker.
   final int? organizationId;
+
+  /// The in-progress picker above the list: the dept/role currently being
+  /// chosen, not yet added to [assignments]. Cleared after each add.
   final int? departmentId;
   final int? roleId;
 
@@ -68,6 +74,7 @@ class StageConfigDraft extends Equatable {
   const StageConfigDraft({
     required this.stage,
     this.assigneeType = AssigneeType.employee,
+    this.assignments = const [],
     this.organizationId,
     this.departmentId,
     this.roleId,
@@ -87,7 +94,11 @@ class StageConfigDraft extends Equatable {
   /// Whether GENERATE_PDF is selected on this stage.
   bool get hasGeneratePdf => actions.contains('GENERATE_PDF');
 
-  /// A USER_TASK is ready when an org/dept/role assignment is fully chosen
+  /// Whether the picker row currently holds a complete, addable triple.
+  bool get canAddAssignment =>
+      organizationId != null && departmentId != null && roleId != null;
+
+  /// A USER_TASK is ready when at least one org/dept/role target has been added
   /// (the backend rejects a USER_TASK with no assignments). A SERVICE_TASK is
   /// ready unless an enabled action is missing required config: a
   /// SEND_NOTIFICATION with no message/recipient, or a GENERATE_PDF with no
@@ -98,11 +109,9 @@ class StageConfigDraft extends Equatable {
     if (stage.isUserTask) {
       // Dynamic routing needs no org/dept/role — it's picked at run-time.
       if (isAssignment) return true;
-      // A citizen assignee needs no org/dept/role — it ships a fixed role.
+      // A citizen assignee needs no org/dept/role — it ships an all-null entry.
       if (assigneeType == AssigneeType.citizen) return true;
-      return organizationId != null &&
-          departmentId != null &&
-          roleId != null;
+      return assignments.isNotEmpty;
     }
     if (hasNotification && !notification.isComplete) {
       return false;
@@ -115,6 +124,7 @@ class StageConfigDraft extends Equatable {
 
   StageConfigDraft copyWith({
     AssigneeType? assigneeType,
+    List<StageAssignmentTarget>? assignments,
     int? organizationId,
     int? departmentId,
     int? roleId,
@@ -133,6 +143,7 @@ class StageConfigDraft extends Equatable {
     return StageConfigDraft(
       stage: stage,
       assigneeType: assigneeType ?? this.assigneeType,
+      assignments: assignments ?? this.assignments,
       organizationId: organizationId ?? this.organizationId,
       departmentId: clearDepartment ? null : (departmentId ?? this.departmentId),
       roleId: clearRole ? null : (roleId ?? this.roleId),
@@ -153,7 +164,10 @@ class StageConfigDraft extends Equatable {
   Map<String, dynamic> toRequestJson() {
     final configJson = <String, dynamic>{
       'form_id': stage.code,
-      'form_name': stage.name, // always the stage name (no separate input)
+      // The stage name (no separate input). `displayName` falls back to a
+      // generated label for unnamed BPMN elements — the backend requires a
+      // non-empty `form_name` and would 400 the whole batch otherwise.
+      'form_name': stage.displayName,
       'widgets': stage.isUserTask
           ? widgets.map((w) => w.toJson()).toList()
           : <Map<String, dynamic>>[],
@@ -180,28 +194,18 @@ class StageConfigDraft extends Equatable {
     };
 
     if (stage.isUserTask) {
-      if (isAssignment) {
-        // Dynamic routing: the backend requires every assignment entry to be
-        // null when is_assignment is true — the destination is picked at
-        // run-time by whoever completes the previous stage.
-        entry['assignments'] = [
-          {
-            'organization_id': null,
-            'department_id': null,
-            'role_id': null,
-          }
-        ];
+      // Dynamic routing and a citizen assignee both ship a single all-null
+      // entry: the backend resolves null/null/null to the CITIZEN role, and
+      // with is_assignment the real destination is picked at run-time by
+      // whoever completes the previous stage.
+      if (isAssignment || assigneeType == AssigneeType.citizen) {
+        entry['assignments'] = [const StageAssignmentTarget.citizen().toJson()];
       } else {
-        // Citizen assignee → no org/dept, fixed citizen role. Employee
-        // assignee → the picked org/dept/role cascade.
-        final isCitizen = assigneeType == AssigneeType.citizen;
-        entry['assignments'] = [
-          {
-            'organization_id': isCitizen ? null : organizationId,
-            'department_id': isCitizen ? null : departmentId,
-            'role_id': isCitizen ? kCitizenRoleId : roleId,
-          }
-        ];
+        // Employee assignee → every added org/dept/role target. The backend
+        // creates one stage_assignments row per entry, so all matching
+        // employees see the task.
+        entry['assignments'] =
+            assignments.map((a) => a.toJson()).toList();
       }
     }
 
@@ -227,6 +231,7 @@ class StageConfigDraft extends Equatable {
   List<Object?> get props => [
         stage,
         assigneeType,
+        assignments,
         organizationId,
         departmentId,
         roleId,

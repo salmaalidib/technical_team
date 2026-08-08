@@ -12,7 +12,9 @@ import '../entities/role_permissions.dart';
 /// the department options come from the departments feature — this repository
 /// only owns the role link itself.
 abstract class RoleRepository {
-  Future<Either<Failure, List<RoleAssignment>>> getRoles();
+  /// Role links of [organizationId] — the backend requires it and answers 400
+  /// without it.
+  Future<Either<Failure, List<RoleAssignment>>> getRoles(int organizationId);
 
   Future<Either<Failure, RoleAssignment>> createRole({
     required String name,
@@ -33,8 +35,12 @@ abstract class RoleRepository {
   // Permissions attach to the (organization, department, role) triple rather
   // than to the role itself, so they live here alongside the role link.
 
-  /// Every permission in the system — the option list for the role form.
-  Future<Either<Failure, List<Permission>>> getPermissions();
+  /// The option list for the role form. [audience] picks the backend route:
+  /// `all` → every permission, `employee` / `admin` → that audience plus the
+  /// shared (`employee,citizen,admin`) rows.
+  Future<Either<Failure, List<Permission>>> getPermissions({
+    PermissionAudience audience = PermissionAudience.all,
+  });
 
   /// Permissions currently granted to the given triple.
   Future<Either<Failure, RolePermissions>> getRolePermissions({

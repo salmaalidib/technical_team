@@ -17,6 +17,7 @@ import '../domain/usecases/get_process_details_usecase.dart';
 import '../domain/usecases/get_processes_by_type_usecase.dart';
 import '../domain/usecases/get_review_queue_usecase.dart';
 import '../domain/usecases/review_process_usecase.dart';
+import '../domain/usecases/update_process_active_status_usecase.dart';
 import '../presentation/bloc/process_builder_bloc.dart';
 import '../presentation/bloc/process_list_bloc.dart';
 
@@ -86,6 +87,12 @@ Future<void> setupProcessBuilderInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<UpdateProcessActiveStatusUseCase>()) {
+    getIt.registerLazySingleton<UpdateProcessActiveStatusUseCase>(
+      () => UpdateProcessActiveStatusUseCase(getIt<ProcessBuilderRepository>()),
+    );
+  }
+
   getIt.registerFactory<ProcessBuilderBloc>(
     () => ProcessBuilderBloc(
       createProcess: getIt<CreateProcessDefinitionUseCase>(),
@@ -107,6 +114,7 @@ Future<void> setupProcessBuilderInjection() async {
       getProcessDetails: getIt<GetProcessDetailsUseCase>(),
       getMissingStageConfig: getIt<GetMissingStageConfigUseCase>(),
       reviewProcess: getIt<ReviewProcessUseCase>(),
+      updateProcessActiveStatus: getIt<UpdateProcessActiveStatusUseCase>(),
     ),
   );
 }

@@ -4,6 +4,7 @@ import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
+import '../../domain/entities/permission.dart';
 
 /// Remote contract for the role-assignment endpoints. Error mapping lives in
 /// [ApiService]; methods return the raw decoded body on the right.
@@ -14,10 +15,13 @@ class RoleRemoteDataSource {
 
   static const _endPoints = EndPoints();
 
-  Future<Either<Failure, dynamic>> getRoles() {
+  /// The backend filters by organization and rejects a missing/invalid
+  /// `organization_id` with a 400, so it always travels as a query parameter.
+  Future<Either<Failure, dynamic>> getRoles(int organizationId) {
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.roles,
+      queryParameters: {'organization_id': organizationId},
     );
   }
 
@@ -45,11 +49,22 @@ class RoleRemoteDataSource {
 
   // ===== permissions =====
 
-  /// All permissions in the system — the checkbox source for the role form.
-  Future<Either<Failure, dynamic>> getPermissions() {
+  /// Permissions list — the checkbox source for the role form.
+  ///
+  /// [PermissionAudience.all] hits `/permissions`; `employee` / `admin` hit
+  /// the audience routes that also include the shared rows.
+  Future<Either<Failure, dynamic>> getPermissions({
+    PermissionAudience audience = PermissionAudience.all,
+  }) {
+    final endPoint = switch (audience) {
+      PermissionAudience.all => _endPoints.permissions,
+      PermissionAudience.employee => _endPoints.permissionsEmployee,
+      PermissionAudience.admin => _endPoints.permissionsAdmin,
+    };
+
     return api.makeRequest(
       method: ApiMethod.get,
-      endPoint: _endPoints.permissions,
+      endPoint: endPoint,
     );
   }
 

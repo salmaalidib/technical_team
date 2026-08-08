@@ -76,7 +76,8 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
     if (name.isEmpty ||
         _codeError != null ||
         orgId == null ||
-        _departmentId == null) {
+        _departmentId == null ||
+        _selectedPermissionIds.isEmpty) {
       return;
     }
 
@@ -154,7 +155,7 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                             onChanged: (v) => setState(() => _departmentId = v),
                           ),
                           const SizedBox(height: 24),
-                          const _Label('الصلاحيات (اختياري)'),
+                          const _Label('الصلاحيات *'),
                           const SizedBox(height: 8),
                           PermissionPicker(
                             status: state.permissionsStatus,
@@ -163,6 +164,17 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                             onChanged: (ids) =>
                                 setState(() => _selectedPermissionIds = ids),
                           ),
+                          if (_touched && _selectedPermissionIds.isEmpty) ...[
+                            const SizedBox(height: 6),
+                            const Text(
+                              'اختر صلاحية واحدة على الأقل',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: AppColors.error,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 26),
                           const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: 18),

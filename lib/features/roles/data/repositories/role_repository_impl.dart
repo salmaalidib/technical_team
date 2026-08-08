@@ -22,8 +22,10 @@ class RoleRepositoryImpl implements RoleRepository {
       body is Map<String, dynamic> ? body['data'] : body;
 
   @override
-  Future<Either<Failure, List<RoleAssignment>>> getRoles() async {
-    final result = await remote.getRoles();
+  Future<Either<Failure, List<RoleAssignment>>> getRoles(
+    int organizationId,
+  ) async {
+    final result = await remote.getRoles(organizationId);
     return result.fold<Either<Failure, List<RoleAssignment>>>(
       (failure) => Left(failure),
       (body) {
@@ -110,8 +112,10 @@ class RoleRepositoryImpl implements RoleRepository {
   // ===== permissions =====
 
   @override
-  Future<Either<Failure, List<Permission>>> getPermissions() async {
-    final result = await remote.getPermissions();
+  Future<Either<Failure, List<Permission>>> getPermissions({
+    PermissionAudience audience = PermissionAudience.all,
+  }) async {
+    final result = await remote.getPermissions(audience: audience);
     return result.fold<Either<Failure, List<Permission>>>(
       (failure) => Left(failure),
       (body) {

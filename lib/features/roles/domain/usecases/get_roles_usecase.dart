@@ -9,7 +9,7 @@ class GetRolesUseCase {
 
   GetRolesUseCase(this.repository);
 
-  Future<Either<Failure, List<RoleAssignment>>> call() {
-    return repository.getRoles();
+  Future<Either<Failure, List<RoleAssignment>>> call(int organizationId) {
+    return repository.getRoles(organizationId);
   }
 }

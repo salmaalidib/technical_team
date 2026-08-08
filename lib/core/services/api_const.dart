@@ -38,7 +38,7 @@ class EndPoints {
       'api/department/admin/by-organization/$orgId/leaves';
 
   // ===== role (bearer token required) =====
-  String get roles => 'api/role'; // GET list · POST create
+  String get roles => 'api/role/'; // GET list · POST create
   String roleToggleStatus(Object id) =>
       'api/role/$id/toggle-status'; // PATCH is_active
   String rolesByDepartment(Object departmentId) =>
@@ -46,7 +46,11 @@ class EndPoints {
 
   // ===== permissions (bearer token required) =====
   String get permissions =>
-      'api/auth/permissions'; // GET كل الصلاحيات (id + name + display_name)
+      'api/auth/permissions'; // GET كل الصلاحيات (id + name عربي + code تقني + type)
+  String get permissionsEmployee =>
+      'api/auth/permissions/employee'; // GET صلاحيات الموظف + المشتركة (كاش auth:permissions:audience:employee)
+  String get permissionsAdmin =>
+      'api/auth/permissions/admin'; // GET صلاحيات الإدارة + المشتركة (كاش auth:permissions:audience:admin)
   String get rolePermissions =>
       'api/auth/role-permissions'; // GET ?organization_id&department_id&role_id · POST إضافة · PUT استبدال كامل
 
@@ -71,6 +75,8 @@ class EndPoints {
       'api/process_definitions/$id/details'; // GET details + validation
   String processDefinitionReview(Object id) =>
       'api/process_definitions/$id/review'; // POST { decision: APPROVE | REJECT }
+  String processDefinitionStatus(Object id) =>
+      'api/process_definitions/admin/$id/status'; // PATCH { is_active: bool }
 
   // ===== stage config (المسؤول التقني) =====
   String get stageConfigCreate =>

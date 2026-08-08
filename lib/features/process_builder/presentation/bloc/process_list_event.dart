@@ -47,6 +47,18 @@ class ReviewProcessRequested extends ProcessListEvent {
   List<Object?> get props => [id, approve];
 }
 
+/// Activates / deactivates a process (`admin/{id}/status`). On success the
+/// item flips between the "فعّالة" and "غير فعّالة" buckets of its type.
+class SetProcessActiveRequested extends ProcessListEvent {
+  final int id;
+  final bool isActive;
+
+  const SetProcessActiveRequested(this.id, {required this.isActive});
+
+  @override
+  List<Object?> get props => [id, isActive];
+}
+
 /// Loads the full details of a single process (`{id}/details`).
 class LoadProcessDetails extends ProcessListEvent {
   final int id;

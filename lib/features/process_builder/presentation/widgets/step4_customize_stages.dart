@@ -121,7 +121,17 @@ class _CardHeader extends StatelessWidget {
     }
     if (stage.isUserTask) {
       final ready = draft?.isComplete ?? false;
-      return ready ? 'مهمة مستخدم · مُهيّأة' : 'مهمة مستخدم · غير مُهيّأة';
+      if (!ready) return 'مهمة مستخدم · غير مُهيّأة';
+      // A stage may be assigned to several org/dept/role targets at once; show
+      // how many so the count is visible without expanding the card.
+      final count = draft?.assignments.length ?? 0;
+      if (draft?.isAssignment == true) {
+        return 'مهمة مستخدم · تعيين ديناميكي';
+      }
+      if (draft?.assigneeType == AssigneeType.citizen) {
+        return 'مهمة مستخدم · صاحب المعاملة';
+      }
+      return 'مهمة مستخدم · $count جهة معيَّنة';
     }
     final count = draft?.actions.length ?? 0;
     return count == 0 ? 'مهمة نظام · بدون إجراءات' : 'مهمة نظام · $count إجراء';
@@ -161,7 +171,7 @@ class _CardHeader extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        stage.name,
+                        stage.displayName,
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -262,8 +272,9 @@ class _UserTaskEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Who executes the stage: a specific employee (org/dept/role cascade)
-        // or the transaction owner (citizen — a fixed role, no cascade).
+        // Who executes the stage: specific employee roles (one or more
+        // org/dept/role targets) or the transaction owner (citizen — a fixed
+        // role, no cascade).
         const WizardLabel('التعيين — من ينفّذ المرحلة *'),
         const SizedBox(height: 8),
         _AssigneeToggle(
@@ -271,17 +282,12 @@ class _UserTaskEditor extends StatelessWidget {
           onChanged: (t) => bloc.add(StageAssigneeTypeChanged(stageId, t)),
         ),
         const SizedBox(height: 12),
-        // Employee → dept/role cascade. Organization is the user's active one,
-        // seeded into the draft — no per-stage picker.
-        if (isEmployee) ...[
-          const _MiniLabel('القسم / الدائرة'),
-          const SizedBox(height: 6),
-          _DepartmentDropdown(state: state, draft: draft),
-          const SizedBox(height: 12),
-          const _MiniLabel('الدور'),
-          const SizedBox(height: 6),
-          _RoleDropdown(state: state, draft: draft),
-        ] else
+        // Employee → an org/dept/role picker that can be used repeatedly; the
+        // backend takes an array of assignments, so the stage can go to several
+        // roles at once (different organizations and departments included).
+        if (isEmployee)
+          _AssignmentsEditor(state: state, draft: draft)
+        else
           const Text(
             'ستُسند هذه المرحلة إلى صاحب المعاملة (المواطن).',
             textAlign: TextAlign.right,
@@ -624,6 +630,91 @@ class _TemplatePicker extends StatelessWidget {
             ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// Multi-target assignment editor for a USER_TASK.
+///
+/// The backend takes `stages[].assignments` as an ARRAY of
+/// `{ organization_id, department_id, role_id }`, creating one
+/// `stage_assignments` row per entry — so a stage can be handed to several
+/// dept/role targets at once and every matching employee sees the task.
+///
+/// The organization is NOT picked here: it is the user's active organization,
+/// seeded into the draft system-wide (see `ActiveOrganizationCubit`), exactly
+/// as before. The dept/role dropdowns below are a PICKER: what they hold is
+/// not saved until «إضافة التعيين» commits it as a chip. Only the committed
+/// chips are submitted.
+class _AssignmentsEditor extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _AssignmentsEditor({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final stageId = draft.stage.id;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'يمكنك إسناد المرحلة إلى أكثر من جهة: اختر القسم والدور ثم اضغط '
+          '«إضافة التعيين»، وكرّر ذلك لكل جهة تريدها.',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const _MiniLabel('القسم / الدائرة'),
+        const SizedBox(height: 6),
+        _DepartmentDropdown(state: state, draft: draft),
+        const SizedBox(height: 12),
+        const _MiniLabel('الدور'),
+        const SizedBox(height: 6),
+        _RoleDropdown(state: state, draft: draft),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.icon(
+            onPressed: draft.canAddAssignment
+                ? () => bloc.add(StageAssignmentAdded(stageId))
+                : null,
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: const Text('إضافة التعيين'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _MiniLabel('الجهات المُعيَّنة  (${draft.assignments.length})'),
+        const SizedBox(height: 6),
+        if (draft.assignments.isEmpty)
+          const _Hint('لم تُضف أي جهة بعد — أضف جهة واحدة على الأقل')
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            textDirection: TextDirection.rtl,
+            children: [
+              for (final a in draft.assignments)
+                _SelectedChip(
+                  label: a.label,
+                  onRemove: () => bloc.add(StageAssignmentRemoved(stageId, a)),
+                ),
+            ],
+          ),
       ],
     );
   }

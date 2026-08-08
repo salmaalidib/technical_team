@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/permission.dart';
+
 abstract class RolesEvent extends Equatable {
   const RolesEvent();
 
@@ -7,10 +9,15 @@ abstract class RolesEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Loads the roles list together with the organizations used by the create
-/// form.
+/// Loads the role links of [organizationId] — the backend filters by it and
+/// rejects the request with a 400 when it is missing.
 class LoadRoles extends RolesEvent {
-  const LoadRoles();
+  final int organizationId;
+
+  const LoadRoles(this.organizationId);
+
+  @override
+  List<Object?> get props => [organizationId];
 }
 
 /// Loads the leaf departments of an organization to populate the department
@@ -24,10 +31,16 @@ class LoadLeafDepartments extends RolesEvent {
   List<Object?> get props => [organizationId];
 }
 
-/// Loads every permission in the system to populate the create-role form's
-/// checkbox list. Fired once when the dialog opens.
+/// Loads the permission options for the create-role form's checkbox list.
+/// Fired once when the dialog opens. [audience] narrows the list to the
+/// employee/admin routes (each includes the shared rows); default is all.
 class LoadPermissions extends RolesEvent {
-  const LoadPermissions();
+  final PermissionAudience audience;
+
+  const LoadPermissions({this.audience = PermissionAudience.all});
+
+  @override
+  List<Object?> get props => [audience];
 }
 
 class CreateRoleRequested extends RolesEvent {

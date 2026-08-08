@@ -15,6 +15,7 @@ import '../../domain/entities/created_process.dart';
 import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_details.dart';
 import '../../domain/entities/process_stage.dart';
+import '../../domain/entities/stage_assignment_target.dart';
 import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/usecases/configure_stages_usecase.dart';
 import '../../domain/usecases/create_process_definition_usecase.dart';
@@ -62,6 +63,8 @@ class ProcessBuilderBloc
     on<StageOrgChanged>(_onStageOrg);
     on<StageDeptChanged>(_onStageDept);
     on<StageRoleChanged>(_onStageRole);
+    on<StageAssignmentAdded>(_onStageAssignmentAdded);
+    on<StageAssignmentRemoved>(_onStageAssignmentRemoved);
     on<StageWidgetToggled>(_onStageWidget);
     on<StageSignatureToggled>(_onStageSignature);
     on<StageIsAssignmentToggled>(_onStageIsAssignment);
@@ -450,6 +453,84 @@ class ProcessBuilderBloc
         event.stageId, emit, (d) => d.copyWith(roleId: event.roleId));
   }
 
+  /// Commits the picked dept/role (under the stage's active organization) as one
+  /// more target. Names are captured from the currently-loaded cascade lists so
+  /// the chip stays readable after the picker moves on to another department.
+  void _onStageAssignmentAdded(
+    StageAssignmentAdded event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    final draft = state.drafts[event.stageId];
+    if (draft == null || !draft.stage.isUserTask) return;
+    if (!draft.canAddAssignment) {
+      emit(state.copyWith(
+        actionError: 'اختر القسم والدور قبل الإضافة.',
+      ));
+      return;
+    }
+
+    final assignment = StageAssignmentTarget(
+      organizationId: draft.organizationId,
+      departmentId: draft.departmentId,
+      roleId: draft.roleId,
+      departmentName: _deptNameOf(draft.departmentId),
+      roleName: _roleNameOf(draft.roleId),
+    );
+
+    if (draft.assignments.any((a) => a.key == assignment.key)) {
+      emit(state.copyWith(actionError: 'هذا التعيين مُضاف مسبقاً.'));
+      return;
+    }
+
+    // Reset only dept/role so the next target can be picked. The organization
+    // stays as-is (the active one) and its department list is already loaded,
+    // so nothing needs re-fetching — only the role list is dropped.
+    _updateDraft(
+      event.stageId,
+      emit,
+      (d) => d.copyWith(
+        assignments: [...d.assignments, assignment],
+        clearDepartment: true,
+        clearRole: true,
+      ),
+    );
+
+    emit(state.copyWith(
+      rolesStatus: RequestStatus.initial,
+      rolesByDepartment: const [],
+    ));
+  }
+
+  void _onStageAssignmentRemoved(
+    StageAssignmentRemoved event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    _updateDraft(
+      event.stageId,
+      emit,
+      (d) => d.copyWith(
+        assignments:
+            d.assignments.where((a) => a.key != event.assignment.key).toList(),
+      ),
+    );
+  }
+
+  String _deptNameOf(int? id) {
+    if (id == null) return '';
+    for (final d in state.leafDepartments) {
+      if (d.id == id) return d.name;
+    }
+    return '';
+  }
+
+  String _roleNameOf(int? id) {
+    if (id == null) return '';
+    for (final r in state.rolesByDepartment) {
+      if (r.id == id) return r.name;
+    }
+    return '';
+  }
+
   void _onStageWidget(
     StageWidgetToggled event,
     Emitter<ProcessBuilderState> emit,
@@ -719,7 +800,8 @@ class ProcessBuilderBloc
         message =
             'أكمل إعداد الإشعار (النص والمُستلِم — أو المؤسسة/القسم/الدور للموظف) قبل الحفظ.';
       } else {
-        message = 'يجب تحديد التعيين (مؤسسة/قسم/دور) لكل مهمة مستخدم قبل الحفظ.';
+        message =
+            'يجب إضافة جهة واحدة على الأقل (قسم/دور) لكل مهمة مستخدم قبل الحفظ.';
       }
       emit(state.copyWith(actionError: message));
       return;

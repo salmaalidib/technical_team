@@ -160,6 +160,22 @@ class ProcessBuilderRepositoryImpl implements ProcessBuilderRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateProcessActiveStatus({
+    required int id,
+    required bool isActive,
+  }) async {
+    final result = await remote.updateProcessActiveStatus(
+      id: id,
+      isActive: isActive,
+    );
+
+    return result.fold<Either<Failure, void>>(
+      (failure) => Left(failure),
+      (_) => const Right(null),
+    );
+  }
+
+  @override
   Future<Either<Failure, List<AdminProcessItem>>> getProcessesByType({
     int typeId = 0,
     int page = 1,

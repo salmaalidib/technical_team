@@ -13,6 +13,10 @@ class RolesState extends Equatable {
   final List<RoleAssignment> roles;
   final String? error;
 
+  /// The organization [roles] was loaded for — reused to reload the same list
+  /// after a create without asking the page for the active org again.
+  final int? loadedOrgId;
+
   /// Create-role form submission.
   final FormStatus formStatus;
   final String? formError;
@@ -57,6 +61,7 @@ class RolesState extends Equatable {
     this.status = RequestStatus.initial,
     this.roles = const [],
     this.error,
+    this.loadedOrgId,
     this.formStatus = FormStatus.idle,
     this.formError,
     this.leafStatus = RequestStatus.initial,
@@ -80,6 +85,7 @@ class RolesState extends Equatable {
     RequestStatus? status,
     List<RoleAssignment>? roles,
     String? error,
+    int? loadedOrgId,
     FormStatus? formStatus,
     String? formError,
     RequestStatus? leafStatus,
@@ -102,6 +108,7 @@ class RolesState extends Equatable {
       status: status ?? this.status,
       roles: roles ?? this.roles,
       error: error,
+      loadedOrgId: loadedOrgId ?? this.loadedOrgId,
       formStatus: formStatus ?? this.formStatus,
       formError: formError,
       leafStatus: leafStatus ?? this.leafStatus,
@@ -128,6 +135,7 @@ class RolesState extends Equatable {
         status,
         roles,
         error,
+        loadedOrgId,
         formStatus,
         formError,
         leafStatus,

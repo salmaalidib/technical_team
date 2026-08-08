@@ -13,7 +13,16 @@ import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import 'process_status_badges.dart';
 
-enum ProcessListTab { all, complaints, review, rejected, inactive, missingConfig }
+enum ProcessListTab {
+  all,
+  activeOnly,
+  inactiveOnly,
+  complaints,
+  review,
+  rejected,
+  inactive,
+  missingConfig,
+}
 
 /// One tab body: a list of processes from one of several sources —
 ///   * [all]           → `admin/type/{typeId}` (tapping a row opens details),
@@ -58,6 +67,8 @@ class ProcessListView extends StatelessWidget {
   RequestStatus _statusOf(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
       case ProcessListTab.complaints:
         return s.allStatus;
       case ProcessListTab.review:
@@ -72,6 +83,8 @@ class ProcessListView extends StatelessWidget {
   String? _errorOf(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
       case ProcessListTab.complaints:
         return s.allError;
       case ProcessListTab.review:
@@ -88,6 +101,10 @@ class ProcessListView extends StatelessWidget {
       case ProcessListTab.all:
       case ProcessListTab.complaints:
         return p.allProcesses != c.allProcesses;
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
+        return p.allProcesses != c.allProcesses ||
+            p.activeActionStatus != c.activeActionStatus;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
       case ProcessListTab.inactive:
@@ -102,6 +119,8 @@ class ProcessListView extends StatelessWidget {
     final bloc = context.read<ProcessListBloc>();
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
         bloc.add(typeId == 0
             ? const LoadAllProcesses()
             : LoadProcessesByType(typeId));
@@ -140,6 +159,8 @@ class ProcessListView extends StatelessWidget {
             .where((i) => i.isApproved && !i.isActive && !_isRejected(i))
             .toList();
       case ProcessListTab.all:
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
       case ProcessListTab.complaints:
       case ProcessListTab.missingConfig:
         return const [];
@@ -149,11 +170,27 @@ class ProcessListView extends StatelessWidget {
   static bool _isRejected(ReviewQueueItem i) =>
       (i.status ?? '').toUpperCase() == 'REJECTED';
 
+  /// The `admin/type/{id}` response carries approved processes both active and
+  /// inactive; [activeOnly] / [inactiveOnly] split that one payload in two so a
+  /// single request feeds both tabs.
+  List<AdminProcessItem> _adminItemsFor(ProcessListState s) {
+    switch (tab) {
+      case ProcessListTab.activeOnly:
+        return s.allProcesses.where((p) => p.isActive).toList();
+      case ProcessListTab.inactiveOnly:
+        return s.allProcesses.where((p) => !p.isActive).toList();
+      default:
+        return s.allProcesses;
+    }
+  }
+
   int _count(ProcessListState s) {
     switch (tab) {
       case ProcessListTab.all:
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
       case ProcessListTab.complaints:
-        return s.allProcesses.length;
+        return _adminItemsFor(s).length;
       case ProcessListTab.review:
       case ProcessListTab.rejected:
       case ProcessListTab.inactive:
@@ -167,6 +204,10 @@ class ProcessListView extends StatelessWidget {
     switch (tab) {
       case ProcessListTab.all:
         return 'لا توجد معاملات لعرضها';
+      case ProcessListTab.activeOnly:
+        return 'لا توجد معاملات فعّالة في هذا النوع';
+      case ProcessListTab.inactiveOnly:
+        return 'لا توجد معاملات غير فعّالة في هذا النوع';
       case ProcessListTab.complaints:
         return 'لا توجد شكاوى لعرضها';
       case ProcessListTab.review:
@@ -182,10 +223,32 @@ class ProcessListView extends StatelessWidget {
 
   Widget _list(BuildContext context, ProcessListState state) {
     if (_count(state) == 0) {
-      return Center(
-        child: Text(
-          _emptyText,
-          style: const TextStyle(color: Colors.black54, fontSize: 15),
+      // Sit near the top rather than dead-centre: on a tall desktop window a
+      // centred line of text leaves the tab bar stranded above a large void.
+      return Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 56),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.inbox_outlined,
+                size: 46,
+                color: AppColors.textSecondary.withValues(alpha: 0.55),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _emptyText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -226,13 +289,24 @@ class ProcessListView extends StatelessWidget {
   /// buttons, so their cards are taller than the plain "all"/"rejected"/
   /// "inactive" tab cards.
   bool get _hasFooter =>
-      tab == ProcessListTab.review || tab == ProcessListTab.missingConfig;
+      tab == ProcessListTab.review ||
+      tab == ProcessListTab.missingConfig ||
+      tab == ProcessListTab.activeOnly ||
+      tab == ProcessListTab.inactiveOnly;
 
   Widget _card(BuildContext context, ProcessListState state, int i) {
     switch (tab) {
       case ProcessListTab.all:
       case ProcessListTab.complaints:
-        return _AdminProcessCard(item: state.allProcesses[i]);
+        return _AdminProcessCard(item: _adminItemsFor(state)[i]);
+      case ProcessListTab.activeOnly:
+      case ProcessListTab.inactiveOnly:
+        return _AdminProcessCard(
+          item: _adminItemsFor(state)[i],
+          actionStatus: state.activeActionStatus,
+          actingId: state.activeActionId,
+          showActiveToggle: true,
+        );
       case ProcessListTab.review:
         return _ReviewItemCard(
           item: _reviewItemsFor(state)[i],
@@ -268,14 +342,28 @@ Future<void> _openComplete(BuildContext context, int id) async {
   }
 }
 
-/// Card for the "all" tab — backed by [AdminProcessItem].
+/// Card for the "all" / "active" / "inactive" tabs — backed by
+/// [AdminProcessItem]. With [showActiveToggle] it carries a button that flips
+/// `is_active` through `PATCH admin/{id}/status`, moving the row to the other
+/// tab.
 class _AdminProcessCard extends StatelessWidget {
   final AdminProcessItem item;
+  final RequestStatus actionStatus;
+  final int? actingId;
+  final bool showActiveToggle;
 
-  const _AdminProcessCard({required this.item});
+  const _AdminProcessCard({
+    required this.item,
+    this.actionStatus = RequestStatus.initial,
+    this.actingId,
+    this.showActiveToggle = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isActing =
+        actionStatus == RequestStatus.loading && actingId == item.processId;
+
     return _CardShell(
       onTap: () => _openDetails(context, item.processId),
       title: item.name,
@@ -284,7 +372,58 @@ class _AdminProcessCard extends StatelessWidget {
         ApprovalBadge(approvalStatus: item.approvalStatus),
         ActiveBadge(isActive: item.isActive),
       ],
+      footer: !showActiveToggle
+          ? null
+          : _ActionButton(
+              label: item.isActive ? 'إلغاء التفعيل' : 'تفعيل المعاملة',
+              icon: item.isActive
+                  ? Icons.toggle_off_outlined
+                  : Icons.toggle_on_outlined,
+              color: item.isActive ? AppColors.error : AppColors.primary,
+              outlined: item.isActive,
+              loading: isActing,
+              onPressed: isActing ? null : () => _confirmAndToggle(context),
+            ),
     );
+  }
+
+  Future<void> _confirmAndToggle(BuildContext context) async {
+    final activate = !item.isActive;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text(activate ? 'تفعيل المعاملة' : 'إلغاء تفعيل المعاملة'),
+          content: Text(
+            activate
+                ? 'سيتم تفعيل المعاملة «${item.name}» وإتاحتها للمستخدمين. متابعة؟'
+                : 'سيتم إلغاء تفعيل المعاملة «${item.name}» وإخفاؤها عن المستخدمين. متابعة؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: activate ? AppColors.primary : AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(activate ? 'تفعيل' : 'إلغاء التفعيل'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (ok == true && context.mounted) {
+      context
+          .read<ProcessListBloc>()
+          .add(SetProcessActiveRequested(item.processId, isActive: activate));
+    }
   }
 }
 

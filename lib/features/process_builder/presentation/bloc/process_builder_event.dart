@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/notification_action_config.dart';
+import '../../domain/entities/stage_assignment_target.dart';
 import '../../domain/entities/stage_config_draft.dart';
 import '../../domain/entities/widget_config.dart';
 
@@ -142,6 +143,26 @@ class StageRoleChanged extends ProcessBuilderEvent {
   const StageRoleChanged(this.stageId, this.roleId);
   @override
   List<Object?> get props => [stageId, roleId];
+}
+
+/// Commits the currently-picked org/dept/role triple as one more target of the
+/// stage (`assignments[]`). The backend accepts an array, so a stage can be
+/// handed to several roles across different organizations/departments; the
+/// picker is reset afterwards so the next target can be chosen.
+class StageAssignmentAdded extends ProcessBuilderEvent {
+  final int stageId;
+  const StageAssignmentAdded(this.stageId);
+  @override
+  List<Object?> get props => [stageId];
+}
+
+/// Removes one previously-added target from the stage's `assignments[]`.
+class StageAssignmentRemoved extends ProcessBuilderEvent {
+  final int stageId;
+  final StageAssignmentTarget assignment;
+  const StageAssignmentRemoved(this.stageId, this.assignment);
+  @override
+  List<Object?> get props => [stageId, assignment];
 }
 
 class StageWidgetToggled extends ProcessBuilderEvent {

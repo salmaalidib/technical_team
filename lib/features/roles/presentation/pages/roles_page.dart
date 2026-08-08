@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
@@ -16,8 +17,16 @@ class RolesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `GET /api/role` filters by organization and 400s without it, so the list
+    // is scoped to the active organization the user picked after login.
+    final orgId = getIt<ActiveOrganizationCubit>().activeOrgId;
+
+    if (orgId == null) {
+      return const _ErrorState.noOrganization();
+    }
+
     return BlocProvider(
-      create: (_) => getIt<RolesBloc>()..add(const LoadRoles()),
+      create: (_) => getIt<RolesBloc>()..add(LoadRoles(orgId)),
       child: BlocListener<RolesBloc, RolesState>(
         listenWhen: (p, c) => p.actionError != c.actionError,
         listener: (context, state) {
@@ -76,7 +85,13 @@ class _RolesBody extends StatelessWidget {
           case RequestStatus.failure:
             return _ErrorState(
               message: state.error ?? 'حدث خطأ غير متوقع',
-              onRetry: () => context.read<RolesBloc>().add(const LoadRoles()),
+              onRetry: () {
+                final orgId = state.loadedOrgId ??
+                    getIt<ActiveOrganizationCubit>().activeOrgId;
+                if (orgId != null) {
+                  context.read<RolesBloc>().add(LoadRoles(orgId));
+                }
+              },
             );
           case RequestStatus.success:
             if (state.roles.isEmpty) {
@@ -136,9 +151,16 @@ class _RolesGrid extends StatelessWidget {
 
 class _ErrorState extends StatelessWidget {
   final String message;
-  final VoidCallback onRetry;
+
+  /// Null hides the retry button — nothing to retry until the user picks an
+  /// organization.
+  final VoidCallback? onRetry;
 
   const _ErrorState({required this.message, required this.onRetry});
+
+  const _ErrorState.noOrganization()
+      : message = 'اختر المؤسسة أولاً لعرض الأدوار',
+        onRetry = null;
 
   @override
   Widget build(BuildContext context) {
@@ -153,12 +175,14 @@ class _ErrorState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('إعادة المحاولة'),
-          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
         ],
       ),
     );

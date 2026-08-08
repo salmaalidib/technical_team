@@ -27,6 +27,16 @@ class AdminProcessItem extends Equatable {
 
   bool get isApproved => approvalStatus == 'APPROVED';
 
+  AdminProcessItem copyWith({bool? isActive}) => AdminProcessItem(
+        processId: processId,
+        name: name,
+        code: code,
+        priority: priority,
+        deploymentStatus: deploymentStatus,
+        approvalStatus: approvalStatus,
+        isActive: isActive ?? this.isActive,
+      );
+
   @override
   List<Object?> get props => [
         processId,
