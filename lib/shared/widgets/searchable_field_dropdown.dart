@@ -90,12 +90,36 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
   void _onScroll() {
     if (!_scrollCtrl.hasClients) return;
     final pos = _scrollCtrl.position;
+    // `maxScrollExtent == 0` means the list doesn't overflow the panel, so
+    // there is nothing to reach — never treat that as "hit the bottom".
+    if (pos.maxScrollExtent <= 0) return;
     if (pos.pixels >= pos.maxScrollExtent - 120) {
       context.read<FieldsBloc>().add(FieldTypeNextPageRequested(widget.type));
     }
   }
 
+  /// A page that doesn't fill the panel leaves nothing to scroll, so the user
+  /// can never reach the bottom to pull page 2. Called after each build of the
+  /// results list: if there's still room and more pages exist, fetch the next
+  /// one so the list grows until it overflows (then normal scrolling takes
+  /// over).
+  void _topUpIfNotScrollable() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.isShowing) return;
+      if (!_scrollCtrl.hasClients) return;
+      if (_scrollCtrl.position.maxScrollExtent > 0) return;
+
+      final s = context.read<FieldsBloc>().state.of(widget.type);
+      if (s.hasMore && !s.loadingMore && s.status != RequestStatus.loading) {
+        context.read<FieldsBloc>().add(FieldTypeNextPageRequested(widget.type));
+      }
+    });
+  }
+
   void _open() {
+    // Reset the box so the panel opens on the full (unfiltered) list — the
+    // bloc slice is shared by every dropdown of this type.
+    _searchCtrl.clear();
     // Ensure the first page is loaded when the panel opens.
     context.read<FieldsBloc>().add(FieldTypeOpened(widget.type));
     _controller.show();
@@ -144,7 +168,28 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
   }
 
   Widget _buildPanel(BuildContext context) {
-    // Full-screen tap-catcher to dismiss, plus the anchored panel itself.
+    // Where the trigger sits on screen decides whether the panel drops below it
+    // or flips above: anchoring it below unconditionally makes it run past the
+    // bottom of the window (and behind the sticky action bar) for any field in
+    // the lower half of a long form.
+    final box = context.findRenderObject() as RenderBox?;
+    final media = MediaQuery.of(context);
+    final screenH = media.size.height;
+
+    var below = screenH;
+    var above = 0.0;
+    if (box != null && box.hasSize) {
+      final top = box.localToGlobal(Offset.zero).dy;
+      final bottom = top + box.size.height;
+      below = screenH - media.padding.bottom - bottom;
+      above = top - media.padding.top;
+    }
+
+    // Flip up only when below is genuinely cramped and above has more room.
+    final flip = below < _kMinPanelHeight && above > below;
+    final maxHeight =
+        ((flip ? above : below) - 16).clamp(_kMinPanelHeight, _kMaxPanelHeight);
+
     return Stack(
       children: [
         Positioned.fill(
@@ -155,20 +200,22 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
         ),
         CompositedTransformFollower(
           link: _link,
-          targetAnchor: Alignment.bottomRight,
-          followerAnchor: Alignment.topRight,
-          offset: const Offset(0, 8),
+          targetAnchor: flip ? Alignment.topRight : Alignment.bottomRight,
+          followerAnchor: flip ? Alignment.bottomRight : Alignment.topRight,
+          offset: Offset(0, flip ? -8 : 8),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Align(
-              alignment: Alignment.topRight,
+              alignment: flip ? Alignment.bottomRight : Alignment.topRight,
               child: _Panel(
                 type: widget.type,
                 title: widget.title,
                 mode: widget.mode,
+                maxHeight: maxHeight.toDouble(),
                 selectedIds: widget.selectedIds,
                 searchCtrl: _searchCtrl,
                 scrollCtrl: _scrollCtrl,
+                onBuilt: _topUpIfNotScrollable,
                 onToggle: widget.onToggle,
                 onPicked: (w) {
                   widget.onPicked?.call(w);
@@ -183,6 +230,11 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
     );
   }
 }
+
+/// Never shrink the panel below this — a shorter box can't scroll enough to
+/// trigger the next page, which is what silently broke pagination.
+const double _kMinPanelHeight = 240;
+const double _kMaxPanelHeight = 420;
 
 // ════════════════════════════ trigger ════════════════════════════
 
@@ -280,9 +332,19 @@ class _Panel extends StatelessWidget {
   final FieldType type;
   final String title;
   final FieldDropdownMode mode;
+
+  /// Height the panel may occupy — computed from the free space around the
+  /// trigger so the list never runs off-screen.
+  final double maxHeight;
+
   final Set<String> selectedIds;
   final TextEditingController searchCtrl;
   final ScrollController scrollCtrl;
+
+  /// Fired after the results list builds, so the host can top up the page when
+  /// the content is too short to scroll.
+  final VoidCallback onBuilt;
+
   final void Function(WidgetConfig widget, bool selected)? onToggle;
   final void Function(WidgetConfig? widget)? onPicked;
   final VoidCallback onClose;
@@ -291,9 +353,11 @@ class _Panel extends StatelessWidget {
     required this.type,
     required this.title,
     required this.mode,
+    required this.maxHeight,
     required this.selectedIds,
     required this.searchCtrl,
     required this.scrollCtrl,
+    required this.onBuilt,
     required this.onToggle,
     required this.onPicked,
     required this.onClose,
@@ -308,7 +372,7 @@ class _Panel extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: panelWidth,
-        constraints: const BoxConstraints(maxHeight: 420),
+        constraints: BoxConstraints(maxHeight: maxHeight),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
@@ -340,6 +404,7 @@ class _Panel extends StatelessWidget {
               mode: mode,
               selectedIds: selectedIds,
               scrollCtrl: scrollCtrl,
+              onBuilt: onBuilt,
               onToggle: onToggle,
               onPicked: onPicked,
             )),
@@ -418,6 +483,7 @@ class _Results extends StatelessWidget {
   final FieldDropdownMode mode;
   final Set<String> selectedIds;
   final ScrollController scrollCtrl;
+  final VoidCallback onBuilt;
   final void Function(WidgetConfig widget, bool selected)? onToggle;
   final void Function(WidgetConfig? widget)? onPicked;
 
@@ -426,6 +492,7 @@ class _Results extends StatelessWidget {
     required this.mode,
     required this.selectedIds,
     required this.scrollCtrl,
+    required this.onBuilt,
     required this.onToggle,
     required this.onPicked,
   });
@@ -476,6 +543,15 @@ class _Results extends StatelessWidget {
 
         final itemCount = s.items.length + (s.loadingMore ? 1 : 0);
 
+        // Let the host check (post-frame) whether this page even fills the
+        // panel — if not, nothing is scrollable and paging would stall here.
+        onBuilt();
+
+        // The list still shrink-wraps so a 2-result search doesn't leave a tall
+        // empty box — but it is capped by the panel's own maxHeight, so a full
+        // page overflows, becomes scrollable, and the scroll listener can fire.
+        // (Previously the panel let it grow past that cap, `maxScrollExtent`
+        // stayed 0, and page 2 was never requested — pagination silently died.)
         return ListView.separated(
           controller: scrollCtrl,
           padding: const EdgeInsets.symmetric(vertical: 6),

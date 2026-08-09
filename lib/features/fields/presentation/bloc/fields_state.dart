@@ -43,6 +43,8 @@ class FieldTypeState extends Equatable {
   /// The page number to request next.
   int get nextPage => (meta?.page ?? 0) + 1;
 
+  /// [clearError] drops the current error (pass it when starting a fresh load);
+  /// otherwise omitting [error] preserves it rather than silently wiping it.
   FieldTypeState copyWith({
     List<WidgetConfig>? items,
     PageMeta? meta,
@@ -50,6 +52,7 @@ class FieldTypeState extends Equatable {
     RequestStatus? status,
     bool? loadingMore,
     String? error,
+    bool clearError = false,
   }) {
     return FieldTypeState(
       items: items ?? this.items,
@@ -57,7 +60,7 @@ class FieldTypeState extends Equatable {
       search: search ?? this.search,
       status: status ?? this.status,
       loadingMore: loadingMore ?? this.loadingMore,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 

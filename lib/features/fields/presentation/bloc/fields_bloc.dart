@@ -157,13 +157,15 @@ class FieldsBloc extends Bloc<FieldsEvent, FieldsState> {
     Emitter<FieldsState> emit,
   ) async {
     final current = state.of(event.type);
-    // Skip if already loaded successfully and not forced.
+    // Skip only when an unfiltered first page is already loaded — a leftover
+    // search term from a previous open must be reset, not shown again.
     if (!event.forceReload &&
         current.status == RequestStatus.success &&
-        current.items.isNotEmpty) {
+        current.items.isNotEmpty &&
+        current.search.isEmpty) {
       return;
     }
-    await _loadFirstPage(event.type, current.search, emit);
+    await _loadFirstPage(event.type, '', emit);
   }
 
   Future<void> _onSearchChanged(
@@ -184,7 +186,8 @@ class FieldsBloc extends Bloc<FieldsEvent, FieldsState> {
       state.of(type).copyWith(
             status: RequestStatus.loading,
             search: search,
-            error: null,
+            loadingMore: false,
+            clearError: true,
           ),
     ));
 
@@ -204,7 +207,7 @@ class FieldsBloc extends Bloc<FieldsEvent, FieldsState> {
               status: RequestStatus.success,
               items: page.items,
               meta: page.meta,
-              error: null,
+              clearError: true,
             ),
       )),
     );
@@ -230,15 +233,24 @@ class FieldsBloc extends Bloc<FieldsEvent, FieldsState> {
         event.type,
         state.of(event.type).copyWith(loadingMore: false, error: failure.message),
       )),
-      (page) => emit(state.withType(
-        event.type,
-        state.of(event.type).copyWith(
-              loadingMore: false,
-              items: [...state.of(event.type).items, ...page.items],
-              meta: page.meta,
-              error: null,
-            ),
-      )),
+      (page) {
+        final existing = state.of(event.type);
+        // Guard against a page arriving twice (double-fire, or a create that
+        // reloaded page 1 mid-flight): append only ids we don't already hold.
+        final seen = existing.items.map((w) => w.widgetId).toSet();
+        final fresh =
+            page.items.where((w) => seen.add(w.widgetId)).toList();
+
+        emit(state.withType(
+          event.type,
+          existing.copyWith(
+            loadingMore: false,
+            items: [...existing.items, ...fresh],
+            meta: page.meta,
+            clearError: true,
+          ),
+        ));
+      },
     );
   }
 
