@@ -72,7 +72,7 @@ class EndPoints {
   String get processDefinitionComplaintsAll =>
       'api/process_definitions/admin/complaints/all'; // GET complaints (active + inactive), paginated
   String processDefinitionDetails(Object id) =>
-      'api/process_definitions/$id/details'; // GET details + validation
+      'api/process_definitions/admin/$id/details'; // GET details + validation
   String processDefinitionReview(Object id) =>
       'api/process_definitions/$id/review'; // POST { decision: APPROVE | REJECT }
   String processDefinitionStatus(Object id) =>

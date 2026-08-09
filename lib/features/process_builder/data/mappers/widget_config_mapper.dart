@@ -103,8 +103,10 @@ class WidgetConfigMapper {
         'id': e.idWidget,
         'label': e.label,
         'is_required': e.isRequired,
-        'min_date': e.minDate,
-        'max_date': e.maxDate,
+        // Sent in the bound's own shape — a string for absolute/"today", a map
+        // for relative — which is what stage_config/create validates against.
+        'min_date': e.minDate.toJson(),
+        'max_date': e.maxDate.toJson(),
       },
     );
   }
