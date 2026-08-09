@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/active_org/active_organization_cubit.dart';
@@ -8,6 +11,10 @@ import '../../../../core/enums/request_status.dart';
 import '../../../../core/services/key_generation_service.dart';
 import '../../../../core/services/key_storage_service.dart';
 import '../../../../core/services/whatsapp_service.dart';
+import '../../../../core/security/usb_device_info.dart';
+import '../../../key_management/domain/usecases/get_connected_usb_devices.dart';
+import '../../../key_management/domain/usecases/create_usb_bound_key.dart';
+import '../../../key_management/presentation/widgets/usb_device_picker_dialog.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
@@ -35,6 +42,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
 
   String? _lastGeneratedPassword;
   String? _lastGeneratedPin;
+  PendingUsbBoundKey? _pendingKey;
 
   // The organization is the user's active one, chosen once after login.
   late final int? _organizationId =
@@ -46,7 +54,6 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
   @override
   void initState() {
     super.initState();
-    _generatePasswordAndPin();
     // Load the active organization's departments for the (cascading) department
     // dropdown. Deferred to post-frame so the EmployeesBloc provided to this
     // dialog route is available.
@@ -60,13 +67,9 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
     }
   }
 
-  void _generatePasswordAndPin() {
-    _password.text = getIt<KeyStorageService>().generatePassword();
-    _pin.text = getIt<KeyStorageService>().generatePin();
-  }
-
   @override
   void dispose() {
+    unawaited(getIt<KeyStorageService>().discardStagedKey(_pendingKey));
     _firstName.dispose();
     _fatherName.dispose();
     _motherName.dispose();
@@ -79,6 +82,29 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
     _pin.dispose();
     _publicKey.dispose();
     super.dispose();
+  }
+
+  Future<bool> _confirmReplaceExistingKey() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('يوجد مفتاح سابق'),
+            content: const Text(
+              'يوجد مفتاح سابق لهذا الموظف على الفلاشة. هل تريد استبداله؟',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('استبدال المفتاح'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   String? _required(TextEditingController c) {
@@ -95,6 +121,26 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
       return 'يجب أن يكون PIN من 6 أرقام';
     }
 
+    return null;
+  }
+
+  String? _nationalIdError() {
+    if (!_touched) return null;
+    final value = _nationalId.text.trim();
+    if (value.isEmpty) return 'هذا الحقل مطلوب';
+    if (!RegExp(r'^\d{11}$').hasMatch(value)) {
+      return 'يجب أن يتكون الرقم الوطني من 11 رقماً';
+    }
+    return null;
+  }
+
+  String? _phoneError() {
+    if (!_touched) return null;
+    final value = _phone.text.trim();
+    if (value.isEmpty) return 'هذا الحقل مطلوب';
+    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+      return 'يجب أن يتكون رقم الهاتف من 10 أرقام';
+    }
     return null;
   }
 
@@ -129,7 +175,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         title: const Text('تم إنشاء الموظف بنجاح'),
         content: SelectableText(
           '$message\n\n'
-          'كلمة المرور المؤقتة:\n$password\n\n'
+          'كلمة المرور:\n$password\n\n'
           'رمز PIN:\n$pin\n\n'
           'يجب تسليم كلمة المرور والـ PIN للموظف وحفظهما جيداً.',
           textDirection: TextDirection.rtl,
@@ -208,7 +254,9 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         _motherName.text.trim().isEmpty ||
         _lastName.text.trim().isEmpty ||
         _nationalId.text.trim().isEmpty ||
+        !RegExp(r'^\d{11}$').hasMatch(_nationalId.text.trim()) ||
         _phone.text.trim().isEmpty ||
+        !RegExp(r'^\d{10}$').hasMatch(_phone.text.trim()) ||
         _userName.text.trim().isEmpty ||
         _email.text.trim().isEmpty ||
         _password.text.trim().isEmpty ||
@@ -228,24 +276,31 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
       _lastGeneratedPassword = generatedPassword;
       _lastGeneratedPin = generatedPin;
 
-      debugPrint('GENERATING KEYS...');
-      final keys = await getIt<KeyGenerationService>().generateKeys();
-
-      debugPrint('PICKING FLASH DIRECTORY...');
-      final directoryPath =
-          await getIt<KeyStorageService>().pickExternalDirectory();
-
-      if (directoryPath == null) {
+      final selectedDevice = await UsbDevicePickerDialog.show(
+        context,
+        getIt<GetConnectedUsbDevices>(),
+      );
+      if (selectedDevice == null) {
         _showDialogMessage('لم يتم اختيار مجلد لحفظ المفاتيح');
         return;
       }
 
-      debugPrint('SAVING KEYS TO: $directoryPath');
+      final storage = getIt<KeyStorageService>();
+      if (await storage.hasExistingKey(
+            selectedDevice: selectedDevice,
+            username: _userName.text.trim(),
+          ) &&
+          !await _confirmReplaceExistingKey()) {
+        return;
+      }
 
-      await getIt<KeyStorageService>().saveEmployeeKeys(
-        directoryPath: directoryPath,
-        userName: _userName.text.trim(),
-        privateKey: keys.privateKey,
+      debugPrint('GENERATING KEYS...');
+      final keys = await getIt<KeyGenerationService>().generateKeys();
+
+      _pendingKey = await getIt<CreateUsbBoundKey>()(
+        selectedDevice: selectedDevice,
+        username: _userName.text.trim(),
+        privateKeyBytes: keys.privateKeyBytes,
         publicKey: keys.publicKey,
         pin: generatedPin,
       );
@@ -276,6 +331,8 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
             ),
           );
     } catch (e) {
+      await getIt<KeyStorageService>().discardStagedKey(_pendingKey);
+      _pendingKey = null;
       debugPrint('CREATE EMPLOYEE ERROR: $e');
 
       if (!context.mounted) return;
@@ -291,8 +348,26 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
     return BlocConsumer<EmployeesBloc, EmployeesState>(
       listenWhen: (p, c) =>
           p.formStatus != c.formStatus || p.actionError != c.actionError,
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.formStatus == FormStatus.success) {
+          final dialogNavigator = Navigator.of(context);
+          final rootNavigator = Navigator.of(context, rootNavigator: true);
+          final pendingKey = _pendingKey;
+          if (pendingKey == null) {
+            _showDialogMessage('تعذّر العثور على المفتاح المرحلي لإتمام الحفظ');
+            return;
+          }
+          try {
+            await getIt<KeyStorageService>().commitStagedKey(
+              pendingKey: pendingKey,
+              pin: _lastGeneratedPin ?? '',
+            );
+            _pendingKey = null;
+          } catch (error) {
+            _showDialogMessage(error.toString());
+            return;
+          }
+          if (!context.mounted) return;
           final successMessage =
               state.createdEmployee?.message ?? 'تم إنشاء حساب الموظف بنجاح';
 
@@ -309,14 +384,13 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           // create dialog. After the pop this State is unmounted, so its own
           // context is defunct — but this navigator outlives it and can host
           // the credentials dialog.
-          final navigator = Navigator.of(context);
-
-          navigator.pop();
+          if (!dialogNavigator.mounted || !rootNavigator.mounted) return;
+          dialogNavigator.pop();
 
           // Show the credentials dialog on the root navigator's context, which
           // is still mounted after the create dialog is gone.
           _showCredentialsDialog(
-            rootContext: navigator.context,
+            rootContext: rootNavigator.context,
             message: successMessage,
             userName: userName,
             phone: phone,
@@ -326,6 +400,9 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
         }
 
         if (state.formStatus == FormStatus.failure) {
+          await getIt<KeyStorageService>().discardStagedKey(_pendingKey);
+          _pendingKey = null;
+          if (!context.mounted) return;
           _showDialogMessage(state.formError ?? 'تعذّر إنشاء الموظف');
         }
 
@@ -345,32 +422,61 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           ),
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
           ),
+          clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
             constraints: const BoxConstraints(
               maxWidth: 920,
-              maxHeight: 760,
+              maxHeight: 820,
             ),
             child: Directionality(
               textDirection: TextDirection.rtl,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(28, 26, 28, 22),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
+                    color: Colors.white,
                     child: Row(
                       children: [
-                        Text(
-                          'إنشاء موظف جديد',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.person_add_alt_1_rounded,
+                            color: Colors.white,
+                          ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'إنشاء موظف جديد',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'أدخل بيانات الموظف واربط حسابه بمفتاح USB آمن',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
                         InkWell(
                           onTap: () => Navigator.pop(context),
                           borderRadius: BorderRadius.circular(8),
@@ -387,7 +493,11 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: AppColors.border),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.border.withValues(alpha: 0.65),
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
@@ -435,14 +545,28 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                             first: _AppTextField(
                               controller: _nationalId,
                               label: 'الرقم الوطني *',
-                              hint: 'مثال: 01010101010',
-                              errorText: _required(_nationalId),
+                              hint: 'أدخل رقمك الوطني',
+                              errorText: _nationalIdError(),
+                              keyboardType: TextInputType.number,
+                              maxLength: 11,
+                              digitsOnly: true,
+                              customCounterMax: 11,
+                              onChanged: (_) {
+                                if (_touched) setState(() {});
+                              },
                             ),
                             second: _AppTextField(
                               controller: _phone,
                               label: 'رقم الهاتف *',
-                              hint: '09xxxxxxxx',
-                              errorText: _required(_phone),
+                              hint: 'أدخل رقم هاتفك',
+                              errorText: _phoneError(),
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              digitsOnly: true,
+                              customCounterMax: 10,
+                              onChanged: (_) {
+                                if (_touched) setState(() {});
+                              },
                             ),
                           ),
                           const SizedBox(height: 18),
@@ -462,37 +586,35 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                           ),
                           const SizedBox(height: 18),
                           _TwoFieldsRow(
-                            first: _GeneratedTextField(
+                            first: _AppTextField(
                               controller: _password,
-                              label: 'كلمة المرور المؤقتة *',
-                              hint: 'يتم توليدها تلقائياً',
+                              label: 'كلمة المرور *',
+                              hint: 'أدخل كلمة مرور آمنة',
                               errorText: _required(_password),
-                              onGenerate: () {
-                                setState(() {
-                                  _password.text = getIt<KeyStorageService>()
-                                      .generatePassword();
-                                });
+                              obscureText: true,
+                              onChanged: (_) {
+                                if (_touched) setState(() {});
                               },
                             ),
-                            second: _GeneratedTextField(
+                            second: _AppTextField(
                               controller: _pin,
                               label: 'رمز PIN *',
-                              hint: '6 أرقام',
+                              hint: 'أدخل 6 أرقام',
                               errorText: _pinError(),
-                              onGenerate: () {
-                                setState(() {
-                                  _pin.text =
-                                      getIt<KeyStorageService>().generatePin();
-                                });
+                              obscureText: true,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                              digitsOnly: true,
+                              customCounterMax: 6,
+                              onChanged: (_) {
+                                if (_touched) setState(() {});
                               },
                             ),
                           ),
-                          const SizedBox(height: 18),
-                          _AppTextField(
-                            controller: _publicKey,
-                            label: 'Public Key',
-                            hint: 'يتم توليده تلقائياً عند الإنشاء',
-                            readOnly: true,
+                          const SizedBox(height: 22),
+                          _SecurityUsbCard(
+                            getConnectedUsbDevices:
+                                getIt<GetConnectedUsbDevices>(),
                           ),
                           const SizedBox(height: 26),
                           const Divider(height: 1, color: AppColors.border),
@@ -559,18 +681,23 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                       ),
                     ),
                   ),
-                  const Divider(height: 1, color: AppColors.border),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(28, 18, 28, 22),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.border.withValues(alpha: 0.65),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(28, 14, 28, 16),
+                    color: Colors.white,
                     child: Row(
                       children: [
                         Expanded(
                           child: SizedBox(
-                            height: 54,
-                            child: ElevatedButton(
+                            height: 50,
+                            child: FilledButton.icon(
                               onPressed:
                                   submitting ? null : () => _submit(context),
-                              child: submitting
+                              icon: submitting
                                   ? const SizedBox(
                                       width: 22,
                                       height: 22,
@@ -579,23 +706,29 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text('إنشاء حساب الموظف'),
+                                  : const Icon(Icons.person_add_rounded),
+                              label: Text(
+                                submitting
+                                    ? 'جارٍ إنشاء الحساب...'
+                                    : 'إنشاء حساب الموظف',
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 18),
                         Expanded(
                           child: SizedBox(
-                            height: 54,
-                            child: ElevatedButton(
+                            height: 50,
+                            child: OutlinedButton.icon(
                               onPressed: submitting
                                   ? null
                                   : () => Navigator.pop(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.inputBackground,
+                              style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.primary,
+                                side: const BorderSide(color: AppColors.border),
                               ),
-                              child: const Text('إلغاء'),
+                              icon: const Icon(Icons.close_rounded),
+                              label: const Text('إلغاء'),
                             ),
                           ),
                         ),
@@ -623,12 +756,26 @@ class _TwoFieldsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: first),
-        const SizedBox(width: 22),
-        Expanded(child: second),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 620) {
+          return Column(
+            children: [
+              first,
+              const SizedBox(height: 18),
+              second,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: first),
+            const SizedBox(width: 22),
+            Expanded(child: second),
+          ],
+        );
+      },
     );
   }
 }
@@ -685,7 +832,11 @@ class _AppTextField extends StatelessWidget {
   final String hint;
   final bool obscureText;
   final String? errorText;
-  final bool readOnly;
+  final TextInputType? keyboardType;
+  final int? maxLength;
+  final bool digitsOnly;
+  final ValueChanged<String>? onChanged;
+  final int? customCounterMax;
 
   const _AppTextField({
     required this.controller,
@@ -693,7 +844,11 @@ class _AppTextField extends StatelessWidget {
     required this.hint,
     this.obscureText = false,
     this.errorText,
-    this.readOnly = false,
+    this.keyboardType,
+    this.maxLength,
+    this.digitsOnly = false,
+    this.onChanged,
+    this.customCounterMax,
   });
 
   @override
@@ -713,70 +868,226 @@ class _AppTextField extends StatelessWidget {
         TextField(
           controller: controller,
           obscureText: obscureText,
-          readOnly: readOnly,
+          keyboardType: keyboardType,
+          maxLength: maxLength,
+          inputFormatters: [
+            if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
+            if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+          ],
+          onChanged: onChanged,
           textDirection: TextDirection.rtl,
           textAlign: TextAlign.right,
           decoration: InputDecoration(
             hintText: hint,
             errorText: errorText,
             hintTextDirection: TextDirection.rtl,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+            counterText: '',
+            constraints: const BoxConstraints(minHeight: 52),
+            filled: true,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 15,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.6,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.error,
+                width: 1.6,
+              ),
             ),
           ),
         ),
+        if (customCounterMax != null) ...[
+          const SizedBox(height: 3),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) => Directionality(
+                textDirection: TextDirection.rtl,
+                child: Text(
+                  '${value.text.length}/$customCounterMax',
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.1,
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
-class _GeneratedTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final VoidCallback onGenerate;
-  final String? errorText;
+class _SecurityUsbCard extends StatefulWidget {
+  final GetConnectedUsbDevices getConnectedUsbDevices;
 
-  const _GeneratedTextField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.onGenerate,
-    this.errorText,
-  });
+  const _SecurityUsbCard({required this.getConnectedUsbDevices});
+
+  @override
+  State<_SecurityUsbCard> createState() => _SecurityUsbCardState();
+}
+
+class _SecurityUsbCardState extends State<_SecurityUsbCard> {
+  late Future<List<UsbDeviceInfo>> _devices;
+
+  @override
+  void initState() {
+    super.initState();
+    _devices = widget.getConnectedUsbDevices();
+  }
+
+  void _refresh() {
+    setState(() => _devices = widget.getConnectedUsbDevices());
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          textAlign: TextAlign.right,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          textDirection: TextDirection.ltr,
-          textAlign: TextAlign.left,
-          decoration: InputDecoration(
-            hintText: hint,
-            errorText: errorText,
-            suffixIcon: IconButton(
-              tooltip: 'توليد جديد',
-              onPressed: onGenerate,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+    return FutureBuilder<List<UsbDeviceInfo>>(
+      future: _devices,
+      builder: (context, snapshot) {
+        final loading = snapshot.connectionState == ConnectionState.waiting;
+        final supportedDevices =
+            snapshot.data?.where((device) => device.isSupported).toList() ??
+                const <UsbDeviceInfo>[];
+        final detected = supportedDevices.isNotEmpty;
+        final hasError = snapshot.hasError;
+
+        final Color accent;
+        final IconData icon;
+        final String status;
+        final String message;
+        if (loading) {
+          accent = const Color(0xffB7791F);
+          icon = Icons.sync_rounded;
+          status = 'جارٍ فحص وحدات USB...';
+          message = 'يرجى الانتظار أثناء قراءة وحدات الأمان المتصلة بالجهاز';
+        } else if (detected) {
+          accent = AppColors.primary;
+          icon = Icons.usb_rounded;
+          status = 'تم اكتشاف مفتاح USB آمن';
+          message = supportedDevices.length == 1
+              ? 'وحدة USB صالحة متصلة. سيتم اختيارها والتحقق منها عند إنشاء الحساب.'
+              : 'تم العثور على ${supportedDevices.length} وحدات صالحة. ستختار الوحدة عند إنشاء الحساب.';
+        } else if (hasError) {
+          accent = AppColors.error;
+          icon = Icons.usb_off_rounded;
+          status = 'تعذّر فحص مفتاح USB';
+          message = 'أعد توصيل وحدة USB ثم اضغط على إعادة الفحص';
+        } else {
+          accent = const Color(0xffB7791F);
+          icon = Icons.usb_off_rounded;
+          status = 'لم يتم اكتشاف مفتاح USB';
+          message =
+              'يرجى توصيل فلاشة الأمان (USB Token) بالجهاز لقراءة المفتاح';
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accent.withValues(alpha: 0.28)),
           ),
-        ),
-      ],
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: loading
+                    ? Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: accent,
+                        ),
+                      )
+                    : Icon(icon, color: accent, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 5,
+                      children: [
+                        Text(
+                          'مفتاح الأمان USB',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            status,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: accent,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      message,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: loading ? null : _refresh,
+                tooltip: 'إعادة فحص وحدات USB',
+                icon: const Icon(Icons.refresh_rounded),
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -813,12 +1124,26 @@ class _AppDropdown extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
-          value: items.containsKey(value) ? value : null,
+          initialValue: items.containsKey(value) ? value : null,
           isExpanded: true,
           decoration: InputDecoration(
             errorText: errorText,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+            filled: true,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.6,
+              ),
             ),
           ),
           hint: Text(

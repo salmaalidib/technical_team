@@ -1,17 +1,58 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
-import 'package:cryptography/cryptography.dart';
-import 'package:file_picker/file_picker.dart';
+import '../security/key_package_crypto_service.dart';
+import '../security/secure_key_exceptions.dart';
+import '../security/usb_device_info.dart';
+import '../security/usb_device_service.dart';
+import '../../features/key_management/domain/usecases/validate_usb_bound_key.dart';
+
+class PendingUsbBoundKey {
+  final String clientKeyId;
+  final String username;
+  final String publicKey;
+  final String stagingDirectoryPath;
+  final String finalDirectoryPath;
+  final String usbFingerprintHash;
+
+  const PendingUsbBoundKey({
+    required this.clientKeyId,
+    required this.username,
+    required this.publicKey,
+    required this.stagingDirectoryPath,
+    required this.finalDirectoryPath,
+    required this.usbFingerprintHash,
+  });
+}
+
+abstract class KeyFileTransactionOperations {
+  Future<void> renameDirectory(String source, String destination);
+}
+
+class IoKeyFileTransactionOperations implements KeyFileTransactionOperations {
+  const IoKeyFileTransactionOperations();
+
+  @override
+  Future<void> renameDirectory(String source, String destination) async {
+    await Directory(source).rename(destination);
+  }
+}
 
 class KeyStorageService {
-  final _aes = AesGcm.with256bits();
-  final _pbkdf2 = Pbkdf2(
-    macAlgorithm: Hmac.sha256(),
-    iterations: 100000,
-    bits: 256,
-  );
+  static const keyDirectoryName = 'DirectorateSecureKeys';
+  static const _minimumFreeBytes = 1024 * 1024;
+
+  final UsbDeviceService _usbDeviceService;
+  final KeyPackageCryptoService _cryptoService;
+  final ValidateUsbBoundKey _validateUsbBoundKey;
+  final KeyFileTransactionOperations _fileTransactionOperations;
+
+  KeyStorageService(
+      this._usbDeviceService, this._cryptoService, this._validateUsbBoundKey,
+      [this._fileTransactionOperations =
+          const IoKeyFileTransactionOperations()]);
 
   String generatePin() {
     final random = Random.secure();
@@ -28,135 +69,192 @@ class KeyStorageService {
     ).join();
   }
 
-  Future<String?> pickExternalDirectory() async {
-    final path = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'اختر مجلداً على فلاشة USB لحفظ مفاتيح الموظف',
-    );
-
-    if (path == null) return null;
-
-    if (!_isExternalDrive(path)) {
-      throw Exception(_externalDriveHint);
-    }
-
-    return path;
+  Future<bool> hasExistingKey({
+    required UsbDeviceInfo selectedDevice,
+    required String username,
+  }) async {
+    final device = await _requireSameConnectedDevice(selectedDevice);
+    return Directory(_finalDirectoryPath(device.rootPath, username)).exists();
   }
 
-  /// Platform-specific guidance shown when the chosen folder is not on a
-  /// removable drive.
-  String get _externalDriveHint {
-    if (Platform.isMacOS) {
-      return 'يجب اختيار مجلد على فلاشة USB (يظهر مسارها تحت \u200E/Volumes\u200E)، '
-          'وليس على القرص الداخلي';
-    }
-    if (Platform.isLinux) {
-      return 'يجب اختيار مجلد على فلاشة USB (تحت \u200E/media\u200E أو \u200E/mnt\u200E)، '
-          'وليس على القرص الداخلي';
-    }
-    return 'يجب اختيار مجلد على فلاشة USB أو قرص خارجي (غير القرص :C)، '
-        'وليس على القرص الداخلي';
-  }
-
-  Future<void> saveEmployeeKeys({
-    required String directoryPath,
-    required String userName,
-    required String privateKey,
+  Future<PendingUsbBoundKey> stageEmployeeKeys({
+    required UsbDeviceInfo selectedDevice,
+    required String username,
+    required Uint8List privateKeyBytes,
     required String publicKey,
     required String pin,
   }) async {
-    final safeUserName = userName.replaceAll(RegExp(r'[^a-zA-Z0-9_.-]'), '_');
+    Directory? stagingDirectory;
+    try {
+      final device = await _requireSameConnectedDevice(selectedDevice);
+      if (device.freeBytes < _minimumFreeBytes) {
+        throw const UsbSecurityException(
+          'لا توجد مساحة كافية على وحدة USB لحفظ المفتاح',
+        );
+      }
+
+      final usbFingerprintHash =
+          await _usbDeviceService.getStableDeviceFingerprint(device);
+      final clientKeyId = _cryptoService.generateClientKeyId();
+      final root = _withoutTrailingSeparator(device.rootPath);
+      final sep = Platform.pathSeparator;
+      final secureRoot = Directory('$root$sep$keyDirectoryName');
+      await secureRoot.create(recursive: true);
+      stagingDirectory = Directory(
+        '${secureRoot.path}$sep.staging$sep$clientKeyId',
+      );
+      await stagingDirectory.create(recursive: true);
+
+      final encrypted = await _cryptoService.encryptPrivateKey(
+        privateKeyBytes: privateKeyBytes,
+        pin: pin,
+        username: username,
+        publicKey: publicKey,
+        usbFingerprintHash: usbFingerprintHash,
+        clientKeyId: clientKeyId,
+        createdAt: DateTime.now(),
+      );
+
+      await File('${stagingDirectory.path}${sep}employee-key.enc')
+          .writeAsString(base64Encode(encrypted.cipherText), flush: true);
+      await File('${stagingDirectory.path}${sep}employee-key.meta')
+          .writeAsString(jsonEncode(encrypted.metadata.toJson()), flush: true);
+      await File('${stagingDirectory.path}${sep}employee-public.pem')
+          .writeAsString(publicKey, flush: true);
+
+      await _validateUsbBoundKey(
+        keyDirectoryPath: stagingDirectory.path,
+        pin: pin,
+      );
+
+      return PendingUsbBoundKey(
+        clientKeyId: clientKeyId,
+        username: username,
+        publicKey: publicKey,
+        stagingDirectoryPath: stagingDirectory.path,
+        finalDirectoryPath: _finalDirectoryPath(device.rootPath, username),
+        usbFingerprintHash: usbFingerprintHash,
+      );
+    } on UsbSecurityException {
+      if (stagingDirectory != null && await stagingDirectory.exists()) {
+        await stagingDirectory.delete(recursive: true);
+      }
+      rethrow;
+    } on FileSystemException {
+      if (stagingDirectory != null && await stagingDirectory.exists()) {
+        await stagingDirectory.delete(recursive: true);
+      }
+      throw const UsbWriteFailedException();
+    } finally {
+      privateKeyBytes.fillRange(0, privateKeyBytes.length, 0);
+    }
+  }
+
+  Future<void> commitStagedKey({
+    required PendingUsbBoundKey pendingKey,
+    required String pin,
+  }) async {
+    final staging = Directory(pendingKey.stagingDirectoryPath);
+    if (!await staging.exists()) throw const UsbDisconnectedException();
+
+    final validation = await _validateUsbBoundKey(
+      keyDirectoryPath: staging.path,
+      pin: pin,
+    );
+    if (validation.clientKeyId != pendingKey.clientKeyId ||
+        validation.publicKey != pendingKey.publicKey) {
+      throw const KeyIntegrityCheckFailedException();
+    }
+
+    final target = Directory(pendingKey.finalDirectoryPath);
+    final secureRoot = target.parent;
+    final backup = Directory(
+      '${secureRoot.path}${Platform.pathSeparator}.backup'
+      '${Platform.pathSeparator}${pendingKey.clientKeyId}',
+    );
+    var oldMovedToBackup = false;
+    try {
+      if (await target.exists()) {
+        await backup.parent.create(recursive: true);
+        if (await backup.exists()) await backup.delete(recursive: true);
+        await _fileTransactionOperations.renameDirectory(
+          target.path,
+          backup.path,
+        );
+        oldMovedToBackup = true;
+      }
+      await _fileTransactionOperations.renameDirectory(
+        staging.path,
+        target.path,
+      );
+      if (oldMovedToBackup && await backup.exists()) {
+        await backup.delete(recursive: true);
+      }
+      await _deleteIfEmpty(backup.parent);
+      await _deleteIfEmpty(staging.parent);
+    } on FileSystemException {
+      if (!await target.exists() && oldMovedToBackup && await backup.exists()) {
+        try {
+          await _fileTransactionOperations.renameDirectory(
+            backup.path,
+            target.path,
+          );
+        } on FileSystemException {
+          // Keep the backup intact for manual recovery if rollback cannot run.
+        }
+      }
+      throw const UsbWriteFailedException();
+    }
+  }
+
+  Future<void> discardStagedKey(PendingUsbBoundKey? pendingKey) async {
+    if (pendingKey == null) return;
+    final staging = Directory(pendingKey.stagingDirectoryPath);
+    try {
+      if (await staging.exists()) await staging.delete(recursive: true);
+      await _deleteIfEmpty(staging.parent);
+    } on FileSystemException {
+      // The USB may already be disconnected; no local fallback copy is made.
+    }
+  }
+
+  Future<UsbDeviceInfo> _requireSameConnectedDevice(
+    UsbDeviceInfo selectedDevice,
+  ) async {
+    final current =
+        await _usbDeviceService.getDeviceForPath(selectedDevice.rootPath);
+    if (current == null) throw const UsbDisconnectedException();
+    if (!current.isRemovable) throw const UsbRequiredException();
+    if (!current.isSupported) throw const UnsupportedUsbDeviceException();
+
+    final selectedFingerprint =
+        await _usbDeviceService.getStableDeviceFingerprint(selectedDevice);
+    final currentFingerprint =
+        await _usbDeviceService.getStableDeviceFingerprint(current);
+    if (selectedFingerprint != currentFingerprint) {
+      throw const UsbDisconnectedException();
+    }
+    return current;
+  }
+
+  String _finalDirectoryPath(String rootPath, String username) {
+    final safeUsername = username.replaceAll(RegExp(r'[^a-zA-Z0-9_.-]'), '_');
+    final root = _withoutTrailingSeparator(rootPath);
     final sep = Platform.pathSeparator;
-    final employeeDir = Directory('$directoryPath$sep$safeUserName-keys');
-
-    if (!await employeeDir.exists()) {
-      await employeeDir.create(recursive: true);
-    }
-
-    final salt = _randomBytes(16);
-    final nonce = _randomBytes(12);
-
-    final secretKey = await _pbkdf2.deriveKey(
-      secretKey: SecretKey(utf8.encode(pin)),
-      nonce: salt,
-    );
-
-    final secretBox = await _aes.encrypt(
-      utf8.encode(privateKey),
-      secretKey: secretKey,
-      nonce: nonce,
-    );
-
-    await File('${employeeDir.path}${sep}employee-key.enc').writeAsString(
-      base64Encode(secretBox.cipherText),
-      flush: true,
-    );
-
-    await File('${employeeDir.path}${sep}employee-key.meta').writeAsString(
-      jsonEncode({
-        'algorithm': 'AES-GCM-256',
-        'kdf': 'PBKDF2-HMAC-SHA256',
-        'iterations': 100000,
-        'salt': base64Encode(salt),
-        'nonce': base64Encode(nonce),
-        'mac': base64Encode(secretBox.mac.bytes),
-        'created_at': DateTime.now().toIso8601String(),
-      }),
-      flush: true,
-    );
-
-    await File('${employeeDir.path}${sep}employee-public.pem').writeAsString(
-      publicKey,
-      flush: true,
-    );
+    return '$root$sep$keyDirectoryName$sep$safeUsername-keys';
   }
 
-  List<int> _randomBytes(int length) {
-    final random = Random.secure();
-    return List.generate(length, (_) => random.nextInt(256));
+  String _withoutTrailingSeparator(String path) {
+    var result = path;
+    while (result.endsWith(Platform.pathSeparator)) {
+      result = result.substring(0, result.length - 1);
+    }
+    return result;
   }
 
-  /// Returns true only when [path] lives on a removable / external volume
-  /// (e.g. a USB flash drive), so employee keys are never written to the
-  /// machine's internal disk. The notion of "external" differs per platform.
-  bool _isExternalDrive(String path) {
-    if (Platform.isWindows) {
-      final normalized = path.replaceAll('/', '\\');
-
-      // The system disk is C:\ — anything on it is internal. Any other
-      // drive letter (D:\, E:\, ...) is treated as removable.
-      if (normalized.toUpperCase().startsWith('C:\\')) {
-        return false;
-      }
-      return RegExp(r'^[A-Z]:\\', caseSensitive: false).hasMatch(normalized);
-    }
-
-    if (Platform.isMacOS) {
-      // External volumes mount under /Volumes/<name>. The internal disk is
-      // also exposed there (usually "/Volumes/Macintosh HD"), so exclude the
-      // bare /Volumes and the root device name; require a real sub-volume.
-      final normalized = path.replaceAll('\\', '/');
-      if (!normalized.startsWith('/Volumes/')) {
-        return false;
-      }
-      final volumeName = normalized
-          .substring('/Volumes/'.length)
-          .split('/')
-          .first
-          .trim();
-      if (volumeName.isEmpty) return false;
-      // Reject the internal boot volume by its default name.
-      return volumeName.toLowerCase() != 'macintosh hd';
-    }
-
-    if (Platform.isLinux) {
-      // USB drives are auto-mounted under one of these on common distros.
-      final normalized = path.replaceAll('\\', '/');
-      return normalized.startsWith('/media/') ||
-          normalized.startsWith('/run/media/') ||
-          normalized.startsWith('/mnt/');
-    }
-
-    // Unknown platform: fail closed so keys are never written internally.
-    return false;
+  Future<void> _deleteIfEmpty(Directory directory) async {
+    if (!await directory.exists()) return;
+    if (!await directory.list().isEmpty) return;
+    await directory.delete();
   }
 }

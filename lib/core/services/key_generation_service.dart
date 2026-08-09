@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
@@ -12,7 +13,7 @@ class KeyGenerationService {
     final privateBytes = await keyPair.extractPrivateKeyBytes();
 
     return KeyPairResult(
-      privateKey: base64Encode(privateBytes),
+      privateKeyBytes: Uint8List.fromList(privateBytes),
       publicKey: _ed25519PublicKeyToPem(publicKey.bytes),
     );
   }
@@ -45,11 +46,11 @@ ${base64Encode(derBytes)}
 }
 
 class KeyPairResult {
-  final String privateKey;
+  final Uint8List privateKeyBytes;
   final String publicKey;
 
   KeyPairResult({
-    required this.privateKey,
+    required this.privateKeyBytes,
     required this.publicKey,
   });
 }
