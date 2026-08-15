@@ -195,12 +195,18 @@ class _Header extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_back_rounded,
-                    size: 22, color: AppColors.textPrimary),
+                // زر رجوع في واجهة RTL: يشير نحو اليمين.
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 22,
+                  color: AppColors.textPrimary,
+                  textDirection: TextDirection.rtl,
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Column(
+              textDirection: TextDirection.rtl,
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [

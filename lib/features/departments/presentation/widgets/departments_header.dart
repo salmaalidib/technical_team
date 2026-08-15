@@ -31,7 +31,10 @@ class DepartmentsHeader extends StatelessWidget {
           runSpacing: 16,
           children: [
             Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              // الـ Wrap يعمل بـ RTL، فـ end هنا يعني اليسار — استخدم start
+              // كي يبقى العنوان والوصف محاذيين لليمين.
+              textDirection: TextDirection.rtl,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   textDirection: TextDirection.rtl,

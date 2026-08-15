@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/active_org/active_organization_cubit.dart';
@@ -127,47 +129,12 @@ class _AppSidebarState extends State<AppSidebar>
             opacity: _headerFade,
             child: SlideTransition(
               position: _headerSlide,
-              child: const SizedBox(
+              child: SizedBox(
                 height: 115,
                 width: double.infinity,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(18, 30, 18, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: Text(
-                          'مديرية التربية',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: Text(
-                          'ريف دمشق',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            color: AppColors.secondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 26, 18, 16),
+                  child: _ActiveOrgHeader(isCollapsed: isCollapsed),
                 ),
               ),
             ),
@@ -208,6 +175,81 @@ class _AppSidebarState extends State<AppSidebar>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// رأس السايدبار: اسم المؤسسة الفعّالة وموقعها. كان النصّان ثابتين — الآن
+/// يُقرآن من [ActiveOrganizationCubit] وهو المصدر الوحيد للمؤسسة المختارة.
+class _ActiveOrgHeader extends StatelessWidget {
+  final bool isCollapsed;
+
+  const _ActiveOrgHeader({this.isCollapsed = false});
+
+  @override
+  Widget build(BuildContext context) {
+    // شعار النسر (نسخة مفرّغة بلا خلفية) — يظهر وحده عند طيّ السايدبار.
+    final logo = SvgPicture.asset(
+      'assets/vectors/syria-logo.svg',
+      width: 40,
+      height: 40,
+      fit: BoxFit.contain,
+    );
+
+    if (isCollapsed) return Center(child: logo);
+
+    return BlocBuilder<ActiveOrganizationCubit, ActiveOrgState>(
+      bloc: getIt<ActiveOrganizationCubit>(),
+      builder: (context, state) {
+        final org = state.activeOrg;
+        final name = org?.name ?? '';
+        final location = org?.locationName ?? '';
+
+        return Row(
+          textDirection: TextDirection.rtl,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            logo,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                textDirection: TextDirection.rtl,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  if (location.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      style: const TextStyle(
+                        color: AppColors.secondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

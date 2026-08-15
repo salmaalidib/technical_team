@@ -6,6 +6,7 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/table/data_pager_widget.dart';
 import '../../../../shared/widgets/table/grid_column.dart';
+import '../../domain/entities/department.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
@@ -55,10 +56,48 @@ class _DepartmentsTableState extends State<DepartmentsTable> {
         NavigateToChildren(parentId: d.id, parentName: d.name),
       ),
       onView: (d) => DepartmentDetailsDialog.show(context, d),
-      onToggleStatus: (d) => bloc.add(ToggleDepartmentStatus(d.id)),
+      onToggleStatus: _confirmAndToggle,
       isToggling: (d) =>
           context.read<DepartmentsBloc>().state.togglingIds.contains(d.id),
     );
+  }
+
+  /// اطلب تأكيداً قبل تفعيل/تعطيل القسم — الإجراء كان يُنفَّذ فوراً عند الضغط.
+  Future<void> _confirmAndToggle(Department department) async {
+    final activate = !department.isActive;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text(activate ? 'تفعيل القسم' : 'تعطيل القسم'),
+          content: Text(
+            activate
+                ? 'سيتم تفعيل القسم «${department.name}» وإتاحته للاستخدام. متابعة؟'
+                : 'سيتم تعطيل القسم «${department.name}» وإيقاف استخدامه. متابعة؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: activate ? AppColors.primary : AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(activate ? 'تفعيل' : 'تعطيل'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (ok == true && mounted) {
+      context.read<DepartmentsBloc>().add(ToggleDepartmentStatus(department.id));
+    }
   }
 
   @override

@@ -204,10 +204,15 @@ class EmployeesBloc extends Bloc<EmployeesEvent, EmployeesState> {
         formStatus: FormStatus.failure,
         formError: failure.message,
       )),
-      (createdEmployee) => emit(state.copyWith(
-        formStatus: FormStatus.success,
-        createdEmployee: createdEmployee,
-      )),
+      (createdEmployee) {
+        emit(state.copyWith(
+          formStatus: FormStatus.success,
+          createdEmployee: createdEmployee,
+        ));
+
+        // أعد تحميل القائمة كي يظهر الموظف الجديد مباشرة.
+        add(const LoadEmployees(page: 1));
+      },
     );
   }
 }

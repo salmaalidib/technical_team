@@ -111,9 +111,11 @@ class _Separator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // الفاصل داخل Wrap بـ RTL: chevron_right ينعكس ليشير نحو اليسار، أي
+    // باتجاه تسلسل المسار من الرئيسية إلى القسم الأعمق.
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 2),
-      child: Icon(Icons.chevron_left_rounded,
+      child: Icon(Icons.chevron_right_rounded,
           size: 20, color: AppColors.textSecondary),
     );
   }

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
 import 'api_const.dart';
@@ -39,7 +41,21 @@ class TokenRefreshService {
                   'Accept': 'application/json',
                 },
               ),
-            );
+            ) {
+    // تجاوز التحقق من شهادة SSL (مطابق لـ DioClient/AuthInterceptor في
+    // Government_Employee_Dashboard) لتفادي تجمّد/فشل المصافحة على بعض بيئات
+    // Windows. بدونه كان يفشل طلب التجديد وحده — فالـ Dio هنا منفصل تمامًا عن
+    // DioClient — فيُعاد false ويطرد AuthInterceptor المستخدم إلى /login كل ساعة
+    // عند انتهاء الـ access token (JWT_ACCESS_EXPIRES_IN = 1h).
+    final adapter = _refreshDio.httpClientAdapter;
+    if (adapter is IOHttpClientAdapter) {
+      adapter.createHttpClient = () {
+        final client = HttpClient();
+        client.badCertificateCallback = (cert, host, port) => true;
+        return client;
+      };
+    }
+  }
 
   final SecureStorageService _storage;
   final Dio _refreshDio;

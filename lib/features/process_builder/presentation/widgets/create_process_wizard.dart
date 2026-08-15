@@ -287,6 +287,7 @@ class _Header extends StatelessWidget {
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 18),
       child: Row(
+        textDirection: TextDirection.rtl,
         children: [
           InkWell(
             onTap: onClose,
@@ -298,11 +299,17 @@ class _Header extends StatelessWidget {
                 color: AppColors.inputBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.arrow_forward_rounded,
-                  size: 22, color: AppColors.textPrimary),
+              // زر رجوع في واجهة RTL: يشير نحو اليمين. نثبّت الاتجاه صراحةً
+              // كي لا يعتمد على انعكاس الأيقونة التلقائي.
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                size: 22,
+                color: AppColors.textPrimary,
+                textDirection: TextDirection.rtl,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 14),
           Text(
             completeMode
                 ? 'إكمال تهيئة المعاملة'
