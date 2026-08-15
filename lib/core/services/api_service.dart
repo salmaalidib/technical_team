@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart';
 import '../enums/api_method.dart';
 import '../errors/failures.dart';
 
@@ -13,8 +14,7 @@ import '../errors/failures.dart';
 /// every feature behaves identically. Token attach/refresh and the
 /// `401 → /login` redirect are owned by the `AuthInterceptor`; this service
 /// never touches tokens or navigation.
-class 
-ApiService {
+class ApiService {
   final dio.Dio _dio;
 
   ApiService(this._dio);
@@ -45,17 +45,63 @@ ApiService {
       );
 
       final status = response.statusCode ?? 0;
+      final isKeyRenewal = method == ApiMethod.put &&
+          RegExp(r'^api/employees/\d+$').hasMatch(endPoint) &&
+          body?.containsKey('public_key') == true;
+      if (isKeyRenewal) {
+        debugPrint('[KeyRenewal] response status = $status');
+        debugPrint(
+          '[KeyRenewal] response body public_key/fingerprint if available = '
+          '${_safePublicKeyResponse(response.data)}',
+        );
+      }
       if (status >= 200 && status < 300) {
         return Right(response.data);
       }
       return Left(_mapResponse(response.statusCode, response.data));
     } on dio.DioException catch (e) {
+      if (method == ApiMethod.put &&
+          RegExp(r'^api/employees/\d+$').hasMatch(endPoint) &&
+          body?.containsKey('public_key') == true) {
+        debugPrint(
+          '[KeyRenewal] response status = ${e.response?.statusCode ?? '(no response)'}',
+        );
+        debugPrint(
+          '[KeyRenewal] response body public_key/fingerprint if available = '
+          '${_safePublicKeyResponse(e.response?.data)}',
+        );
+      }
       return Left(_mapDioException(e));
     } catch (_) {
       return const Left(
         ServerFailure("حدث خطأ غير متوقع، يرجى المحاولة لاحقًا."),
       );
     }
+  }
+
+  static Object _safePublicKeyResponse(dynamic data) {
+    if (data is Map) {
+      final safe = <String, Object?>{};
+      for (final key in const [
+        'public_key',
+        'public_key_fingerprint',
+        'key_fingerprint',
+      ]) {
+        if (data.containsKey(key)) safe[key] = data[key];
+      }
+      final nested = data['data'];
+      if (nested is Map) {
+        for (final key in const [
+          'public_key',
+          'public_key_fingerprint',
+          'key_fingerprint',
+        ]) {
+          if (nested.containsKey(key)) safe[key] = nested[key];
+        }
+      }
+      return safe.isEmpty ? '(not available)' : safe;
+    }
+    return '(not available)';
   }
 
   Failure _mapDioException(dio.DioException error) {

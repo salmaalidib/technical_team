@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,7 +8,11 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../core/services/key_generation_service.dart';
 import '../../../../core/services/key_storage_service.dart';
+import '../../../../core/security/key_package_crypto_service.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../key_management/domain/usecases/get_connected_usb_devices.dart';
+import '../../../key_management/domain/usecases/create_usb_bound_key.dart';
+import '../../../key_management/presentation/widgets/usb_device_picker_dialog.dart';
 import '../../domain/entities/employee.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
@@ -45,6 +51,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
   // المفتاح العام المُولَّد حديثاً (إن طلب المستخدم توليد مفتاح جديد). يبقى
   // null ما لم يُولَّد، فلا يُرسل أي تغيير للمفاتيح.
   String? _generatedPublicKey;
+  PendingUsbBoundKey? _pendingKey;
   bool _generatingKey = false;
 
   // قسم الأمان مخفيٌّ افتراضياً مثل قسم إعادة التعيين. عند تفعيله تُولَّد كلمة
@@ -80,6 +87,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
 
   @override
   void dispose() {
+    unawaited(getIt<KeyStorageService>().discardStagedKey(_pendingKey));
     _firstName.dispose();
     _fatherName.dispose();
     _motherName.dispose();
@@ -93,6 +101,29 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
     _pin.dispose();
     _confirmPin.dispose();
     super.dispose();
+  }
+
+  Future<bool> _confirmReplaceExistingKey() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('يوجد مفتاح سابق'),
+            content: const Text(
+              'يوجد مفتاح سابق لهذا الموظف على الفلاشة. هل تريد استبداله؟',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('استبدال المفتاح'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _showMessage(String message) {
@@ -210,6 +241,8 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
         _password.text = password;
         _confirmPassword.text = password;
       } else {
+        unawaited(getIt<KeyStorageService>().discardStagedKey(_pendingKey));
+        _pendingKey = null;
         _pin.clear();
         _confirmPin.clear();
         _password.clear();
@@ -223,7 +256,11 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
   /// بالـ PIN السابق ولم يعد مطابقاً. هكذا يُجبَر المستخدم على إعادة التوليد.
   void _onPinChanged(String _) {
     if (_generatedPublicKey != null) {
-      setState(() => _generatedPublicKey = null);
+      unawaited(getIt<KeyStorageService>().discardStagedKey(_pendingKey));
+      setState(() {
+        _generatedPublicKey = null;
+        _pendingKey = null;
+      });
     }
   }
 
@@ -246,19 +283,31 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
 
     setState(() => _generatingKey = true);
     try {
-      final keys = await getIt<KeyGenerationService>().generateKeys();
-
-      final directoryPath =
-          await getIt<KeyStorageService>().pickExternalDirectory();
-      if (directoryPath == null) {
+      final selectedDevice = await UsbDevicePickerDialog.show(
+        context,
+        getIt<GetConnectedUsbDevices>(),
+      );
+      if (selectedDevice == null) {
         _showMessage('لم يتم اختيار مجلد لحفظ المفتاح الخاص');
         return;
       }
 
-      await getIt<KeyStorageService>().saveEmployeeKeys(
-        directoryPath: directoryPath,
-        userName: _e.userName,
-        privateKey: keys.privateKey,
+      final storage = getIt<KeyStorageService>();
+      if (await storage.hasExistingKey(
+            selectedDevice: selectedDevice,
+            username: _e.userName,
+          ) &&
+          !await _confirmReplaceExistingKey()) {
+        return;
+      }
+
+      final keys = await getIt<KeyGenerationService>().generateKeys();
+
+      await storage.discardStagedKey(_pendingKey);
+      _pendingKey = await getIt<CreateUsbBoundKey>()(
+        selectedDevice: selectedDevice,
+        username: _e.userName,
+        privateKeyBytes: keys.privateKeyBytes,
         publicKey: keys.publicKey,
         pin: pin,
       );
@@ -268,6 +317,8 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
       _showMessage('تم توليد مفتاح جديد وحفظ المفتاح الخاص. سيُحدَّث المفتاح '
           'العام عند الحفظ.');
     } catch (e) {
+      await getIt<KeyStorageService>().discardStagedKey(_pendingKey);
+      _pendingKey = null;
       if (!mounted) return;
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -275,7 +326,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
     }
   }
 
-  void _submit(BuildContext context) {
+  Future<void> _submit() async {
     setState(() => _touched = true);
 
     final payload = _buildPayload();
@@ -286,6 +337,21 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
       return;
     }
 
+    if (_generatedPublicKey != null) {
+      final fingerprint = await getIt<KeyPackageCryptoService>()
+          .fingerprintPublicKey(_generatedPublicKey!);
+      debugPrint('[KeyRenewal] employeeId = ${_e.id}');
+      debugPrint('[KeyRenewal] endpoint = api/employees/${_e.id}');
+      debugPrint(
+        '[KeyRenewal] publicKey included = ${payload.containsKey('public_key')}',
+      );
+      debugPrint(
+        '[KeyRenewal] publicKey fingerprint before request = $fingerprint',
+      );
+    }
+
+    if (!mounted) return;
+
     context.read<EmployeesBloc>().add(
           UpdateEmployeeRequested(id: _e.id, data: payload),
         );
@@ -295,10 +361,37 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
   Widget build(BuildContext context) {
     return BlocConsumer<EmployeesBloc, EmployeesState>(
       listenWhen: (p, c) => p.updateStatus != c.updateStatus,
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.updateStatus == FormStatus.success) {
+          final pendingKey = _pendingKey;
+          if (_generatedPublicKey != null && pendingKey == null) {
+            _showMessage('تعذّر العثور على المفتاح المرحلي لإتمام الحفظ');
+            return;
+          }
+          if (pendingKey != null) {
+            try {
+              await getIt<KeyStorageService>().commitStagedKey(
+                pendingKey: pendingKey,
+                pin: _pin.text.trim(),
+              );
+              _pendingKey = null;
+              debugPrint('[KeyRenewal] USB package committed = true');
+            } catch (error) {
+              debugPrint('[KeyRenewal] USB package committed = false');
+              _showMessage(error.toString());
+              return;
+            }
+          }
+          if (!context.mounted) return;
           Navigator.pop(context);
         } else if (state.updateStatus == FormStatus.failure) {
+          if (_generatedPublicKey != null) {
+            debugPrint('[KeyRenewal] USB package committed = false');
+          }
+          await getIt<KeyStorageService>().discardStagedKey(_pendingKey);
+          _pendingKey = null;
+          _generatedPublicKey = null;
+          if (!context.mounted) return;
           _showMessage(state.updateError ?? 'تعذّر تعديل بيانات الموظف');
         }
       },
@@ -310,8 +403,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
           insetPadding:
               const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           backgroundColor: AppColors.surface,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 920, maxHeight: 780),
             child: Directionality(
@@ -347,10 +439,9 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
                           const SizedBox(height: 16),
                           _Row(
                             first: _Field(
-                                controller: _nationalId,
-                                label: 'الرقم الوطني'),
-                            second: _Field(
-                                controller: _phone, label: 'رقم الهاتف'),
+                                controller: _nationalId, label: 'الرقم الوطني'),
+                            second:
+                                _Field(controller: _phone, label: 'رقم الهاتف'),
                           ),
                           const SizedBox(height: 16),
                           _Row(
@@ -485,7 +576,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
                   const Divider(height: 1, color: AppColors.border),
                   _Footer(
                     submitting: submitting,
-                    onSubmit: () => _submit(context),
+                    onSubmit: _submit,
                     onCancel: () => Navigator.pop(context),
                   ),
                 ],
