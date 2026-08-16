@@ -6,9 +6,11 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_bloc.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_event.dart';
 import 'package:technical_team/features/auth/presentation/bloc/login/login_state.dart';
+import 'package:technical_team/shared/theme/app_colors.dart';
 import 'package:technical_team/shared/widgets/app_snackbar.dart';
 
-const _forest = Color(0xFF054239);
+/// الأخضر الأساسي للتطبيق — نفس اللون المستخدم في باقي الواجهات.
+const _forest = AppColors.primary;
 const _charcoal = Color(0xFF3D3A3B);
 
 class LoginForm extends StatefulWidget {

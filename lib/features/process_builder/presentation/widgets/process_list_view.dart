@@ -99,8 +99,8 @@ class ProcessListView extends StatelessWidget {
   bool _listChanged(ProcessListState p, ProcessListState c) {
     switch (tab) {
       case ProcessListTab.all:
-      case ProcessListTab.complaints:
         return p.allProcesses != c.allProcesses;
+      case ProcessListTab.complaints:
       case ProcessListTab.activeOnly:
       case ProcessListTab.inactiveOnly:
         return p.allProcesses != c.allProcesses ||
@@ -292,13 +292,14 @@ class ProcessListView extends StatelessWidget {
       tab == ProcessListTab.review ||
       tab == ProcessListTab.missingConfig ||
       tab == ProcessListTab.activeOnly ||
-      tab == ProcessListTab.inactiveOnly;
+      tab == ProcessListTab.inactiveOnly ||
+      tab == ProcessListTab.complaints;
 
   Widget _card(BuildContext context, ProcessListState state, int i) {
     switch (tab) {
       case ProcessListTab.all:
-      case ProcessListTab.complaints:
         return _AdminProcessCard(item: _adminItemsFor(state)[i]);
+      case ProcessListTab.complaints:
       case ProcessListTab.activeOnly:
       case ProcessListTab.inactiveOnly:
         return _AdminProcessCard(
@@ -306,6 +307,7 @@ class ProcessListView extends StatelessWidget {
           actionStatus: state.activeActionStatus,
           actingId: state.activeActionId,
           showActiveToggle: true,
+          isComplaint: tab == ProcessListTab.complaints,
         );
       case ProcessListTab.review:
         return _ReviewItemCard(
@@ -352,12 +354,18 @@ class _AdminProcessCard extends StatelessWidget {
   final int? actingId;
   final bool showActiveToggle;
 
+  /// يبدّل التسمية بين «المعاملة» و«الشكوى» في الزر وحوار التأكيد.
+  final bool isComplaint;
+
   const _AdminProcessCard({
     required this.item,
     this.actionStatus = RequestStatus.initial,
     this.actingId,
     this.showActiveToggle = false,
+    this.isComplaint = false,
   });
+
+  String get _noun => isComplaint ? 'الشكوى' : 'المعاملة';
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +383,7 @@ class _AdminProcessCard extends StatelessWidget {
       footer: !showActiveToggle
           ? null
           : _ActionButton(
-              label: item.isActive ? 'إلغاء التفعيل' : 'تفعيل المعاملة',
+              label: item.isActive ? 'إلغاء التفعيل' : 'تفعيل $_noun',
               icon: item.isActive
                   ? Icons.toggle_off_outlined
                   : Icons.toggle_on_outlined,
@@ -395,21 +403,40 @@ class _AdminProcessCard extends StatelessWidget {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text(activate ? 'تفعيل المعاملة' : 'إلغاء تفعيل المعاملة'),
-          content: Text(
-            activate
-                ? 'سيتم تفعيل المعاملة «${item.name}» وإتاحتها للمستخدمين. متابعة؟'
-                : 'سيتم إلغاء تفعيل المعاملة «${item.name}» وإخفاؤها عن المستخدمين. متابعة؟',
+          // الحوار يتمدّد افتراضياً لعرض الشاشة — قيّده ليبقى مضغوطاً.
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+          title: Text(
+            activate ? 'تفعيل $_noun' : 'إلغاء تفعيل $_noun',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Text(
+              activate
+                  ? 'سيتم تفعيل $_noun «${item.name}» وإتاحتها للمستخدمين. متابعة؟'
+                  : 'سيتم إلغاء تفعيل $_noun «${item.name}» وإخفاؤها عن المستخدمين. متابعة؟',
+              style: const TextStyle(fontSize: 14, height: 1.6),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(96, 42),
+                foregroundColor: AppColors.textSecondary,
+              ),
               child: const Text('إلغاء'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: activate ? AppColors.primary : AppColors.error,
                 foregroundColor: Colors.white,
+                // ألغِ عرض double.infinity القادم من الثيم العام.
+                minimumSize: const Size(112, 42),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(activate ? 'تفعيل' : 'إلغاء التفعيل'),

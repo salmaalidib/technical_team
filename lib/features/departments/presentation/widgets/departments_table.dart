@@ -71,21 +71,40 @@ class _DepartmentsTableState extends State<DepartmentsTable> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text(activate ? 'تفعيل القسم' : 'تعطيل القسم'),
-          content: Text(
-            activate
-                ? 'سيتم تفعيل القسم «${department.name}» وإتاحته للاستخدام. متابعة؟'
-                : 'سيتم تعطيل القسم «${department.name}» وإيقاف استخدامه. متابعة؟',
+          // الحوار يتمدّد افتراضياً لعرض الشاشة — قيّده ليبقى مضغوطاً.
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+          title: Text(
+            activate ? 'تفعيل القسم' : 'تعطيل القسم',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Text(
+              activate
+                  ? 'سيتم تفعيل القسم «${department.name}» وإتاحته للاستخدام. متابعة؟'
+                  : 'سيتم تعطيل القسم «${department.name}» وإيقاف استخدامه. متابعة؟',
+              style: const TextStyle(fontSize: 14, height: 1.6),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(96, 42),
+                foregroundColor: AppColors.textSecondary,
+              ),
               child: const Text('إلغاء'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: activate ? AppColors.primary : AppColors.error,
                 foregroundColor: Colors.white,
+                // ألغِ عرض double.infinity القادم من الثيم العام.
+                minimumSize: const Size(112, 42),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(activate ? 'تفعيل' : 'تعطيل'),

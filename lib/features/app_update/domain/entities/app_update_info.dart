@@ -41,19 +41,46 @@ class AppUpdateInfo extends Equatable {
         url.isNotEmpty;
   }
 
+  /// أعمدة `BIGINT` (مثل `apk_size`) يُعيدها درايفر `pg` **كنص** لا كرقم،
+  /// تفادياً لفقدان الدقة في JS — فتصل في JSON هكذا: `"apk_size":"31845806"`.
+  /// لذا `as int?` المباشر كان يرمي `TypeError` يُبتلع في `catch` العام داخل
+  /// المستودع ويتحوّل إلى «تعذّر التحقق من وجود تحديث»، أي فشل صامت كامل.
+  /// نقبل هنا الرقم والنص معاً حتى لا يتعلّق عمل الميزة بنوع عمود في قاعدة
+  /// البيانات قد يتغيّر لاحقاً.
+  static int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
+  /// بعض الحقول المنطقية قد تصل كـ `0/1` أو `"true"` حسب مصدرها.
+  static bool _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final v = value.trim().toLowerCase();
+      return v == 'true' || v == '1';
+    }
+    return false;
+  }
+
+  static String? _asString(dynamic value) => value?.toString();
+
   factory AppUpdateInfo.fromJson(Map<String, dynamic> json) {
     return AppUpdateInfo(
-      id: json['id'] as int,
-      applicationName: json['application_name'] as String? ?? '',
-      displayName: json['display_name'] as String? ?? '',
-      packageName: json['package_name'] as String?,
-      versionName: json['version_name'] as String? ?? '',
-      versionCode: json['version_code'] as int? ?? 0,
-      changelog: json['changelog'] as String?,
-      forceUpdate: json['force_update'] as bool? ?? false,
-      updateStrategy: json['update_strategy'] as String? ?? 'store',
-      downloadUrl: json['download_url'] as String?,
-      fileSize: json['apk_size'] as int?,
+      // `id` كان `as int` بلا `?` — يرمي على أي نص أو null.
+      id: _asInt(json['id']) ?? 0,
+      applicationName: _asString(json['application_name']) ?? '',
+      displayName: _asString(json['display_name']) ?? '',
+      packageName: _asString(json['package_name']),
+      versionName: _asString(json['version_name']) ?? '',
+      versionCode: _asInt(json['version_code']) ?? 0,
+      changelog: _asString(json['changelog']),
+      forceUpdate: _asBool(json['force_update']),
+      updateStrategy: _asString(json['update_strategy']) ?? 'store',
+      downloadUrl: _asString(json['download_url']),
+      fileSize: _asInt(json['apk_size']),
     );
   }
 
@@ -91,10 +118,12 @@ class UpdateCheckResult extends Equatable {
   factory UpdateCheckResult.fromJson(Map<String, dynamic> json) {
     final appInfo = json['app_info'];
     return UpdateCheckResult(
-      forceUpdateEnabled: json['force_update_enabled'] as bool? ?? false,
-      softUpdateEnabled: json['soft_update_enabled'] as bool? ?? false,
-      info: appInfo is Map<String, dynamic>
-          ? AppUpdateInfo.fromJson(appInfo)
+      forceUpdateEnabled: AppUpdateInfo._asBool(json['force_update_enabled']),
+      softUpdateEnabled: AppUpdateInfo._asBool(json['soft_update_enabled']),
+      // `is Map<String, dynamic>` وحده يفشل حين يأتي الـ JSON مفكوكاً كـ
+      // `Map<dynamic, dynamic>`، فيُعامَل التحديث الموجود على أنه «لا تحديث».
+      info: appInfo is Map
+          ? AppUpdateInfo.fromJson(Map<String, dynamic>.from(appInfo))
           : null,
     );
   }

@@ -227,9 +227,11 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
       (_) {
         emit(state.copyWith(
           activeActionStatus: RequestStatus.success,
-          activeActionSuccess: event.isActive
-              ? 'تم تفعيل المعاملة'
-              : 'تم إلغاء تفعيل المعاملة',
+          activeActionSuccess: _complaintsLoaded
+              ? (event.isActive ? 'تم تفعيل الشكوى' : 'تم إلغاء تفعيل الشكوى')
+              : (event.isActive
+                  ? 'تم تفعيل المعاملة'
+                  : 'تم إلغاء تفعيل المعاملة'),
           allProcesses: [
             for (final p in state.allProcesses)
               p.processId == event.id

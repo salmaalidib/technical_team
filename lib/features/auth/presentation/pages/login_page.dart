@@ -7,11 +7,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:technical_team/core/di/injection.dart';
 
+import '../../../../shared/theme/app_colors.dart';
 import '../bloc/login/login_bloc.dart';
 import '../widgets/login_form.dart';
 
-const _forest = Color(0xFF054239);
-const _forestDark = Color(0xFF002623);
+/// الأخضر الأساسي للتطبيق. اللوحة هنا مشتقّة منه كي تطابق باقي الواجهات.
+const _forest = AppColors.primary;
+
+/// الطرف الداكن لتدرّج اللوحة — نفس درجة [_forest] مع خفض السطوع.
+const _forestDark = Color(0xFF163E31);
 const _gold = Color(0xFFB9A779);
 const _goldLight = Color(0xFFEDEBE0);
 

@@ -42,11 +42,13 @@ class StageConfigDraft extends Equatable {
 
   final bool requiresSignature;
 
-  /// When true, this stage does NOT use a pre-assigned org/dept/role — the
-  /// employee who completes the PREVIOUS stage picks the destination at
-  /// run-time (`POST /complete`). Serializes to `config_json.is_assignment`
-  /// and forces `assignments` to a single all-null entry (the backend
-  /// rejects anything else once this flag is on).
+  /// When true, the employees of THIS stage pick the destination of the NEXT
+  /// stage at run-time (`POST /complete`) instead of it being pre-assigned.
+  /// Serializes to `config_json.is_assignment`.
+  ///
+  /// It does NOT change who executes this stage: [assignments] still needs real
+  /// employee targets, and the backend rejects the all-null CITIZEN shape while
+  /// the flag is on (a citizen cannot route transactions).
   final bool isAssignment;
 
   /// Linked document templates (USER_TASK only). Serializes to
@@ -107,10 +109,11 @@ class StageConfigDraft extends Equatable {
     // Already-saved stages are complete by definition (and not re-submitted).
     if (locked) return true;
     if (stage.isUserTask) {
-      // Dynamic routing needs no org/dept/role — it's picked at run-time.
-      if (isAssignment) return true;
       // A citizen assignee needs no org/dept/role — it ships an all-null entry.
       if (assigneeType == AssigneeType.citizen) return true;
+      // Everything else (including dynamic routing) needs a real target: the
+      // employees who execute THIS stage. `is_assignment` only decides where
+      // the NEXT stage goes, so it never removes that requirement.
       return assignments.isNotEmpty;
     }
     if (hasNotification && !notification.isComplete) {
@@ -194,11 +197,15 @@ class StageConfigDraft extends Equatable {
     };
 
     if (stage.isUserTask) {
-      // Dynamic routing and a citizen assignee both ship a single all-null
-      // entry: the backend resolves null/null/null to the CITIZEN role, and
-      // with is_assignment the real destination is picked at run-time by
-      // whoever completes the previous stage.
-      if (isAssignment || assigneeType == AssigneeType.citizen) {
+      // An all-null entry is NOT "unassigned" — the backend reads it as the
+      // CITIZEN role, so it is reserved for a citizen assignee only.
+      //
+      // `is_assignment` answers a DIFFERENT question: it controls where the
+      // NEXT stage goes (picked at run-time by whoever works this stage), and
+      // says nothing about who executes THIS stage. This stage still needs real
+      // employee targets, and the backend rejects the CITIZEN shape when the
+      // flag is on — a citizen cannot route transactions.
+      if (assigneeType == AssigneeType.citizen) {
         entry['assignments'] = [const StageAssignmentTarget.citizen().toJson()];
       } else {
         // Employee assignee → every added org/dept/role target. The backend

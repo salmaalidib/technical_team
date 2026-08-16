@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
+import '../bloc/process_list_state.dart';
 import '../widgets/process_list_view.dart';
 
 /// Complaints landing page (`admin/complaints/all`): every complaint process,
@@ -46,18 +48,41 @@ class _ComplaintsView extends StatelessWidget {
       });
     }
 
-    return Container(
-      color: const Color(0xffF0EFE7),
-      padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Header(onCreate: openCreate),
-          const SizedBox(height: 24),
-          const Expanded(
-            child: ProcessListView(tab: ProcessListTab.complaints),
-          ),
-        ],
+    return BlocListener<ProcessListBloc, ProcessListState>(
+      // One-shot feedback for the activate/deactivate action.
+      listenWhen: (p, c) => p.activeActionStatus != c.activeActionStatus,
+      listener: (context, state) {
+        final message = state.activeActionStatus == RequestStatus.failure
+            ? state.activeActionError
+            : state.activeActionStatus == RequestStatus.success
+                ? state.activeActionSuccess
+                : null;
+        if (message == null || message.isEmpty) return;
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(message, textAlign: TextAlign.right),
+              backgroundColor: state.activeActionStatus == RequestStatus.failure
+                  ? AppColors.error
+                  : AppColors.primary,
+            ),
+          );
+      },
+      child: Container(
+        color: const Color(0xffF0EFE7),
+        padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Header(onCreate: openCreate),
+            const SizedBox(height: 24),
+            const Expanded(
+              child: ProcessListView(tab: ProcessListTab.complaints),
+            ),
+          ],
+        ),
       ),
     );
   }

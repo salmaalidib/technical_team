@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/app_update_info.dart';
@@ -30,7 +31,11 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
       return Left(ServerFailure(
         _serverMessage(e.response?.data) ?? 'تعذّر التحقق من وجود تحديث.',
       ));
-    } catch (_) {
+    } catch (e, stack) {
+      // لا تبتلع الاستثناء صامتاً: عطل تحليل الاستجابة (مثل `apk_size` القادم
+      // كنص من عمود BIGINT) كان يظهر هنا كرسالة عامة مضلِّلة بلا أي أثر
+      // تشخيصي، فيبدو أن الميزة «لا تعمل» بلا سبب ظاهر.
+      debugPrint('[AppUpdate] فشل تحليل استجابة فحص التحديث: $e\n$stack');
       return const Left(ServerFailure('تعذّر التحقق من وجود تحديث.'));
     }
   }

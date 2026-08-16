@@ -125,11 +125,13 @@ class _CardHeader extends StatelessWidget {
       // A stage may be assigned to several org/dept/role targets at once; show
       // how many so the count is visible without expanding the card.
       final count = draft?.assignments.length ?? 0;
-      if (draft?.isAssignment == true) {
-        return 'مهمة مستخدم · تعيين ديناميكي';
-      }
       if (draft?.assigneeType == AssigneeType.citizen) {
         return 'مهمة مستخدم · صاحب المعاملة';
+      }
+      // Dynamic routing is an extra property of the stage, not a replacement
+      // for its targets — show both.
+      if (draft?.isAssignment == true) {
+        return 'مهمة مستخدم · $count جهة معيَّنة · توجيه ديناميكي';
       }
       return 'مهمة مستخدم · $count جهة معيَّنة';
     }
@@ -368,6 +370,8 @@ class _IsAssignmentToggle extends StatelessWidget {
           'بدلاً من ذلك، سيصبح موظفو هذه المرحلة (أصحاب هذه الخطوة) هم من '
           'يحدّدون يدوياً إلى أي جهة تذهب المرحلة القادمة، وذلك وقت تنفيذهم '
           'للمعاملة.\n\n'
+          'ملاحظة: هذا لا يغيّر من ينفّذ هذه المرحلة — يجب أن تبقى الجهات '
+          'المُعيَّنة أعلاه محدَّدة، فهي من ستستلم المرحلة وتختار الوجهة.\n\n'
           'هل أنت متأكد من رغبتك في المتابعة؟',
           textAlign: TextAlign.right,
           style: TextStyle(height: 1.6, fontSize: 13.5),
@@ -394,6 +398,11 @@ class _IsAssignmentToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Only employees can route the next stage, so the backend rejects
+    // is_assignment on a citizen-assigned stage. Disable it rather than let the
+    // whole batch 400 at save time.
+    final enabled = draft.assigneeType == AssigneeType.employee;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -404,7 +413,7 @@ class _IsAssignmentToggle extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -412,17 +421,23 @@ class _IsAssignmentToggle extends StatelessWidget {
                   'تعيين ديناميكي — يُحدَّد لاحقاً من هذه المرحلة',
                   textAlign: TextAlign.right,
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: enabled
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'عند التفعيل: موظفو هذه المرحلة هم من يختارون وجهة '
-                  'المرحلة القادمة، بدل التوجيه التلقائي.',
+                  enabled
+                      ? 'عند التفعيل: موظفو هذه المرحلة هم من يختارون وجهة '
+                          'المرحلة القادمة، بدل التوجيه التلقائي. لا يغيّر ذلك '
+                          'الجهات المُعيَّنة لتنفيذ هذه المرحلة.'
+                      : 'غير متاح مع «صاحب المعاملة» — توجيه المرحلة القادمة '
+                          'يقوم به موظف، لا المواطن.',
                   textAlign: TextAlign.right,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                     height: 1.5,
@@ -435,7 +450,7 @@ class _IsAssignmentToggle extends StatelessWidget {
           Switch(
             value: draft.isAssignment,
             activeColor: Colors.red,
-            onChanged: (v) => _handleChanged(context, v),
+            onChanged: enabled ? (v) => _handleChanged(context, v) : null,
           ),
         ],
       ),

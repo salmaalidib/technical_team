@@ -219,10 +219,12 @@ class _OrgCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // سهم دخول في واجهة RTL: يشير نحو اليمين (اتجاه القراءة).
               const Icon(
-                Icons.arrow_back_ios_new_rounded,
+                Icons.arrow_forward_ios_rounded,
                 color: AppColors.textSecondary,
                 size: 16,
+                textDirection: TextDirection.rtl,
               ),
             ],
           ),

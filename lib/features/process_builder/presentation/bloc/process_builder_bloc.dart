@@ -382,6 +382,12 @@ class ProcessBuilderBloc
       if (toEmployee && updated.organizationId == null) {
         updated = updated.copyWith(organizationId: _activeOrgId);
       }
+      // Dynamic routing is employee-only (the backend rejects it for a citizen
+      // assignee), so switching to citizen clears a previously-set flag instead
+      // of leaving an invalid combination to 400 at save time.
+      if (!toEmployee && updated.isAssignment) {
+        updated = updated.copyWith(isAssignment: false);
+      }
       return updated;
     });
 
