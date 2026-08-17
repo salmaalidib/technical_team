@@ -73,6 +73,13 @@ class PushSocket {
   final TokenRefreshService _refreshService;
   final NotificationService _notifications;
 
+  /// يُستدعى عند وصول كل إشعار صالح، بعد عرض التوست.
+  ///
+  /// خطّاف اختياري تربطه طبقةٌ أعلى (انظر `main_dev.dart`) كي تحدّث سجلّ
+  /// الإشعارات وشارة العدّاد. نُبقيه دالّةً بسيطة بدل حقن الـ cubit مباشرةً كي
+  /// تبقى هذه الطبقة غير مرتبطة بأي feature.
+  void Function(PushMessage message)? onMessage;
+
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   Timer? _pingTimer;
@@ -237,6 +244,14 @@ class PushSocket {
       body: message.body,
       payload: message.payload == null ? null : jsonEncode(message.payload),
     );
+
+    // أبلغ الطبقة الأعلى كي تحدّث سجلّ الإشعارات والعدّاد. أي استثناء هنا يجب
+    // ألّا يُسقط الاتصال — الإشعار عُرض بالفعل.
+    try {
+      onMessage?.call(message);
+    } catch (e) {
+      debugPrint('[PushSocket] فشل خطّاف onMessage: $e');
+    }
   }
 
   void _startPing() {

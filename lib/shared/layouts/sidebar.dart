@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/active_org/active_organization_cubit.dart';
 import '../../core/di/injection.dart';
 import '../../features/auth/domain/usecases/logout_usecase.dart';
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_snackbar.dart';
@@ -103,6 +104,9 @@ class _AppSidebarState extends State<AppSidebar>
       },
       (_) async {
         await getIt<ActiveOrganizationCubit>().clear();
+        // الـ cubit singleton يبقى حيًّا بعد الخروج — صفّره كي لا تتسرّب
+        // إشعارات المستخدم السابق إلى الجلسة التالية.
+        getIt<NotificationsCubit>().clear();
         if (!mounted) return;
         context.go('/login');
       },

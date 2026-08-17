@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:animate_do/animate_do.dart';
@@ -10,6 +11,7 @@ import 'package:technical_team/core/di/injection.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../bloc/otp/otp_bloc.dart';
 import '../bloc/otp/otp_state.dart';
 import '../widgets/otp_form.dart';
@@ -80,6 +82,10 @@ class _OtpViewState extends State<_OtpView>
           listener: (context, state) {
             if (state.response != null) {
               AppSnackBar.show(context, message: 'تم تسجيل الدخول بنجاح');
+
+              // دخول جديد لا يمرّ بالـ splash، فسخّن عدّاد الإشعارات هنا كي
+              // تظهر الشارة صحيحة فوراً. لا ننتظره حتى لا يؤخّر التنقّل.
+              unawaited(getIt<NotificationsCubit>().load());
 
               // Pick the active organization once before entering the app.
               context.go('/select-organization');

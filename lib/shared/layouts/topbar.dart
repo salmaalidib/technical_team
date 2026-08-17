@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/di/injection.dart';
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
+import '../../features/notifications/presentation/cubit/notifications_state.dart';
+import '../../features/notifications/presentation/widgets/notifications_panel.dart';
 import '../theme/app_colors.dart';
 
 class AppTopbar extends StatelessWidget {
@@ -156,42 +161,70 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      // الشارة تُوضع بإحداثيات صريحة، فثبّت اتجاه الـ Stack كي لا تنقلب مع
-      // اتجاه الشريط العلوي (RTL).
-      textDirection: TextDirection.ltr,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: AppColors.primary,
-            size: 25,
-          ),
-        ),
-        Positioned(
-          top: 8,
-          right: 9,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: const Color(0xff7A2334),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.surface,
-                width: 1.3,
+    return BlocBuilder<NotificationsCubit, NotificationsState>(
+      bloc: getIt<NotificationsCubit>(),
+      buildWhen: (p, c) => p.unreadCount != c.unreadCount,
+      builder: (context, state) {
+        final unread = state.unreadCount;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          // الشارة تُوضع بإحداثيات صريحة، فثبّت اتجاه الـ Stack كي لا تنقلب مع
+          // اتجاه الشريط العلوي (RTL).
+          textDirection: TextDirection.ltr,
+          children: [
+            InkWell(
+              onTap: () {
+                final box = context.findRenderObject() as RenderBox?;
+                if (box != null) NotificationsPanel.show(context, box);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.inputBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  unread > 0
+                      ? Icons.notifications_rounded
+                      : Icons.notifications_none_rounded,
+                  color: AppColors.primary,
+                  size: 25,
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+            // الشارة تحمل العدد الحقيقي وتختفي عند الصفر (كانت نقطة ثابتة).
+            if (unread > 0)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 18),
+                  height: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xff7A2334),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: AppColors.surface, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      unread > 99 ? '99+' : '$unread',
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

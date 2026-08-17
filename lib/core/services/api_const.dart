@@ -116,6 +116,14 @@ String get registerEmployee => 'api/auth/register/employee/';
   String employeeById(Object id) =>
       'api/employees/$id'; // GET one · PUT update
 
+  // ===== notifications (bearer token required) =====
+  String get myNotifications =>
+      'api/notifications/my'; // GET ?cursor=&limit=&unread= (cursor pagination)
+  String get markNotificationsRead =>
+      'api/notifications/read'; // PATCH { notification_ids: [...] }
+  String markNotificationRead(Object id) =>
+      'api/notifications/$id/read'; // PATCH one
+
   // ===== app updates (بلا مصادقة — انظر AppUpdateRemoteDataSource) =====
   String get appUpdateSettings =>
       'api/app-updates/settings'; // GET ?app=&platform=&current_version_code=

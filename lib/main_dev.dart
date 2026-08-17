@@ -19,6 +19,8 @@ import 'package:technical_team/features/departments/di/injection.dart';
 import 'package:technical_team/features/employees/di/injection.dart';
 import 'package:technical_team/features/fields/di/injection.dart';
 import 'package:technical_team/features/institutions/di/injection.dart';
+import 'package:technical_team/features/notifications/di/injection.dart';
+import 'package:technical_team/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:technical_team/features/roles/di/injection.dart';
 import 'package:technical_team/features/type_processes/di/injection.dart';
 import 'package:technical_team/features/type_docs/di/injection.dart';
@@ -63,6 +65,7 @@ void main() async {
   await setupEmployeesInjection();
   await setupProcessBuilderInjection();
   await setupAppUpdateInjection();
+  await setupNotificationsInjection();
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
   // → (3) فتح اتصال الـ socket. الاتصال يبقى حيًّا في الـ tray عند "إغلاق"
@@ -77,6 +80,12 @@ void main() async {
   if (_isDesktop) {
     await TrayService.instance.init();
   }
+  // كل إشعار وارد عبر الـ socket يحدّث السجلّ وشارة العدّاد: الـ WS هو النبض
+  // اللحظي، و`GET /notifications/my` هو المصدر الدائم — الخطّاف يُبقي الاثنين
+  // متّسقين دون أن يعرف الـ socket شيئًا عن طبقة العرض.
+  getIt<PushSocket>().onMessage =
+      (_) => getIt<NotificationsCubit>().onPushReceived();
+
   // يبدأ الاتصال؛ يعيد المحاولة تلقائيًّا حتى لو لم يكن المستخدم مسجّلًا بعد
   // (سيتصل بدون توكن ثم يُعيد الاتصال بعد تسجيل الدخول عند انقطاعه).
   await getIt<PushSocket>().start();

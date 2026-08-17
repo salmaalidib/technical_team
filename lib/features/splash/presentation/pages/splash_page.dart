@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:animate_do/animate_do.dart';
@@ -12,6 +13,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../app_update/presentation/bloc/app_update_bloc.dart';
 import '../../../app_update/presentation/bloc/app_update_event.dart';
 import '../../../app_update/presentation/bloc/app_update_state.dart';
+import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../../../app_update/presentation/widgets/optional_update_dialog.dart';
 
 class SplashPage extends StatefulWidget {
@@ -87,6 +89,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     try {
       await activeOrg.load();
     } catch (_) {}
+
+    // تسخين عدّاد الإشعارات كي تظهر الشارة صحيحة فور دخول التطبيق. لا ننتظره:
+    // فشلُه أو بطؤه يجب ألّا يؤخّر الإقلاع.
+    unawaited(getIt<NotificationsCubit>().load());
 
     if (!mounted) return;
 
