@@ -8,7 +8,12 @@
             "name": "technical_team (dev)",
             "request": "launch",
             "type": "dart",
-            "program": "lib/main_dev.dart"
+            "program": "lib/main_dev.dart",
+            // APP_VERSION_CODE: بدونه يُرسَل 0 وتتكرّر شاشة التحديث الإجباري
+            // حتى على نسخة محدَّثة (buildNumber فارغ على ويندوز — انظر
+            // lib/features/app_update/di/injection.dart). أبقِه مطابقاً لـ +N
+            // في pubspec.yaml.
+            "toolArgs": ["--dart-define=APP_VERSION_CODE=3"]
         },
         {
             // Web run with a PERSISTENT Chrome profile so flutter_secure_storage
@@ -22,21 +27,24 @@
             "deviceId": "chrome",
             "args": [
                 "--web-browser-flag=--user-data-dir=${workspaceFolder}/.dart_tool/chrome-dev-profile"
-            ]
+            ],
+            "toolArgs": ["--dart-define=APP_VERSION_CODE=3"]
         },
         {
             "name": "technical_team (dev - profile)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main_dev.dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "toolArgs": ["--dart-define=APP_VERSION_CODE=3"]
         },
         {
             "name": "technical_team (dev - release)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main_dev.dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "toolArgs": ["--dart-define=APP_VERSION_CODE=3"]
         }
     ]
 }
