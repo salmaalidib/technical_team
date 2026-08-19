@@ -1,9 +1,9 @@
 ; نسخة التطبيق تُمرَّر من سطر الأوامر كي لا تُكتب يدوياً في مكانين ثم تتباعد
-; عن pubspec.yaml (كان MyAppVersion=1.0.2 بينما الخادم يوزّع 1.0.5):
-;   iscc /DMyAppVersion=1.0.5 installer\technical_team.iss
+; عن pubspec.yaml:
+;   iscc /DMyAppVersion=1.0.7 installer\technical_team.iss
 ; القيم أدناه مجرد احتياطي إن نُسي التمرير — انظر BUILD_WINDOWS.md.
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.5"
+  #define MyAppVersion "1.0.7"
 #endif
 
 #define MyAppName "Technical Team"
