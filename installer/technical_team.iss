@@ -1,5 +1,5 @@
 #define MyAppName "Technical Team"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Technical Team"
 #define MyAppExeName "technical_team.exe"
 
@@ -13,7 +13,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=..\dist
-OutputBaseFilename=TechnicalTeam-Setup-1.0.2
+OutputBaseFilename=TechnicalTeam-Setup-1.0.5
 SetupIconFile=..\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/max
