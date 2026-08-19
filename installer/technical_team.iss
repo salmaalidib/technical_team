@@ -1,5 +1,12 @@
+; نسخة التطبيق تُمرَّر من سطر الأوامر كي لا تُكتب يدوياً في مكانين ثم تتباعد
+; عن pubspec.yaml (كان MyAppVersion=1.0.2 بينما الخادم يوزّع 1.0.5):
+;   iscc /DMyAppVersion=1.0.5 installer\technical_team.iss
+; القيم أدناه مجرد احتياطي إن نُسي التمرير — انظر BUILD_WINDOWS.md.
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.5"
+#endif
+
 #define MyAppName "Technical Team"
-#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Technical Team"
 #define MyAppExeName "technical_team.exe"
 
@@ -7,13 +14,14 @@
 AppId={{E85C8CA6-1A38-47A7-AEBB-A515F24B92D8}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+VersionInfoVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\Technical Team
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=..\dist
-OutputBaseFilename=TechnicalTeam-Setup-1.0.5
+OutputBaseFilename=TechnicalTeam-Setup-{#MyAppVersion}
 SetupIconFile=..\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/max

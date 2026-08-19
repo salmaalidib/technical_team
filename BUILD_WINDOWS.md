@@ -55,14 +55,54 @@ flutter pub get
 **شرط النجاح:** ينتهي بـ `Got dependencies!` بدون أخطاء حمراء.
 
 ### الخطوة 3 — البناء
+
+**الطريقة المفضَّلة** — سكربت يشتقّ رقم الإصدار من `pubspec.yaml` تلقائياً
+ويصنع المثبِّت أيضاً:
 ```bat
-flutter build windows --release --target=lib/main_dev.dart
+powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 ```
+
+أو يدوياً:
+```bat
+flutter build windows --release --target=lib/main_dev.dart --dart-define=APP_VERSION_CODE=3
+```
+
+> ⚠️ **`--dart-define=APP_VERSION_CODE` إلزامي — لا تُسقطه.**
+> الرقم هو ما بعد `+` في سطر `version:` داخل `pubspec.yaml`
+> (في `version: 1.0.2+3` يكون الرقم `3`).
+>
+> **لماذا؟** `PackageInfo.buildNumber` **لا يعمل على ويندوز**: المكتبة تقرأ
+> `ProductVersion` من داخل الـ `.exe` وتقسمه على `+`، بينما Flutter يكتب هناك
+> `1.0.2` بلا `+3` إطلاقاً. فيصبح `buildNumber = ""` ويُرسَل
+> `current_version_code=0` مهما كان الإصدار المثبَّت — فيردّ الخادم دائماً
+> «يوجد تحديث» وتتكرّر شاشة التحديث الإجباري بلا نهاية حتى على نسخة محدَّثة.
+> التفصيل الكامل في `lib/features/app_update/di/injection.dart`.
+
 **شرط النجاح:** ينتهي بسطر يشبه:
 ```
 √ Built build\windows\x64\runner\Release\technical_team.exe
 ```
 > ملاحظة: البناء الأول قد يستغرق عدة دقائق (يجمّع كود C++). هذا طبيعي.
+
+### الخطوة 4 — صنع المثبِّت (إن لم تستخدم السكربت)
+```bat
+iscc /DMyAppVersion=1.0.2 installer\technical_team.iss
+```
+مرِّر **نفس** رقم النسخة الموجود في `pubspec.yaml`؛ الملف الناتج
+`dist\TechnicalTeam-Setup-<النسخة>.exe`.
+
+---
+
+## إصدار نسخة جديدة — قائمة تحقّق
+
+1. عدّل سطر واحد فقط في `pubspec.yaml`، مثلاً `version: 1.0.5+5`.
+   (اسم النسخة **ورقم البناء معاً** — الخادم يقارن رقم البناء حصراً.)
+2. `powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1`
+3. ارفع `dist\TechnicalTeam-Setup-1.0.5.exe` إلى مضيف التنزيل.
+4. سجّل الإصدار على الخادم بـ `version_name=1.0.5` و`version_code=5`
+   و`update_strategy=direct` ورابط التنزيل.
+5. تحقّق أن الرقم المسجَّل يطابق `+N` في `pubspec.yaml` تماماً — أي اختلاف
+   هنا يعني إمّا حلقة تحديث لا تنتهي أو تحديثاً لا يظهر أبداً.
 
 ---
 
