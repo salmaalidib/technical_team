@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_text_styles.dart';
 import '../bloc/app_update_bloc.dart';
 import '../bloc/app_update_event.dart';
 import '../bloc/app_update_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// شاشة التحديث الإجباري — تُعرض بدل splash عند force_update_enabled=true.
 /// لا PopScope قابل للتجاوز: لا مسار آخر للمستخدم سوى التحديث.
@@ -58,7 +59,7 @@ class ForceUpdatePage extends StatelessWidget {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: AppColors.lightPrimary,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Text(
                               state.info!.changelog!,
@@ -100,7 +101,7 @@ class _ActionArea extends StatelessWidget {
           LinearProgressIndicator(
             value: p >= 0 ? p : null,
             minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           const SizedBox(height: 12),
           Text(label, style: AppTextStyles.body),
@@ -162,12 +163,12 @@ class _PrimaryButton extends StatelessWidget {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         ),
-        child: Text(label, style: AppTextStyles.body.copyWith(color: Colors.white)),
+        child: Text(label, style: AppTextStyles.body.copyWith(color: AppColors.white)),
       ),
     );
   }

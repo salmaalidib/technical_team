@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class EmployeeActionButton extends StatelessWidget {
   final IconData icon;
@@ -29,7 +30,7 @@ class EmployeeActionButton extends StatelessWidget {
           height: 38,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Icon(
             icon,

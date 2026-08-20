@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show TextInputFormatter;
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Shared building blocks for the field / file create-edit dialogs, kept in one
 /// place so both dialogs stay visually identical without duplication.
@@ -30,13 +31,13 @@ class DialogHeader extends StatelessWidget {
           ),
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(Icons.close_rounded,
                   size: 24, color: AppColors.textPrimary),
@@ -134,10 +135,10 @@ class DialogActions extends StatelessWidget {
               onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: submitting
@@ -146,7 +147,7 @@ class DialogActions extends StatelessWidget {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     )
                   : Text(
@@ -167,7 +168,7 @@ class DialogActions extends StatelessWidget {
                 backgroundColor: AppColors.inputBackground,
                 foregroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: const Text(
@@ -185,7 +186,7 @@ class DialogActions extends StatelessWidget {
 InputDecoration dialogDropdownDecoration([String? errorText]) {
   return InputDecoration(
     filled: true,
-    fillColor: Colors.white,
+    fillColor: AppColors.white,
     errorText: errorText,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     border: _border(AppColors.border),
@@ -195,6 +196,6 @@ InputDecoration dialogDropdownDecoration([String? errorText]) {
 }
 
 OutlineInputBorder _border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: BorderSide(color: color),
     );

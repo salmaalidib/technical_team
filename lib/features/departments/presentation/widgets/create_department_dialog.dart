@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class CreateDepartmentDialog extends StatefulWidget {
   /// When opened inside a level, the new department inherits this parent and
@@ -88,7 +89,7 @@ class _CreateDepartmentDialogState extends State<CreateDepartmentDialog> {
           child: Dialog(
             backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: SizedBox(
               width: 620,
@@ -158,13 +159,13 @@ class _Header extends StatelessWidget {
           const Spacer(),
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(Icons.close_rounded,
                   size: 24, color: AppColors.textPrimary),
@@ -220,15 +221,15 @@ class _TextInput extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),
@@ -260,10 +261,10 @@ class _Actions extends StatelessWidget {
               onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: submitting
@@ -272,7 +273,7 @@ class _Actions extends StatelessWidget {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     )
                   : Text(
@@ -293,7 +294,7 @@ class _Actions extends StatelessWidget {
                 backgroundColor: AppColors.inputBackground,
                 foregroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: const Text(

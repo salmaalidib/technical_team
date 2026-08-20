@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/process_stage.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Step 3 — read-only preview of the stages generated from the uploaded BPMN.
 class Step3PreviewStages extends StatelessWidget {
@@ -49,7 +50,7 @@ class Step3PreviewStages extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لم يتم توليد أي مرحلة من الملف',
-                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               )
@@ -114,8 +115,8 @@ class _StageCard extends StatelessWidget {
       width: 230,
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
       decoration: BoxDecoration(
-        color: stage.isAuth ? AppColors.lightPrimary : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: stage.isAuth ? AppColors.lightPrimary : AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: stage.isAuth ? AppColors.primary : AppColors.border,
           width: stage.isAuth ? 1.6 : 1.2,
@@ -183,12 +184,12 @@ class _StageCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: accent,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
             child: Text(
               typeLabel,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),

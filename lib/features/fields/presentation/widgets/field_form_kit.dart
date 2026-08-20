@@ -28,7 +28,7 @@ class DialogErrorText extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.right,
-        style: const TextStyle(color: Colors.red, fontSize: 12),
+        style: const TextStyle(color: AppColors.error, fontSize: 12),
       ),
     );
   }

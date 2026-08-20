@@ -9,6 +9,7 @@ import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
 import 'add_location_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class CreateInstitutionDialog extends StatefulWidget {
   const CreateInstitutionDialog({super.key});
@@ -80,7 +81,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
           child: Dialog(
             backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: SizedBox(
               width: 620,
@@ -170,13 +171,13 @@ class _DialogHeader extends StatelessWidget {
           const Spacer(),
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(
                 Icons.close_rounded,
@@ -240,12 +241,12 @@ class _AddLocationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.inputBackground,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(color: AppColors.primary),
         ),
         child: const Row(
@@ -294,15 +295,15 @@ class _TextInput extends StatelessWidget {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),
@@ -332,10 +333,10 @@ class _DialogActions extends StatelessWidget {
               onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: submitting
@@ -344,7 +345,7 @@ class _DialogActions extends StatelessWidget {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     )
                   : const Text(
@@ -367,7 +368,7 @@ class _DialogActions extends StatelessWidget {
                 backgroundColor: AppColors.inputBackground,
                 foregroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: const Text(

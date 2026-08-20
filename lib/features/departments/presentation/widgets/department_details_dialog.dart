@@ -11,6 +11,7 @@ import '../bloc/departments_state.dart';
 import 'department_employee_tile.dart';
 import 'department_manager_card.dart';
 import 'department_stat_item.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Shows a department's rich overview (manager / employees / stats / sections)
 /// in a dialog. Replaces the old expandable card.
@@ -27,7 +28,7 @@ class DepartmentDetailsDialog extends StatelessWidget {
     }
     return showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: AppColors.scrim,
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: DepartmentDetailsDialog(department: department),
@@ -42,7 +43,7 @@ class DepartmentDetailsDialog extends StatelessWidget {
       child: Dialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720, maxHeight: 640),
@@ -107,10 +108,10 @@ class _Header extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: const Icon(Icons.apartment_outlined,
-                color: Colors.white, size: 26),
+                color: AppColors.white, size: 26),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -143,13 +144,13 @@ class _Header extends StatelessWidget {
           const SizedBox(width: 12),
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(Icons.close_rounded,
                   size: 24, color: AppColors.textPrimary),
@@ -270,8 +271,8 @@ class _SectionTile extends StatelessWidget {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 22),
       decoration: BoxDecoration(
-        color: const Color(0xffFAF9F5),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -297,7 +298,7 @@ class _SectionTile extends StatelessWidget {
                       ? AppColors.primary
                       : AppColors.textSecondary)
                   .withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Text(
               section.isActive ? 'مفعّل' : 'معطّل',
@@ -373,7 +374,7 @@ class _RetryState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 40),
           const SizedBox(height: 12),
           const Text(
             'تعذّر تحميل تفاصيل القسم',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../../shared/theme/app_dimens.dart';
 
 class AppSnackBar {
   static void show(
@@ -13,7 +14,7 @@ class AppSnackBar {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -27,10 +28,10 @@ class AppSnackBar {
           ),
           decoration: BoxDecoration(
             color: isError ? AppColors.error : AppColors.secondary,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: AppColors.shadowMedium,
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -42,12 +43,12 @@ class AppSnackBar {
                 height: 38,
                 width: 38,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: AppColors.white.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isError ? Icons.close_rounded : Icons.check_rounded,
-                  color: Colors.white,
+                  color: AppColors.white,
                   size: 22,
                 ),
               ),
@@ -56,7 +57,7 @@ class AppSnackBar {
                 child: Text(
                   message,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     height: 1.4,

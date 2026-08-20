@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// شارة حالة القسم (مفعّل / معطّل) — بنفس أسلوب شارة حالة الموظفين.
 class DepartmentStatusBadge extends StatelessWidget {
@@ -14,8 +15,8 @@ class DepartmentStatusBadge extends StatelessWidget {
       height: 34,
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.lightPrimary : const Color(0xffFDECEC),
-        borderRadius: BorderRadius.circular(18),
+        color: isActive ? AppColors.lightPrimary : AppColors.errorLight,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       alignment: Alignment.center,
       child: Text(

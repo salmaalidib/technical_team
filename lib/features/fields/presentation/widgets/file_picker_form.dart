@@ -9,6 +9,7 @@ import '../bloc/fields_event.dart';
 import 'dialog_kit.dart';
 import 'field_form_kit.dart';
 import 'field_type_card.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class FilePickerForm extends StatefulWidget {
   final FieldTypeMeta meta;
@@ -125,7 +126,7 @@ class _FilePickerFormState extends State<FilePickerForm> {
               onPressed: _addExtension,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 // Override the theme's full-width default
                 // (minimumSize: Size(double.infinity, 58)) so this button
@@ -135,7 +136,7 @@ class _FilePickerFormState extends State<FilePickerForm> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
               child: const Text('إضافة'),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class DepartmentManagerCard extends StatelessWidget {
   final String name;
@@ -18,7 +19,7 @@ class DepartmentManagerCard extends StatelessWidget {
       height: 90,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.primary, width: 1.8),
       ),
       child: Stack(
@@ -35,7 +36,7 @@ class DepartmentManagerCard extends StatelessWidget {
               ),
               child: const Icon(
                 Icons.person_outline_rounded,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 38,
               ),
             ),

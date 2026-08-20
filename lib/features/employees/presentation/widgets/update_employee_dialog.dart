@@ -17,6 +17,7 @@ import '../../domain/entities/employee.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// نموذج تعديل موظف بكل الحقول. يبني حمولة جزئية (الحقول المتغيّرة فقط)
 /// ويحترم قواعد الـ backend الترابطية:
@@ -403,7 +404,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
           insetPadding:
               const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 920, maxHeight: 780),
             child: Directionality(
@@ -612,13 +613,13 @@ class _Header extends StatelessWidget {
           ),
           InkWell(
             onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(Icons.close_rounded),
             ),
@@ -657,7 +658,7 @@ class _Footer extends StatelessWidget {
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       )
                     : const Text('حفظ التعديلات'),
@@ -760,7 +761,7 @@ class _Field extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintTextDirection: TextDirection.rtl,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
           ),
         ),
       ],
@@ -800,7 +801,7 @@ class _Dropdown extends StatelessWidget {
           value: items.containsKey(value) ? value : null,
           isExpanded: true,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
           ),
           hint: Text(hint, textAlign: TextAlign.right),
           items: items.entries
@@ -861,7 +862,7 @@ class _SecurityNotice extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.lightPrimary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -907,7 +908,7 @@ class _PublicKeySection extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -953,7 +954,7 @@ class _PublicKeySection extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         )
                       : const Icon(Icons.refresh_rounded, size: 20),

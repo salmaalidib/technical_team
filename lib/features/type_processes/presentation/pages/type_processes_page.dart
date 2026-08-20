@@ -10,6 +10,7 @@ import '../bloc/type_processes_event.dart';
 import '../bloc/type_processes_state.dart';
 import '../widgets/type_process_card.dart';
 import '../widgets/type_processes_header.dart';
+import '../../../../shared/theme/app_colors.dart';
 
 class TypeProcessesPage extends StatelessWidget {
   const TypeProcessesPage({super.key});
@@ -42,7 +43,7 @@ class _TypeProcessesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
       child: const SingleChildScrollView(
         child: Column(
@@ -86,7 +87,7 @@ class _TypeProcessesBody extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لا توجد أنواع عمليات لعرضها',
-                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );
@@ -147,7 +148,7 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
       child: Column(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 44),
           const SizedBox(height: 12),
           Text(
             message,

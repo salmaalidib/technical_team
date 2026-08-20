@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/type_processes_bloc.dart';
 import 'create_type_process_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class TypeProcessesHeader extends StatelessWidget {
   const TypeProcessesHeader({super.key});
@@ -54,7 +55,7 @@ class TypeProcessesHeader extends StatelessWidget {
               final bloc = context.read<TypeProcessesBloc>();
               showDialog(
                 context: context,
-                barrierColor: Colors.black.withOpacity(0.55),
+                barrierColor: AppColors.scrim,
                 builder: (_) => BlocProvider.value(
                   value: bloc,
                   child: const CreateTypeProcessDialog(),
@@ -63,10 +64,10 @@ class TypeProcessesHeader extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
             child: Row(
@@ -78,7 +79,7 @@ class TypeProcessesHeader extends StatelessWidget {
                 Text(
                   'إنشاء نوع عملية',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),

@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_state.dart';
 import 'create_department_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class DepartmentsHeader extends StatelessWidget {
   const DepartmentsHeader({super.key});
@@ -73,7 +74,7 @@ class DepartmentsHeader extends StatelessWidget {
                       atRoot ? null : bloc.state.breadcrumb.last;
                   showDialog(
                     context: context,
-                    barrierColor: Colors.black.withOpacity(0.55),
+                    barrierColor: AppColors.scrim,
                     builder: (_) => BlocProvider.value(
                       value: bloc,
                       child: CreateDepartmentDialog(
@@ -85,10 +86,10 @@ class DepartmentsHeader extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
                 child: Row(
@@ -100,7 +101,7 @@ class DepartmentsHeader extends StatelessWidget {
                     Text(
                       buttonLabel,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.w700,
                           ),
                     ),

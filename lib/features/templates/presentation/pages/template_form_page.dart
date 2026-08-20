@@ -22,6 +22,7 @@ import '../widgets/extracted_fields_picker.dart';
 import '../widgets/form_inputs.dart';
 import '../widgets/template_file_upload.dart';
 import 'template_validation.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Create / edit a document template as a **two-step wizard** that mirrors the
 /// backend API:
@@ -266,7 +267,7 @@ class _TemplateFormViewState extends State<_TemplateFormView> {
         return Directionality(
             textDirection: TextDirection.rtl,
             child: Container(
-              color: const Color(0xffF0EFE7),
+              color: AppColors.surfaceAlt,
               child: SafeArea(
                 child: Column(
                   children: [
@@ -535,7 +536,7 @@ class _StepBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Text(
         'الخطوة $step من 2',
@@ -560,8 +561,8 @@ class _Section extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -596,7 +597,7 @@ class _FooterBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(horizontal, 12, horizontal, 12),
       decoration: const BoxDecoration(
-        color: Color(0xffF0EFE7),
+        color: AppColors.surfaceAlt,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: child,
@@ -632,7 +633,7 @@ class _PrimaryButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               )
             : Text(label),

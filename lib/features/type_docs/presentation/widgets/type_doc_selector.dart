@@ -10,6 +10,7 @@ import '../bloc/type_docs_bloc.dart';
 import '../bloc/type_docs_event.dart';
 import '../bloc/type_docs_state.dart';
 import 'type_doc_form_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Inline document-type picker for the file-picker form: a dropdown of the
 /// active document types plus add / edit / delete (deactivate) actions.
@@ -34,7 +35,7 @@ class TypeDocSelector extends StatelessWidget {
     final bloc = context.read<TypeDocsBloc>();
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: AppColors.scrim,
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: TypeDocFormDialog(id: id, initialName: initialName),
@@ -168,7 +169,7 @@ class TypeDocSelector extends StatelessWidget {
                   child: Text(
                     errorText!,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    style: const TextStyle(color: AppColors.error, fontSize: 12),
                   ),
                 ),
             ],
@@ -202,13 +203,13 @@ class _IconButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           width: 46,
           height: 46,
           decoration: BoxDecoration(
             color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Icon(icon, size: 22, color: fg),
         ),

@@ -52,7 +52,7 @@ class _DepartmentsPageState extends State<DepartmentsPage> {
           }
         },
         child: Container(
-          color: const Color(0xffF0EFE7),
+          color: AppColors.surfaceAlt,
           padding: const EdgeInsets.fromLTRB(40, 28, 40, 30),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -132,11 +132,11 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.folder_off_outlined,
-                color: Colors.black26, size: 48),
+                color: AppColors.iconMuted, size: 48),
             const SizedBox(height: 14),
             Text(
               message,
-              style: const TextStyle(color: Colors.black54, fontSize: 15),
+              style: const TextStyle(color: AppColors.textTertiary, fontSize: 15),
             ),
           ],
         ),
@@ -165,7 +165,7 @@ class _ErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black54, fontSize: 15),
+              style: const TextStyle(color: AppColors.textTertiary, fontSize: 15),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(

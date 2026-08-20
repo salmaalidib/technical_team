@@ -6,6 +6,7 @@ import '../../features/notifications/presentation/cubit/notifications_cubit.dart
 import '../../features/notifications/presentation/cubit/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notifications_panel.dart';
 import '../theme/app_colors.dart';
+import '../../shared/theme/app_dimens.dart';
 
 class AppTopbar extends StatelessWidget {
   const AppTopbar({super.key});
@@ -55,7 +56,7 @@ class AppTopbar extends StatelessWidget {
             backgroundColor: AppColors.primary,
             child: Icon(
               Icons.person_outline,
-              color: Colors.white,
+              color: AppColors.white,
               size: 30,
             ),
           ),
@@ -125,15 +126,15 @@ class _SearchBox extends StatelessWidget {
           filled: true,
           fillColor: AppColors.inputBackground,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.primary),
           ),
           hintText: 'بحث...',
@@ -178,13 +179,13 @@ class _NotificationButton extends StatelessWidget {
                 final box = context.findRenderObject() as RenderBox?;
                 if (box != null) NotificationsPanel.show(context, box);
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(
                   unread > 0
@@ -205,8 +206,8 @@ class _NotificationButton extends StatelessWidget {
                   height: 18,
                   padding: const EdgeInsets.symmetric(horizontal: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xff7A2334),
-                    borderRadius: BorderRadius.circular(9),
+                    color: AppColors.accentMaroon,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     border: Border.all(color: AppColors.surface, width: 1.5),
                   ),
                   child: Center(
@@ -214,7 +215,7 @@ class _NotificationButton extends StatelessWidget {
                       unread > 99 ? '99+' : '$unread',
                       textDirection: TextDirection.ltr,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                       ),

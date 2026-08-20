@@ -12,6 +12,7 @@ import '../../../type_processes/presentation/bloc/type_processes_bloc.dart';
 import '../../../type_processes/presentation/bloc/type_processes_event.dart';
 import '../../../type_processes/presentation/bloc/type_processes_state.dart';
 import '../../../type_processes/presentation/widgets/create_type_process_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Landing page for the technical team's transactions: manages process types
 /// (create + activate/deactivate) and navigates into a type's processes list at
@@ -43,7 +44,7 @@ class _ProcessTypesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
       child: const SingleChildScrollView(
         child: Column(
@@ -66,7 +67,7 @@ class _Header extends StatelessWidget {
     final bloc = context.read<TypeProcessesBloc>();
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: AppColors.scrim,
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: const CreateTypeProcessDialog(),
@@ -120,10 +121,10 @@ class _Header extends StatelessWidget {
             onPressed: () => _openCreate(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
             child: Row(
@@ -135,7 +136,7 @@ class _Header extends StatelessWidget {
                 Text(
                   'إنشاء نوع معاملة',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -177,7 +178,7 @@ class _Body extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لا توجد أنواع معاملات لعرضها',
-                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );
@@ -237,15 +238,15 @@ class _TypeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: () =>
             context.push('/transactions/type/${type.id}', extra: type.name),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
           child: Column(
@@ -262,10 +263,10 @@ class _TypeTile extends StatelessWidget {
                       height: 46,
                       decoration: BoxDecoration(
                         color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: const Icon(Icons.category_outlined,
-                          color: Colors.white, size: 24),
+                          color: AppColors.white, size: 24),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -408,7 +409,7 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
       child: Column(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 44),
           const SizedBox(height: 12),
           Text(
             message,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class DashboardStatCard extends StatelessWidget {
   final String title;
@@ -26,11 +27,11 @@ class DashboardStatCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.shadowSoft,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -48,7 +49,7 @@ class DashboardStatCard extends StatelessWidget {
                 color: isSecondaryIcon
                     ? AppColors.inputBackground
                     : AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(
                 icon,

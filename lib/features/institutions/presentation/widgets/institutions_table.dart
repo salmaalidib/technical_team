@@ -12,6 +12,7 @@ import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
 import 'institutions_data_source.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// جدول المؤسسات مبني على [SfDataGrid]. عرض كامل بدون ترقيم؛ البحث على جهة
 /// العميل يُعيد بناء مصدر البيانات بالقائمة المُرشَّحة.
@@ -46,11 +47,11 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.shadowSoft,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -110,7 +111,7 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
               height: InstitutionsTable.gridHeight,
               child: SfDataGridTheme(
                 data: const SfDataGridThemeData(
-                  headerColor: Color(0xffF0EFE7),
+                  headerColor: AppColors.surfaceAlt,
                   gridLineColor: AppColors.border,
                 ),
                 child: SfDataGrid(
@@ -170,15 +171,15 @@ class _TableSearch extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.primary),
             ),
           ),

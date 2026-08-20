@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Shared, styled building blocks for the create-process wizard, matching the
 /// look of the existing create dialogs (roles / employees).
@@ -146,7 +147,7 @@ class WizardDateField extends StatelessWidget {
         : '${value!.day}/${value!.month}/${value!.year}';
 
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       onTap: () async {
         final now = DateTime.now();
         final picked = await showDatePicker(
@@ -188,19 +189,19 @@ InputDecoration _wizardInputDecoration({String? hint, String? errorText}) {
     hintText: hint,
     errorText: errorText,
     filled: true,
-    fillColor: Colors.white,
+    fillColor: AppColors.white,
     hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: const BorderSide(color: AppColors.border),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: const BorderSide(color: AppColors.border),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: const BorderSide(color: AppColors.primary),
     ),
   );
@@ -281,11 +282,11 @@ class _StepNode extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: state == _NodeState.done
-                ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
+                ? const Icon(Icons.check_rounded, color: AppColors.white, size: 24)
                 : Text(
                     '$step',
                     style: TextStyle(
-                      color: isUpcoming ? AppColors.textSecondary : Colors.white,
+                      color: isUpcoming ? AppColors.textSecondary : AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),

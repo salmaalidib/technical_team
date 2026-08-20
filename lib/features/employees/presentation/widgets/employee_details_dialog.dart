@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class EmployeeDetailsDialog extends StatelessWidget {
   final String firstName;
@@ -35,7 +36,7 @@ class EmployeeDetailsDialog extends StatelessWidget {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760, maxHeight: 700),
         child: Directionality(
@@ -56,13 +57,13 @@ class EmployeeDetailsDialog extends StatelessWidget {
                     const Spacer(),
                     InkWell(
                       onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
                           color: AppColors.inputBackground,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: const Icon(Icons.close_rounded),
                       ),
@@ -111,8 +112,8 @@ class _InfoRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xffFAF9F5),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(

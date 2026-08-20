@@ -9,10 +9,11 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/otp/otp_bloc.dart';
 import '../bloc/otp/otp_event.dart';
 import '../bloc/otp/otp_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// الأخضر الأساسي للتطبيق — نفس اللون المستخدم في باقي الواجهات.
 const _forest = AppColors.primary;
-const _charcoal = Color(0xFF3D3A3B);
+const _charcoal = AppColors.textCharcoal;
 
 class OtpForm extends StatefulWidget {
   final String sessionId;
@@ -94,7 +95,6 @@ class _OtpFormState extends State<OtpForm> {
               child: const Text(
                 'رمز التحقق',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: _charcoal,
@@ -108,9 +108,8 @@ class _OtpFormState extends State<OtpForm> {
               child: const Text(
                 'تم إرسال رمز التحقق إلى رقم هاتفك',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
                   fontSize: 14,
-                  color: Color(0xFF9E9E9E),
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
@@ -125,7 +124,6 @@ class _OtpFormState extends State<OtpForm> {
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: state.isLoading ? null : (_) => _submit(),
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
                   fontSize: 26,
                   letterSpacing: 12,
                   fontWeight: FontWeight.bold,
@@ -150,7 +148,7 @@ class _OtpFormState extends State<OtpForm> {
               child: Container(
                 height: 54,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   boxShadow: state.isLoading
                       ? null
                       : [
@@ -168,7 +166,7 @@ class _OtpFormState extends State<OtpForm> {
                     backgroundColor: _forest,
                     disabledBackgroundColor: _forest.withValues(alpha: .6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: state.isLoading
@@ -177,14 +175,13 @@ class _OtpFormState extends State<OtpForm> {
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         )
                       : const Text(
                           'تأكيد التحقق',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: .5,
@@ -203,7 +200,6 @@ class _OtpFormState extends State<OtpForm> {
                 child: const Text(
                   'إعادة إرسال الرمز',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
                     color: _forest,
                     fontWeight: FontWeight.bold,
                   ),
@@ -231,9 +227,9 @@ class _TimerPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
+        color: AppColors.inputBackgroundAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.borderLight, width: 1.5),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +243,6 @@ class _TimerPill extends StatelessWidget {
           Text(
             waiting ? 'إعادة الإرسال خلال $timerText' : 'يمكنك إعادة إرسال الرمز',
             style: const TextStyle(
-              fontFamily: 'Cairo',
               fontSize: 13,
               color: _charcoal,
               fontWeight: FontWeight.w600,
@@ -261,25 +256,24 @@ class _TimerPill extends StatelessWidget {
 
 InputDecoration _otpInputDecoration() {
   OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
   return InputDecoration(
     hintText: '000000',
     hintStyle: const TextStyle(
-      fontFamily: 'Cairo',
       fontSize: 26,
       letterSpacing: 12,
       fontWeight: FontWeight.bold,
-      color: Color(0xFFBDBDBD),
+      color: AppColors.borderStrong,
     ),
     filled: true,
-    fillColor: const Color(0xFFFAFAFA),
+    fillColor: AppColors.inputBackgroundAlt,
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-    enabledBorder: border(const Color(0xFFEEEEEE), 1.5),
+    enabledBorder: border(AppColors.borderLight, 1.5),
     focusedBorder: border(_forest, 1.8),
-    errorBorder: border(Colors.redAccent.withValues(alpha: .5), 1.5),
-    focusedErrorBorder: border(Colors.redAccent, 1.8),
+    errorBorder: border(AppColors.error.withValues(alpha: .5), 1.5),
+    focusedErrorBorder: border(AppColors.error, 1.8),
   );
 }

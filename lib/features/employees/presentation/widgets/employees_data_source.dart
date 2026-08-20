@@ -116,7 +116,6 @@ class EmployeesDataSource extends DataGridSource {
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontFamily: 'Cairo',
           fontSize: 14,
           height: 1.4,
           color: muted ? AppColors.textSecondary : AppColors.textPrimary,

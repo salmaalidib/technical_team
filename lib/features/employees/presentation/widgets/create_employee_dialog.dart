@@ -19,6 +19,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class CreateEmployeeDialog extends StatefulWidget {
   const CreateEmployeeDialog({super.key});
@@ -422,7 +423,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
           ),
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
           ),
           clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
@@ -436,7 +437,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                 children: [
                   Container(
                     padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
-                    color: Colors.white,
+                    color: AppColors.white,
                     child: Row(
                       children: [
                         Container(
@@ -444,11 +445,11 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                           height: 42,
                           decoration: BoxDecoration(
                             color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           child: const Icon(
                             Icons.person_add_alt_1_rounded,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -479,13 +480,13 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                         ),
                         InkWell(
                           onTap: () => Navigator.pop(context),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                           child: Container(
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
                               color: AppColors.inputBackground,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: const Icon(Icons.close_rounded),
                           ),
@@ -688,7 +689,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                   ),
                   Container(
                     padding: const EdgeInsets.fromLTRB(28, 14, 28, 16),
-                    color: Colors.white,
+                    color: AppColors.white,
                     child: Row(
                       children: [
                         Expanded(
@@ -703,7 +704,7 @@ class _CreateEmployeeDialogState extends State<CreateEmployeeDialog> {
                                       height: 22,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color: AppColors.white,
                                       ),
                                     )
                                   : const Icon(Icons.person_add_rounded),
@@ -890,22 +891,22 @@ class _AppTextField extends StatelessWidget {
               vertical: 15,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(
                 color: AppColors.primary,
                 width: 1.6,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(
                 color: AppColors.error,
                 width: 1.6,
@@ -977,7 +978,7 @@ class _SecurityUsbCardState extends State<_SecurityUsbCard> {
         final String status;
         final String message;
         if (loading) {
-          accent = const Color(0xffB7791F);
+          accent = AppColors.warningAlt;
           icon = Icons.sync_rounded;
           status = 'جارٍ فحص وحدات USB...';
           message = 'يرجى الانتظار أثناء قراءة وحدات الأمان المتصلة بالجهاز';
@@ -994,7 +995,7 @@ class _SecurityUsbCardState extends State<_SecurityUsbCard> {
           status = 'تعذّر فحص مفتاح USB';
           message = 'أعد توصيل وحدة USB ثم اضغط على إعادة الفحص';
         } else {
-          accent = const Color(0xffB7791F);
+          accent = AppColors.warningAlt;
           icon = Icons.usb_off_rounded;
           status = 'لم يتم اكتشاف مفتاح USB';
           message =
@@ -1005,7 +1006,7 @@ class _SecurityUsbCardState extends State<_SecurityUsbCard> {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: accent.withValues(alpha: 0.28)),
           ),
           child: Row(
@@ -1015,7 +1016,7 @@ class _SecurityUsbCardState extends State<_SecurityUsbCard> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: loading
                     ? Padding(
@@ -1052,7 +1053,7 @@ class _SecurityUsbCardState extends State<_SecurityUsbCard> {
                           ),
                           decoration: BoxDecoration(
                             color: accent.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
                           ),
                           child: Text(
                             status,
@@ -1135,11 +1136,11 @@ class _AppDropdown extends StatelessWidget {
               vertical: 16,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: const BorderSide(
                 color: AppColors.primary,
                 width: 1.6,

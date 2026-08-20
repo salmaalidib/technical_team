@@ -11,6 +11,7 @@ import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
 import 'employee_dialogs.dart';
 import 'employees_data_source.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// جدول الموظفين مبني على [SfDataGrid] مع ترقيم من جهة الخادم عبر
 /// [DataPagerWidget]. يقرأ الصفحة الحالية وحجمها والإجمالي من حالة الـ BLoC،
@@ -60,11 +61,11 @@ class _EmployeesTableState extends State<EmployeesTable> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.shadowSoft,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -75,7 +76,7 @@ class _EmployeesTableState extends State<EmployeesTable> {
           Expanded(
             child: SfDataGridTheme(
               data: const SfDataGridThemeData(
-                headerColor: Color(0xffF0EFE7),
+                headerColor: AppColors.surfaceAlt,
                 gridLineColor: AppColors.border,
               ),
               child: SfDataGrid(

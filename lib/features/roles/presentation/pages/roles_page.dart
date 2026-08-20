@@ -11,6 +11,7 @@ import '../bloc/roles_event.dart';
 import '../bloc/roles_state.dart';
 import '../widgets/role_card.dart';
 import '../widgets/roles_header.dart';
+import '../../../../shared/theme/app_colors.dart';
 
 class RolesPage extends StatelessWidget {
   const RolesPage({super.key});
@@ -51,7 +52,7 @@ class _RolesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
       child: const SingleChildScrollView(
         child: Column(
@@ -100,7 +101,7 @@ class _RolesBody extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لا توجد أدوار لعرضها',
-                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );
@@ -168,7 +169,7 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
       child: Column(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 44),
           const SizedBox(height: 12),
           Text(
             message,

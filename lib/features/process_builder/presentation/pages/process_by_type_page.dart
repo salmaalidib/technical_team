@@ -9,6 +9,7 @@ import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import '../widgets/process_list_view.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Processes belonging to a single type (`admin/type/{typeId}`), reached from
 /// the types grid. Hosts the "create transaction" button, which carries the
@@ -83,7 +84,7 @@ class _ProcessByTypeView extends StatelessWidget {
       child: DefaultTabController(
         length: 2,
         child: Container(
-          color: const Color(0xffF0EFE7),
+          color: AppColors.surfaceAlt,
           padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,20 +132,20 @@ class _ActiveTabs extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.border),
             ),
             padding: const EdgeInsets.all(4),
             child: TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,
-              dividerColor: Colors.transparent,
+              dividerColor: AppColors.transparent,
               indicatorSize: TabBarIndicatorSize.tab,
               indicator: BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              labelColor: Colors.white,
+              labelColor: AppColors.white,
               unselectedLabelColor: AppColors.textSecondary,
               labelPadding: const EdgeInsets.symmetric(horizontal: 22),
               labelStyle:
@@ -186,13 +187,13 @@ class _Header extends StatelessWidget {
               onTap: () => context.canPop()
                   ? context.pop()
                   : context.go('/transactions'),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.border),
                 ),
                 // زر رجوع في واجهة RTL: يشير نحو اليمين.
@@ -237,10 +238,10 @@ class _Header extends StatelessWidget {
             onPressed: onCreate,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
             child: Row(
@@ -252,7 +253,7 @@ class _Header extends StatelessWidget {
                 Text(
                   'إنشاء معاملة جديدة',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),

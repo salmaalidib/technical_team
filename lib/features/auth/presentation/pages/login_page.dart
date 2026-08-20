@@ -10,14 +10,15 @@ import 'package:technical_team/core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/login/login_bloc.dart';
 import '../widgets/login_form.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// الأخضر الأساسي للتطبيق. اللوحة هنا مشتقّة منه كي تطابق باقي الواجهات.
 const _forest = AppColors.primary;
 
 /// الطرف الداكن لتدرّج اللوحة — نفس درجة [_forest] مع خفض السطوع.
-const _forestDark = Color(0xFF163E31);
-const _gold = Color(0xFFB9A779);
-const _goldLight = Color(0xFFEDEBE0);
+const _forestDark = AppColors.primaryDark;
+const _gold = AppColors.secondaryAlt;
+const _goldLight = AppColors.lightSecondary;
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -62,7 +63,7 @@ class _LoginViewState extends State<_LoginView>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         body: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 850;
@@ -183,11 +184,10 @@ class _LoginIllustration extends StatelessWidget {
                       'مديرية التربية في ريف دمشق',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: .5,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -195,10 +195,9 @@ class _LoginIllustration extends StatelessWidget {
                       'الفريق التقني الخاص بمديرية التربية',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xD9EDEBE0),
+                        color: AppColors.lightSecondaryTranslucent,
                       ),
                     ),
                     SizedBox(height: 48),
@@ -227,7 +226,6 @@ class _CompactBranding extends StatelessWidget {
           'مديرية التربية في ريف دمشق',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Cairo',
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: _forest,
@@ -237,16 +235,15 @@ class _CompactBranding extends StatelessWidget {
           'الفريق التقني الخاص بمديرية التربية',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Cairo',
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF757575),
+            color: AppColors.textMuted,
           ),
         ),
         SizedBox(height: 20),
         SizedBox(
           width: 80,
-          child: Divider(height: 1.5, thickness: 1.5, color: Color(0xFFEEEEEE)),
+          child: Divider(height: 1.5, thickness: 1.5, color: AppColors.borderLight),
         ),
         SizedBox(height: 24),
       ],
@@ -320,9 +317,9 @@ class _SecurityBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .05),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: .1)),
+        color: AppColors.white.withValues(alpha: .05),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.white.withValues(alpha: .1)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -332,10 +329,9 @@ class _SecurityBadge extends StatelessWidget {
           Text(
             'نظام آمن ومحمي',
             style: TextStyle(
-              fontFamily: 'Cairo',
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xE6FFFFFF),
+              color: AppColors.whiteTranslucent,
             ),
           ),
         ],

@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/notification_item.dart';
 import '../cubit/notifications_cubit.dart';
 import '../cubit/notifications_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// القائمة المنسدلة التي تظهر عند الضغط على جرس الإشعارات.
 class NotificationsPanel extends StatefulWidget {
@@ -25,14 +26,14 @@ class NotificationsPanel extends StatefulWidget {
 
     return showDialog<void>(
       context: context,
-      barrierColor: Colors.transparent,
+      barrierColor: AppColors.transparent,
       builder: (_) => Stack(
         children: [
           Positioned(
             top: topLeft.dy + 8,
             left: topLeft.dx,
             child: const Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               child: NotificationsPanel(),
             ),
           ),
@@ -84,11 +85,11 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
           constraints: const BoxConstraints(maxHeight: 480),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: .12),
+                color: AppColors.shadowMedium,
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -193,7 +194,7 @@ class _Header extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
               child: Text(
                 '$unreadCount',
@@ -247,7 +248,7 @@ class _NotificationTile extends StatelessWidget {
               height: 8,
               margin: const EdgeInsets.only(top: 6),
               decoration: BoxDecoration(
-                color: item.isRead ? Colors.transparent : AppColors.primary,
+                color: item.isRead ? AppColors.transparent : AppColors.primary,
                 shape: BoxShape.circle,
               ),
             ),

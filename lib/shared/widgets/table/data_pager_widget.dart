@@ -66,14 +66,12 @@ class DataPagerWidget extends StatelessWidget {
           data: const SfDataPagerThemeData(
             selectedItemColor: AppColors.primary,
             selectedItemTextStyle: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Cairo',
+              color: AppColors.white,
               fontWeight: FontWeight.w700,
             ),
             itemColor: AppColors.surface,
             itemTextStyle: TextStyle(
               color: AppColors.textPrimary,
-              fontFamily: 'Cairo',
             ),
           ),
           child: SfDataPager(

@@ -12,6 +12,7 @@ import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
 import 'department_details_dialog.dart';
 import 'departments_data_source.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// جدول الأقسام مبني على [SfDataGrid] بنفس تصميم جدول الموظفين. الترقيم من جهة
 /// العميل داخل المستوى الحالي (الجذور أو شعب قسم)، عبر [DataPagerWidget].
@@ -99,11 +100,11 @@ class _DepartmentsTableState extends State<DepartmentsTable> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: activate ? AppColors.primary : AppColors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 // ألغِ عرض double.infinity القادم من الثيم العام.
                 minimumSize: const Size(112, 42),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               onPressed: () => Navigator.pop(ctx, true),
@@ -129,11 +130,11 @@ class _DepartmentsTableState extends State<DepartmentsTable> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.shadowSoft,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -144,7 +145,7 @@ class _DepartmentsTableState extends State<DepartmentsTable> {
           Expanded(
             child: SfDataGridTheme(
               data: const SfDataGridThemeData(
-                headerColor: Color(0xffF0EFE7),
+                headerColor: AppColors.surfaceAlt,
                 gridLineColor: AppColors.border,
               ),
               child: SfDataGrid(

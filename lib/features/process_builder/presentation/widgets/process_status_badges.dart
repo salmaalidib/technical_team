@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Colored pill summarising a process's approval state. Works for both list
 /// shapes: the admin tab passes `approvalStatus`, the review tab may also pass
@@ -18,13 +20,13 @@ class ApprovalBadge extends StatelessWidget {
     late final Color color;
     if (approved || status == 'APPROVED') {
       label = 'معتمدة';
-      color = const Color(0xff2E7D32);
+      color = AppColors.success;
     } else if (status == 'REJECTED') {
       label = 'مرفوضة';
-      color = const Color(0xffC62828);
+      color = AppColors.errorDark;
     } else {
       label = 'بانتظار الاعتماد';
-      color = const Color(0xffB26A00);
+      color = AppColors.warning;
     }
 
     return _Pill(label: label, color: color, icon: Icons.verified_outlined);
@@ -41,7 +43,7 @@ class ActiveBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Pill(
       label: isActive ? 'مُفعّلة' : 'غير مُفعّلة',
-      color: isActive ? const Color(0xff2E7D32) : const Color(0xff757575),
+      color: isActive ? AppColors.success : AppColors.neutral,
       icon: isActive ? Icons.toggle_on : Icons.toggle_off,
     );
   }
@@ -60,7 +62,7 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Row(

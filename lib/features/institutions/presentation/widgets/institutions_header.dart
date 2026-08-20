@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/institutions_bloc.dart';
 import 'create_institution_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class InstitutionsHeader extends StatelessWidget {
   const InstitutionsHeader({super.key});
@@ -74,7 +75,7 @@ class InstitutionsHeader extends StatelessWidget {
               final bloc = context.read<InstitutionsBloc>();
               showDialog(
                 context: context,
-                barrierColor: Colors.black.withOpacity(0.55),
+                barrierColor: AppColors.scrim,
                 builder: (_) => BlocProvider.value(
                   value: bloc,
                   child: const CreateInstitutionDialog(),
@@ -88,11 +89,11 @@ class InstitutionsHeader extends StatelessWidget {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 18),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               textStyle: const TextStyle(
                 fontSize: 16,

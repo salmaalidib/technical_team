@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/doc_template.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// A single document-template card in the list grid: name, document type,
 /// version + field count. Tapping the card opens its edit form.
@@ -19,20 +20,20 @@ class TemplateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fieldCount = template.config?.widgets.length ?? 0;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onEdit,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.shadowFaint,
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -113,7 +114,7 @@ class _Chip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

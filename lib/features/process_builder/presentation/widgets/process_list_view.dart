@@ -12,6 +12,7 @@ import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import 'process_status_badges.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 enum ProcessListTab {
   all,
@@ -431,11 +432,11 @@ class _AdminProcessCard extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: activate ? AppColors.primary : AppColors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 // ألغِ عرض double.infinity القادم من الثيم العام.
                 minimumSize: const Size(112, 42),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               onPressed: () => Navigator.pop(ctx, true),
@@ -538,7 +539,7 @@ class _ReviewItemCard extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: approve ? AppColors.primary : AppColors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
               ),
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(approve ? 'موافقة' : 'رفض'),
@@ -669,7 +670,7 @@ class _ActionButton extends StatelessWidget {
                 minimumSize: const Size(0, 44),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
               child: child,
             )
@@ -677,13 +678,13 @@ class _ActionButton extends StatelessWidget {
               onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 44),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
               child: child,
             ),
@@ -711,15 +712,15 @@ class _CardShell extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -794,7 +795,7 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 44),
           const SizedBox(height: 12),
           Text(
             message,

@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/date_bound.dart';
 import 'dialog_kit.dart';
 import 'field_form_kit.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Editor for one end of a date range.
 ///
@@ -50,7 +51,7 @@ class DateBoundField extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
           decoration: BoxDecoration(
             color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.border),
           ),
           child: Column(
@@ -267,12 +268,12 @@ class _ModeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? AppColors.primary : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
           ),
@@ -282,7 +283,7 @@ class _ModeChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? AppColors.white : AppColors.textSecondary,
           ),
         ),
       ),
@@ -352,18 +353,18 @@ class _OffsetBoxState extends State<_OffsetBox> {
             onChanged: (t) => widget.onChanged(int.tryParse(t) ?? 0),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppColors.white,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.primary),
               ),
             ),

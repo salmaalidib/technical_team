@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../theme/app_colors.dart';
+import '../../shared/theme/app_dimens.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 /// App skeleton loaders — built on the `skeletonizer` package.
@@ -26,8 +27,8 @@ import '../theme/app_colors.dart';
 /// The shared shimmer effect, tinted with the app palette so the bones blend
 /// with the surrounding surfaces instead of reading as a foreign grey.
 const ShimmerEffect _appShimmer = ShimmerEffect(
-  baseColor: Color(0xffE7E9EC),
-  highlightColor: Color(0xffF6F7F9),
+  baseColor: AppColors.skeletonBase,
+  highlightColor: AppColors.skeletonHighlight,
   duration: Duration(milliseconds: 1300),
 );
 
@@ -181,7 +182,7 @@ class _SkeletonCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -250,7 +251,7 @@ class _SkeletonList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: AppColors.border),
             ),
             child: const Row(
@@ -313,7 +314,7 @@ class _SkeletonTable extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
@@ -383,7 +384,7 @@ class _Bone extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xffE7E9EC),
+        color: AppColors.skeletonBase,
         shape: circle ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: circle ? null : BorderRadius.circular(radius),
       ),

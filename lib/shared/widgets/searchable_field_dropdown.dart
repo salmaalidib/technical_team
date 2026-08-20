@@ -9,6 +9,7 @@ import '../../features/fields/presentation/bloc/fields_state.dart';
 import '../../features/fields/presentation/widgets/create_field_dialog.dart';
 import '../../features/process_builder/domain/entities/widget_config.dart';
 import '../theme/app_colors.dart';
+import '../../shared/theme/app_dimens.dart';
 
 /// Selection behaviour of [SearchableFieldDropdown].
 enum FieldDropdownMode { single, multi }
@@ -131,7 +132,7 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
     final bloc = context.read<FieldsBloc>();
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: AppColors.scrim,
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: CreateFieldDialog(type: widget.type),
@@ -281,14 +282,14 @@ class _Trigger extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: hasSelection ? AppColors.primary : AppColors.border,
             width: hasSelection ? 1.4 : 1.1,
@@ -369,17 +370,17 @@ class _Panel extends StatelessWidget {
     final panelWidth = media.width < 420 ? media.width - 32 : 360.0;
 
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: Container(
         width: panelWidth,
         constraints: BoxConstraints(maxHeight: maxHeight),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: AppColors.shadowMedium,
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -461,15 +462,15 @@ class _SearchBar extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             borderSide: const BorderSide(color: AppColors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
           ),
         ),
@@ -615,7 +616,7 @@ class _Row extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: selected ? AppColors.lightPrimary : Colors.transparent,
+        color: selected ? AppColors.lightPrimary : AppColors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Row(
           textDirection: TextDirection.rtl,
@@ -719,15 +720,15 @@ class _MiniCheckbox extends StatelessWidget {
       width: 20,
       height: 20,
       decoration: BoxDecoration(
-        color: checked ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+        color: checked ? AppColors.primary : AppColors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
         border: Border.all(
           color: checked ? AppColors.primary : AppColors.border,
           width: 1.6,
         ),
       ),
       child: checked
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+          ? const Icon(Icons.check_rounded, size: 14, color: AppColors.white)
           : null,
     );
   }
@@ -781,15 +782,15 @@ class _AddButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         width: 50,
         height: 50,
         decoration: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+        child: const Icon(Icons.add_rounded, color: AppColors.white, size: 24),
       ),
     );
   }

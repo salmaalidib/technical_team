@@ -40,7 +40,6 @@ class InstitutionsDataSource extends DataGridSource {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Cairo',
               fontSize: 15,
               color: muted ? AppColors.textSecondary : AppColors.textPrimary,
               fontWeight: FontWeight.w600,

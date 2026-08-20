@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../../shared/theme/app_dimens.dart';
 
 /// Dropdown over an `{ id: name }` map that yields the selected int id.
 ///
@@ -34,7 +35,7 @@ class AppIdDropdown extends StatelessWidget {
       ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         errorText: errorText,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -71,6 +72,6 @@ class AppIdDropdown extends StatelessWidget {
 }
 
 OutlineInputBorder _border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: BorderSide(color: color),
     );

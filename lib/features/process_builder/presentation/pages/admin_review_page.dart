@@ -8,6 +8,7 @@ import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import '../widgets/process_list_view.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Technical-team admin screen with two tabs:
 ///   * "مكتملة (للاعتماد)" → review-queue (approve / reject),
@@ -50,7 +51,7 @@ class _AdminReviewView extends StatelessWidget {
           }
         },
         child: Container(
-          color: const Color(0xffF0EFE7),
+          color: AppColors.surfaceAlt,
           padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -73,8 +74,8 @@ class _AdminReviewView extends StatelessWidget {
               const SizedBox(height: 18),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: const TabBar(

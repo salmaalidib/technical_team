@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/field_type.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Metadata for each FieldType: Arabic label, icon, description.
 class FieldTypeMeta {
@@ -74,14 +75,14 @@ class FieldTypeCard extends StatelessWidget {
         curve: Curves.easeOut,
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isSelected ? 0.06 : 0.03),
+              color: isSelected ? AppColors.shadowSoft : AppColors.shadowFaint,
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -102,11 +103,11 @@ class FieldTypeCard extends StatelessWidget {
                     color: isSelected
                         ? AppColors.primary
                         : AppColors.lightPrimary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(
                     meta.icon,
-                    color: isSelected ? Colors.white : AppColors.primary,
+                    color: isSelected ? AppColors.white : AppColors.primary,
                     size: 24,
                   ),
                 ),
@@ -144,13 +145,13 @@ class _CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: active ? AppColors.primary : AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Text(
         '$count',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: active ? Colors.white : AppColors.textPrimary,
+          color: active ? AppColors.white : AppColors.textPrimary,
           fontSize: 13,
           fontWeight: FontWeight.w700,
         ),

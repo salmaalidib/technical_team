@@ -3,6 +3,7 @@ import 'package:technical_team/features/employees/presentation/widgets/create_em
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/employees_bloc.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class EmployeesHeader extends StatelessWidget {
   const EmployeesHeader({super.key});
@@ -62,7 +63,7 @@ class EmployeesHeader extends StatelessWidget {
 
                   showDialog(
                     context: context,
-                    barrierColor: Colors.black.withOpacity(0.55),
+                    barrierColor: AppColors.scrim,
                     builder: (_) => BlocProvider.value(
                       value: bloc,
                       child: const CreateEmployeeDialog(),
@@ -71,10 +72,10 @@ class EmployeesHeader extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
                 child: Row(
@@ -86,7 +87,7 @@ class EmployeesHeader extends StatelessWidget {
                     Text(
                       'إضافة موظف جديد',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.w700,
                           ),
                     ),

@@ -124,7 +124,7 @@ class DepartmentsDataSource extends DataGridSource {
                         : Icons.toggle_off_outlined,
                     backgroundColor: department.isActive
                         ? AppColors.lightPrimary
-                        : const Color(0xffFDECEC),
+                        : AppColors.errorLight,
                     iconColor: department.isActive
                         ? AppColors.primary
                         : AppColors.error,
@@ -157,7 +157,6 @@ class DepartmentsDataSource extends DataGridSource {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontFamily: 'Cairo',
           fontSize: 14,
           height: 1.4,
           color: muted ? AppColors.textSecondary : AppColors.textPrimary,

@@ -12,6 +12,7 @@ import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import '../widgets/process_status_badges.dart';
 import '../widgets/stage_config_view.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Full details of one process (`GET /api/process_definitions/{id}/details`):
 /// header info, the validation verdict, then each stage with its assignments.
@@ -39,7 +40,7 @@ class _DetailsScaffold extends StatelessWidget {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
 
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 24, horizontal, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -243,7 +244,7 @@ class _DateChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.lightPrimary,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -279,7 +280,7 @@ class _ValidationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final valid = validation.isValid;
     final color =
-        valid ? const Color(0xff2E7D32) : const Color(0xffC62828);
+        valid ? AppColors.success : AppColors.errorDark;
 
     return _Card(
       borderColor: color.withOpacity(0.4),
@@ -359,7 +360,7 @@ class _StageCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.lightPrimary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Text(
                     'مرحلة المواطن',
@@ -460,12 +461,12 @@ class _MiniTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ok ? const Color(0xff2E7D32) : const Color(0xffB26A00);
+    final color = ok ? AppColors.success : AppColors.warning;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         label,
@@ -488,8 +489,8 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: borderColor ?? AppColors.border),
       ),
       child: child,
@@ -509,7 +510,7 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 44),
           const SizedBox(height: 12),
           Text(
             message,

@@ -26,7 +26,7 @@ class DepartmentEmployeeTile extends StatelessWidget {
           child: Text(
             letter,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.w700,
                 ),
           ),

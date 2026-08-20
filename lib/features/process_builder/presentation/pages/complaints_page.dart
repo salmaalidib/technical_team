@@ -9,6 +9,7 @@ import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
 import '../widgets/process_list_view.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Complaints landing page (`admin/complaints/all`): every complaint process,
 /// active and inactive. Complaints have no process type, so unlike the
@@ -71,7 +72,7 @@ class _ComplaintsView extends StatelessWidget {
           );
       },
       child: Container(
-        color: const Color(0xffF0EFE7),
+        color: AppColors.surfaceAlt,
         padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -139,10 +140,10 @@ class _Header extends StatelessWidget {
             onPressed: onCreate,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
             child: Row(
@@ -154,7 +155,7 @@ class _Header extends StatelessWidget {
                 Text(
                   'إنشاء شكوى',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),

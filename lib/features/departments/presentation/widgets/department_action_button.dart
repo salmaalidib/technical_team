@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// زر إجراء دائري/مربّع داخل خلايا جدول الأقسام.
 ///
@@ -36,7 +37,7 @@ class DepartmentActionButton extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(
               icon,

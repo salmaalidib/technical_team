@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Step 2 — drag/drop or pick a BPMN/XML workflow file.
 class Step2UploadBpmn extends StatelessWidget {
@@ -44,7 +45,7 @@ class Step2UploadBpmn extends StatelessWidget {
       buildWhen: (p, c) => p.fileName != c.fileName || p.hasFile != c.hasFile,
       builder: (context, state) {
         return InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: () => _pick(context),
           child: DottedBorderBox(
             child: Padding(
@@ -117,8 +118,8 @@ class DottedBorderBox extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border, width: 1.4),
       ),
       child: child,

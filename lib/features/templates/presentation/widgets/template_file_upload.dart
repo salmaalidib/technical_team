@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// A picked template file held in the form (bytes kept for multipart upload).
 class PickedFile {
@@ -85,13 +86,13 @@ class TemplateFileUpload extends StatelessWidget {
           )
         else
           InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             onTap: () => _pick(context),
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
                   color: AppColors.border,
                   width: 1.4,
@@ -153,8 +154,8 @@ class _FileChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border, width: 1.4),
       ),
       child: Row(

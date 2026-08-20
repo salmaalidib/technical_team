@@ -12,6 +12,7 @@ import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
 import 'wizard_kit.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Step 4 — a vertical list of stage cards. Tapping a card expands its inline
 /// editor (instead of a side panel).
@@ -69,7 +70,7 @@ class _StageCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: expanded ? AppColors.primary : AppColors.border,
           width: expanded ? 1.6 : 1.2,
@@ -79,7 +80,7 @@ class _StageCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             onTap: () => context
                 .read<ProcessBuilderBloc>()
                 .add(StageExpansionToggled(stage.id)),
@@ -154,12 +155,12 @@ class _CardHeader extends StatelessWidget {
             height: 46,
             decoration: BoxDecoration(
               color: expanded ? AppColors.primary : accent.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             alignment: Alignment.center,
             child: Icon(
               isUser ? Icons.shield_outlined : Icons.bolt_outlined,
-              color: expanded ? Colors.white : accent,
+              color: expanded ? AppColors.white : accent,
               size: 24,
             ),
           ),
@@ -232,7 +233,7 @@ class _LockedStageNotice extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -349,11 +350,11 @@ class _IsAssignmentToggle extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         title: const Row(
           textDirection: TextDirection.rtl,
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
             SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -383,7 +384,7 @@ class _IsAssignmentToggle extends StatelessWidget {
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('نعم، تفعيل'),
           ),
@@ -407,7 +408,7 @@ class _IsAssignmentToggle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -449,7 +450,7 @@ class _IsAssignmentToggle extends StatelessWidget {
           const SizedBox(width: 10),
           Switch(
             value: draft.isAssignment,
-            activeColor: Colors.red,
+            activeColor: AppColors.error,
             onChanged: enabled ? (v) => _handleChanged(context, v) : null,
           ),
         ],
@@ -513,7 +514,7 @@ class _TemplatePicker extends StatelessWidget {
           enabled: all.isNotEmpty,
           position: PopupMenuPosition.under,
           constraints: const BoxConstraints(minWidth: 260, maxWidth: 360),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
           itemBuilder: (context) {
             final localSelected = {...selectedIds};
             return [
@@ -598,8 +599,8 @@ class _TemplatePicker extends StatelessWidget {
             height: 50,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
@@ -707,7 +708,7 @@ class _AssignmentsEditor extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
           ),
@@ -909,16 +910,16 @@ class _GatewayFieldSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.red.withOpacity(0.4), width: 1.2),
+            color: AppColors.error.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: AppColors.error.withOpacity(0.4), width: 1.2),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             textDirection: TextDirection.rtl,
             children: [
               const Icon(Icons.warning_amber_rounded,
-                  color: Colors.red, size: 22),
+                  color: AppColors.error, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -928,7 +929,7 @@ class _GatewayFieldSection extends StatelessWidget {
                       'تنبيه هام — هذا الحقل يتحكم في مسار المعاملة بالكامل',
                       textAlign: TextAlign.right,
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        color: AppColors.errorDark,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                       ),
@@ -997,7 +998,7 @@ class _SelectedChip extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Row(
         textDirection: TextDirection.rtl,
@@ -1014,7 +1015,7 @@ class _SelectedChip extends StatelessWidget {
           const SizedBox(width: 4),
           InkWell(
             onTap: onRemove,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             child: const Icon(Icons.close_rounded,
                 size: 16, color: AppColors.textSecondary),
           ),
@@ -1098,7 +1099,7 @@ class _GeneratePdfConfigEditor extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -1141,7 +1142,7 @@ class _NotificationConfigEditor extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -1207,20 +1208,20 @@ class _NotificationConfigEditor extends StatelessWidget {
         hintTextDirection: TextDirection.rtl,
         isDense: true,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         counterText: '',
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
       );
@@ -1270,12 +1271,12 @@ class _RecipientChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          color: selected ? AppColors.primary : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
           ),
@@ -1285,7 +1286,7 @@ class _RecipientChip extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.textPrimary,
+            color: selected ? AppColors.white : AppColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -1367,12 +1368,12 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -1414,7 +1415,7 @@ class _CheckRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => onChanged(!checked),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -1455,7 +1456,7 @@ class _Hint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       alignment: Alignment.centerRight,

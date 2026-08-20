@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_text_styles.dart';
 import '../../../app_update/presentation/bloc/app_update_bloc.dart';
 import '../../../app_update/presentation/bloc/app_update_event.dart';
 import '../../../app_update/presentation/bloc/app_update_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// صفحة "حول التطبيق" — تعرض رقم الإصدار الحالي وزر فحص تحديث يدوي.
 /// (كانت DashboardPage — بقايا نسخ ولصق غير مستخدمة، انظر توثيق الميزة).
@@ -50,7 +51,7 @@ class _AboutCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -134,7 +135,7 @@ class _UpdateStatusArea extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
             ),
             onPressed: info.isDirectInstall
                 ? () => context

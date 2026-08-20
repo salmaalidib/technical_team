@@ -10,6 +10,7 @@ import '../../features/notifications/presentation/cubit/notifications_cubit.dart
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_snackbar.dart';
+import '../../shared/theme/app_dimens.dart';
 
 /// A single navigation entry. Kept as data so the rows can be built in a loop
 /// and given a staggered entrance based on their index.
@@ -80,7 +81,7 @@ class _AppSidebarState extends State<AppSidebar>
 
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: .32),
+      barrierColor: AppColors.scrimLight,
       builder: (dialogContext) => _LogoutConfirmationDialog(
         onCancel: () => Navigator.of(dialogContext).pop(false),
         onConfirm: () => Navigator.of(dialogContext).pop(true),
@@ -285,7 +286,7 @@ class _LogoutButtonState extends State<_LogoutButton> {
         ? AppColors.error.withValues(alpha: .12)
         : _isHovered
             ? AppColors.error.withValues(alpha: .08)
-            : Colors.transparent;
+            : AppColors.transparent;
 
     final button = MouseRegion(
       cursor: widget.isLoading
@@ -317,7 +318,7 @@ class _LogoutButtonState extends State<_LogoutButton> {
             ),
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: isEmphasized
                     ? AppColors.error.withValues(alpha: .12)
@@ -374,7 +375,6 @@ class _LogoutButtonState extends State<_LogoutButton> {
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: foreground,
@@ -413,18 +413,18 @@ class _LogoutConfirmationDialog extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: Container(
           width: 420,
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: .1),
+                color: AppColors.shadowMedium,
                 blurRadius: 32,
                 offset: const Offset(0, 14),
               ),
@@ -450,7 +450,6 @@ class _LogoutConfirmationDialog extends StatelessWidget {
               const Text(
                 'تسجيل الخروج',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -461,7 +460,6 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                 'هل تريد تسجيل الخروج من النظام؟',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
                   fontSize: 14,
                   height: 1.6,
                   color: AppColors.textSecondary,
@@ -478,7 +476,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text('إلغاء'),
@@ -491,10 +489,10 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
                         backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       icon: const Icon(Icons.logout_rounded, size: 19),
@@ -575,10 +573,10 @@ class _SidebarItemState extends State<_SidebarItem>
 
     // Background: solid tint when selected, faint tint on hover, else clear.
     final bg = selected
-        ? const Color(0xffF0EFE7)
+        ? AppColors.surfaceAlt
         : _hovered
-            ? const Color(0xffF0EFE7).withValues(alpha: .5)
-            : Colors.transparent;
+            ? AppColors.surfaceAlt.withValues(alpha: .5)
+            : AppColors.transparent;
 
     return FadeTransition(
       opacity: _fade,
@@ -598,7 +596,7 @@ class _SidebarItemState extends State<_SidebarItem>
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Row(
                 textDirection: TextDirection.rtl,
@@ -615,7 +613,7 @@ class _SidebarItemState extends State<_SidebarItem>
                     height: selected ? 26 : 0,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                   ),
                   const SizedBox(width: 10),

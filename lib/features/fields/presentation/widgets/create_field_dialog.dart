@@ -16,6 +16,7 @@ import 'field_type_card.dart';
 import 'file_picker_form.dart';
 import 'options_form.dart';
 import 'text_field_form.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Modal entry point: shows the create form for [type], and on success/failure
 /// surfaces a snackbar and closes itself. Each form lives in its own file; this
@@ -46,7 +47,7 @@ class CreateFieldDialog extends StatelessWidget {
         child: Dialog(
           backgroundColor: AppColors.surface,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680, maxHeight: 780),
             child: _FormBody(type: type),

@@ -5,6 +5,7 @@ import '../../../../shared/widgets/searchable_field_dropdown.dart';
 import '../../../fields/domain/entities/field_type.dart';
 import '../../../process_builder/domain/entities/widget_config.dart';
 import '../../domain/entities/extracted_field.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Step-2 picker: one card per **extracted PDF field**, grouped like step 4 of
 /// the process builder. For each PDF field the technician links a field from the
@@ -119,7 +120,7 @@ class _ExtractedFieldCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: isLinked ? AppColors.primary : AppColors.border,
           width: isLinked ? 1.6 : 1.2,
@@ -139,12 +140,12 @@ class _ExtractedFieldCard extends StatelessWidget {
                   color: isLinked
                       ? AppColors.primary
                       : AppColors.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 alignment: Alignment.center,
                 child: Icon(
                   isLinked ? Icons.check_rounded : Icons.text_fields_rounded,
-                  color: isLinked ? Colors.white : AppColors.primary,
+                  color: isLinked ? AppColors.white : AppColors.primary,
                   size: 22,
                 ),
               ),
@@ -232,12 +233,12 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -257,7 +258,7 @@ class _EmptyHint extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.inputBackground.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Text(

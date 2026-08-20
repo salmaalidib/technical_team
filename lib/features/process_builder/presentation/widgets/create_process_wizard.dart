@@ -16,6 +16,7 @@ import 'step2_upload_bpmn.dart';
 import 'step3_preview_stages.dart';
 import 'step4_customize_stages.dart';
 import 'wizard_kit.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 const _stepTitles = [
   'المعلومات الأساسية',
@@ -163,7 +164,7 @@ class _WizardViewState extends State<_WizardView> {
       },
       builder: (context, state) {
         return Container(
-          color: const Color(0xffF0EFE7),
+          color: AppColors.surfaceAlt,
           child: Column(
             children: [
               _Header(
@@ -229,7 +230,7 @@ class _Body extends StatelessWidget {
             state.createError ?? 'تعذّر تحميل المعاملة.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w600, color: Colors.redAccent),
+                fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.error),
           ),
         ),
       );
@@ -291,13 +292,13 @@ class _Header extends StatelessWidget {
         children: [
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               // زر رجوع في واجهة RTL: يشير نحو اليمين. نثبّت الاتجاه صراحةً
               // كي لا يعتمد على انعكاس الأيقونة التلقائي.
@@ -366,7 +367,7 @@ class _Footer extends StatelessWidget {
                 foregroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 28),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: const Text('إلغاء',
@@ -381,10 +382,10 @@ class _Footer extends StatelessWidget {
                 onPressed: busy ? null : onPrimary,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
                 child: busy
@@ -393,7 +394,7 @@ class _Footer extends StatelessWidget {
                         width: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       )
                     : Text(
@@ -418,7 +419,7 @@ class _Footer extends StatelessWidget {
                   foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 28),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
                 child: const Text('السابق',

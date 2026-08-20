@@ -20,7 +20,7 @@ GridColumn buildGridColumn({
     width: width,
     columnWidthMode: columnWidthMode,
     label: Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       alignment: alignment,
       child: Text(
@@ -29,7 +29,6 @@ GridColumn buildGridColumn({
             ? TextAlign.center
             : TextAlign.right,
         style: const TextStyle(
-          fontFamily: 'Cairo',
           fontSize: 14,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,

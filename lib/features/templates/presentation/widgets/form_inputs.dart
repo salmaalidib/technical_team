@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// A small labeled text field tuned for the template form (RTL, compact, white
 /// fill). Used by the template's basic-info and form-settings inputs.
@@ -41,7 +42,7 @@ class LabeledField extends StatelessWidget {
             isDense: true,
             hintText: hint,
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.white,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             border: _border(AppColors.border),
@@ -55,6 +56,6 @@ class LabeledField extends StatelessWidget {
 }
 
 OutlineInputBorder _border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: BorderSide(color: color),
     );

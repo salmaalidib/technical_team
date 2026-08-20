@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Clickable drill-down trail: "الرئيسية › قسم › شعبة". Only shown when the
 /// user has navigated below the root level.
@@ -25,7 +26,7 @@ class DepartmentsBreadcrumb extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.border),
           ),
           child: Wrap(
@@ -97,7 +98,7 @@ class _Crumb extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppRadius.xs),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: content,

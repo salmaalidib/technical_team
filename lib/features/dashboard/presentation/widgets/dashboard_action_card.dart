@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class DashboardActionCard extends StatelessWidget {
   final String title;
@@ -18,7 +19,7 @@ class DashboardActionCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -29,11 +30,11 @@ class DashboardActionCard extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(
               icon,
-              color: Colors.white,
+              color: AppColors.white,
               size: 22,
             ),
           ),

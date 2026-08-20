@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_text_styles.dart';
 import '../bloc/app_update_bloc.dart';
 import '../bloc/app_update_event.dart';
 import '../bloc/app_update_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// حوار تحديث قابل للتأجيل — يُعرض فقط عند soft_update_enabled=true
 /// و force_update=false (انظر UpdateCheckResult).
@@ -28,7 +29,7 @@ class _OptionalUpdateDialog extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: BlocConsumer<AppUpdateBloc, AppUpdateState>(
@@ -86,7 +87,7 @@ class _OptionalUpdateDialog extends StatelessWidget {
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.white,
                               ),
                               onPressed: () => context
                                   .read<AppUpdateBloc>()

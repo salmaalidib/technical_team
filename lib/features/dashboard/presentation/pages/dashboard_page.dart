@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../widgets/dashboard_action_card.dart';
 import '../widgets/dashboard_stat_card.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -10,7 +11,7 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: const EdgeInsets.fromLTRB(40, 26, 40, 30),
       child: SingleChildScrollView(
         child: Column(
@@ -59,11 +60,11 @@ class _QuickActionsSection extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: AppColors.shadowSoft,
             blurRadius: 7,
             offset: const Offset(0, 3),
           ),

@@ -6,6 +6,7 @@ import '../../domain/entities/role_assignment.dart';
 import '../bloc/roles_bloc.dart';
 import '../bloc/roles_event.dart';
 import 'edit_role_permissions_dialog.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class RoleCard extends StatelessWidget {
   final RoleAssignment role;
@@ -20,11 +21,11 @@ class RoleCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: AppColors.shadowFaint,
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -71,10 +72,10 @@ class _TopRow extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child:
-              const Icon(Icons.shield_outlined, color: Colors.white, size: 24),
+              const Icon(Icons.shield_outlined, color: AppColors.white, size: 24),
         ),
         const SizedBox(width: 12),
         Expanded(

@@ -224,13 +224,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                         height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.12),
+                          color: AppColors.white.withOpacity(0.12),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.20),
+                            color: AppColors.white.withOpacity(0.20),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: AppColors.shadowSoft,
                               blurRadius: 24,
                               offset: const Offset(0, 12),
                             ),
@@ -238,7 +238,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                         ),
                         child: const Icon(
                           Icons.admin_panel_settings_rounded,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 72,
                         ),
                       ),
@@ -252,7 +252,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.white,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -265,7 +265,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                         'لوحة إدارة المعاملات والخدمات التقنية',
                         style: TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
-                          color: Colors.white.withOpacity(0.82),
+                          color: AppColors.white.withOpacity(0.82),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -329,7 +329,7 @@ class _CircularLoadingIndicatorState extends State<_CircularLoadingIndicator>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.08),
+                color: AppColors.white.withOpacity(0.08),
                 width: 3,
               ),
             ),

@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/type_docs_bloc.dart';
 import '../bloc/type_docs_event.dart';
 import '../bloc/type_docs_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Name-only dialog to create a new document type, or rename an existing one
 /// when [id] is non-null. Must be shown with a [TypeDocsBloc] in its context
@@ -83,7 +84,7 @@ class _TypeDocFormDialogState extends State<TypeDocFormDialog> {
           child: Dialog(
             backgroundColor: AppColors.surface,
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: SizedBox(
               width: 460,
               child: Column(
@@ -174,13 +175,13 @@ class _Header extends StatelessWidget {
           ),
           InkWell(
             onTap: onClose,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
                 color: AppColors.inputBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(Icons.close_rounded,
                   size: 22, color: AppColors.textPrimary),
@@ -216,17 +217,17 @@ class _Actions extends StatelessWidget {
               onPressed: submitting ? null : onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
               child: submitting
                   ? const SizedBox(
                       height: 22,
                       width: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2, color: AppColors.white),
                     )
                   : Text(
                       saveLabel,
@@ -246,7 +247,7 @@ class _Actions extends StatelessWidget {
                 backgroundColor: AppColors.inputBackground,
                 foregroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
               child: const Text(
                 'إلغاء',
@@ -261,6 +262,6 @@ class _Actions extends StatelessWidget {
 }
 
 OutlineInputBorder _border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       borderSide: BorderSide(color: color),
     );

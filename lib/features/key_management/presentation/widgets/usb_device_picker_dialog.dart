@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/security/usb_device_info.dart';
 import '../../domain/usecases/get_connected_usb_devices.dart';
+import '../../../../shared/theme/app_colors.dart';
 
 class UsbDevicePickerDialog extends StatefulWidget {
   final GetConnectedUsbDevices getConnectedUsbDevices;
@@ -128,7 +129,7 @@ class _UsbDevicePickerDialogState extends State<UsbDevicePickerDialog> {
                               ? Icons.usb_rounded
                               : Icons.usb_off_rounded,
                           color:
-                              device.isSupported ? Colors.green : Colors.grey,
+                              device.isSupported ? AppColors.success : AppColors.neutral,
                         ),
                       ),
                     );

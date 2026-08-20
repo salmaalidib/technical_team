@@ -11,6 +11,7 @@ import '../bloc/templates_event.dart';
 import '../bloc/templates_state.dart';
 import '../widgets/template_card.dart';
 import 'template_form_page.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// Document-templates dashboard: lists the active templates and opens the
 /// create/edit form. Provides the [TemplatesBloc] consumed by both this page
@@ -47,7 +48,7 @@ class _TemplatesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
     return Container(
-      color: const Color(0xffF0EFE7),
+      color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
       child: SingleChildScrollView(
         child: Column(
@@ -103,7 +104,7 @@ class _Header extends StatelessWidget {
             minimumSize: const Size(0, 50),
             padding: const EdgeInsets.symmetric(horizontal: 22),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
           ),
         ),
@@ -139,7 +140,7 @@ class _Body extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لا توجد قوالب لعرضها — أنشئ قالبك الأول',
-                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );

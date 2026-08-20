@@ -8,10 +8,11 @@ import 'package:technical_team/features/auth/presentation/bloc/login/login_event
 import 'package:technical_team/features/auth/presentation/bloc/login/login_state.dart';
 import 'package:technical_team/shared/theme/app_colors.dart';
 import 'package:technical_team/shared/widgets/app_snackbar.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// الأخضر الأساسي للتطبيق — نفس اللون المستخدم في باقي الواجهات.
 const _forest = AppColors.primary;
-const _charcoal = Color(0xFF3D3A3B);
+const _charcoal = AppColors.textCharcoal;
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -67,7 +68,6 @@ class _LoginFormState extends State<LoginForm> {
                 child: const Text(
                   'تسجيل الدخول',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: _charcoal,
@@ -81,9 +81,8 @@ class _LoginFormState extends State<LoginForm> {
                 child: const Text(
                   'أدخل بيانات حسابك للمتابعة',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
                     fontSize: 14,
-                    color: Color(0xFF9E9E9E),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),
@@ -134,7 +133,7 @@ class _LoginFormState extends State<LoginForm> {
                 child: Container(
                   height: 54,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     boxShadow: state.isLoading
                         ? null
                         : [
@@ -152,7 +151,7 @@ class _LoginFormState extends State<LoginForm> {
                       backgroundColor: _forest,
                       disabledBackgroundColor: _forest.withValues(alpha: .6),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: state.isLoading
@@ -161,14 +160,13 @@ class _LoginFormState extends State<LoginForm> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Colors.white,
+                              color: AppColors.white,
                             ),
                           )
                         : const Text(
                             'تسجيل الدخول',
                             style: TextStyle(
-                              fontFamily: 'Cairo',
-                              color: Colors.white,
+                              color: AppColors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               letterSpacing: .5,
@@ -185,7 +183,7 @@ class _LoginFormState extends State<LoginForm> {
   }
 }
 
-const _inputStyle = TextStyle(fontFamily: 'Cairo', fontSize: 15);
+const _inputStyle = TextStyle(fontSize: 15);
 
 InputDecoration _inputDecoration({
   required String hint,
@@ -193,19 +191,18 @@ InputDecoration _inputDecoration({
   Widget? suffixIcon,
 }) {
   OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
 
   return InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(
-      fontFamily: 'Cairo',
       fontSize: 14,
-      color: Color(0xFFBDBDBD),
+      color: AppColors.borderStrong,
     ),
     filled: true,
-    fillColor: const Color(0xFFFAFAFA),
+    fillColor: AppColors.inputBackgroundAlt,
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     prefixIcon: Icon(
       prefixIcon,
@@ -213,14 +210,13 @@ InputDecoration _inputDecoration({
       color: _forest.withValues(alpha: .7),
     ),
     suffixIcon: suffixIcon,
-    enabledBorder: border(const Color(0xFFEEEEEE), 1.5),
+    enabledBorder: border(AppColors.borderLight, 1.5),
     focusedBorder: border(_forest, 1.8),
-    errorBorder: border(Colors.redAccent.withValues(alpha: .5), 1.5),
-    focusedErrorBorder: border(Colors.redAccent, 1.8),
+    errorBorder: border(AppColors.error.withValues(alpha: .5), 1.5),
+    focusedErrorBorder: border(AppColors.error, 1.8),
     errorStyle: const TextStyle(
-      fontFamily: 'Cairo',
       fontSize: 12,
-      color: Colors.redAccent,
+      color: AppColors.error,
     ),
   );
 }

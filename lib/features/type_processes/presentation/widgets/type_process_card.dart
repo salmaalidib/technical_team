@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/type_process.dart';
 import '../bloc/type_processes_bloc.dart';
 import '../bloc/type_processes_event.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 class TypeProcessCard extends StatelessWidget {
   final TypeProcess typeProcess;
@@ -23,11 +24,11 @@ class TypeProcessCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: AppColors.shadowFaint,
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -66,10 +67,10 @@ class _TopRow extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: const Icon(Icons.category_outlined,
-              color: Colors.white, size: 24),
+              color: AppColors.white, size: 24),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -113,7 +114,7 @@ class _TopRow extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.inputBackground,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     typeProcess.code,

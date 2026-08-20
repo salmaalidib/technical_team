@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/departments_bloc.dart';
 import '../bloc/departments_event.dart';
 import '../bloc/departments_state.dart';
+import '../../../../shared/theme/app_dimens.dart';
 
 /// بطاقة بحث الأقسام — بنفس تصميم بطاقة بحث الموظفين. البحث من جهة العميل ضمن
 /// المستوى الحالي، مع debounce، ويتزامن مع الـ BLoC (يُفرَّغ الحقل عند التنقّل).
@@ -50,11 +51,11 @@ class _DepartmentSearchBarState extends State<DepartmentSearchBar> {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: AppColors.shadowSoft,
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -81,15 +82,15 @@ class _DepartmentSearchBarState extends State<DepartmentSearchBar> {
               fillColor: AppColors.surface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 18),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.primary),
               ),
             ),
