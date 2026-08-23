@@ -120,11 +120,11 @@ class _WidgetRow extends StatelessWidget {
         return 'حقل نصي';
       case 'dropdown':
       case 'text_dropdown':
-        return 'قائمة منسدلة';
+        return 'قائمة اختيار وحيد';
       case 'radio_group':
         return 'اختيار واحد';
       case 'check_list':
-        return 'قائمة تحقق';
+        return 'قائمة اختيار من متعدد';
       case 'date_picker':
         return 'تاريخ';
       case 'file_picker':

@@ -48,12 +48,16 @@ class RoleRepositoryImpl implements RoleRepository {
     required String code,
     required int organizationId,
     required int departmentId,
+    int? parentId,
   }) async {
     final result = await remote.createRole({
       'name': name.trim(),
       'code': code.trim(),
       'organization_id': organizationId,
       'department_id': departmentId,
+      // The backend validates `parent_id` as a positive integer or null, so a
+      // root role sends an explicit null rather than omitting the key.
+      'parent_id': parentId,
     });
     return result.fold<Either<Failure, RoleAssignment>>(
       (failure) => Left(failure),

@@ -658,11 +658,14 @@ class _TemplatePicker extends StatelessWidget {
 /// `stage_assignments` row per entry — so a stage can be handed to several
 /// dept/role targets at once and every matching employee sees the task.
 ///
-/// The organization is NOT picked here: it is the user's active organization,
-/// seeded into the draft system-wide (see `ActiveOrganizationCubit`), exactly
-/// as before. The dept/role dropdowns below are a PICKER: what they hold is
-/// not saved until «إضافة التعيين» commits it as a chip. Only the committed
-/// chips are submitted.
+/// The organization defaults to the user's active one (see
+/// `ActiveOrganizationCubit`) but is editable per stage, so a stage can be
+/// handed to a department in another organization. Its options come from the
+/// `GET /api/organization` list already loaded at wizard boot.
+///
+/// The org/dept/role dropdowns below are a PICKER: what they hold is not saved
+/// until «إضافة التعيين» commits it as a chip. Only the committed chips are
+/// submitted.
 class _AssignmentsEditor extends StatelessWidget {
   final ProcessBuilderState state;
   final StageConfigDraft draft;
@@ -686,6 +689,10 @@ class _AssignmentsEditor extends StatelessWidget {
             height: 1.5,
           ),
         ),
+        const SizedBox(height: 12),
+        const _MiniLabel('المؤسسة'),
+        const SizedBox(height: 6),
+        _OrganizationDropdown(state: state, draft: draft),
         const SizedBox(height: 12),
         const _MiniLabel('القسم / الدائرة'),
         const SizedBox(height: 6),
@@ -732,6 +739,33 @@ class _AssignmentsEditor extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+/// Per-stage organization picker, fed by the `GET /api/organization` list
+/// fetched once at wizard boot into `state.organizations`. Changing it clears
+/// the department and role (the bloc reloads the new org's leaves), so the
+/// cascade below always matches the organization shown here.
+class _OrganizationDropdown extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _OrganizationDropdown({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    if (state.bootStatus == RequestStatus.loading) {
+      return const _Hint('جاري تحميل المؤسسات...', spinner: true);
+    }
+    if (state.organizations.isEmpty) {
+      return const _Hint('لا توجد مؤسسات');
+    }
+    return WizardDropdown<int>(
+      hint: 'اختر المؤسسة...',
+      value: draft.organizationId,
+      items: {for (final o in state.organizations) o.id: o.name},
+      onChanged: (v) => bloc.add(StageOrgChanged(draft.stage.id, v)),
     );
   }
 }
@@ -795,8 +829,8 @@ class _RoleDropdown extends StatelessWidget {
 /// (FieldType, backend widget_type, Arabic title) for each dynamic field type.
 const _dynTypes = <(FieldType, String, String)>[
   (FieldType.textField, 'text_field', 'حقل نص'),
-  (FieldType.textDropdown, 'dropdown', 'قائمة منسدلة'),
-  (FieldType.checkList, 'check_list', 'قائمة تحقق'),
+  (FieldType.textDropdown, 'dropdown', 'قائمة اختيار وحيد'),
+  (FieldType.checkList, 'check_list', 'قائمة اختيار من متعدد'),
   (FieldType.datePicker, 'date_picker', 'منتقي تاريخ'),
   (FieldType.filePicker, 'file_picker', 'منتقي ملفات'),
 ];

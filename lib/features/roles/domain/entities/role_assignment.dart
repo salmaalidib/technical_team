@@ -19,6 +19,13 @@ class RoleAssignment extends Equatable {
   final int departmentId;
   final String? departmentName;
 
+  /// Link id of the parent assignment (`organization_department_roles.parent_id`).
+  /// Null for a root role — one with no role above it in the hierarchy.
+  final int? parentId;
+
+  /// Role name of the parent assignment, when the response embeds the relation.
+  final String? parentRoleName;
+
   /// Server-generated group key: `CODE__ORG{X}__DEPT{Y}`.
   final String? camundaGroupKey;
   final bool isActive;
@@ -32,6 +39,8 @@ class RoleAssignment extends Equatable {
     this.organizationName,
     required this.departmentId,
     this.departmentName,
+    this.parentId,
+    this.parentRoleName,
     this.camundaGroupKey,
     this.isActive = true,
   });
@@ -46,6 +55,8 @@ class RoleAssignment extends Equatable {
       organizationName: organizationName,
       departmentId: departmentId,
       departmentName: departmentName,
+      parentId: parentId,
+      parentRoleName: parentRoleName,
       camundaGroupKey: camundaGroupKey,
       isActive: isActive ?? this.isActive,
     );
@@ -61,6 +72,8 @@ class RoleAssignment extends Equatable {
         organizationName,
         departmentId,
         departmentName,
+        parentId,
+        parentRoleName,
         camundaGroupKey,
         isActive,
       ];

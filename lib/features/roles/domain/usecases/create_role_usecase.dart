@@ -14,12 +14,14 @@ class CreateRoleUseCase {
     required String code,
     required int organizationId,
     required int departmentId,
+    int? parentId,
   }) {
     return repository.createRole(
       name: name,
       code: code,
       organizationId: organizationId,
       departmentId: departmentId,
+      parentId: parentId,
     );
   }
 }

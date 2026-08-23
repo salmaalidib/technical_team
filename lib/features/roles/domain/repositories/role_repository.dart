@@ -16,11 +16,14 @@ abstract class RoleRepository {
   /// without it.
   Future<Either<Failure, List<RoleAssignment>>> getRoles(int organizationId);
 
+  /// [parentId] is the link id of the role above this one in the hierarchy —
+  /// null creates a root role, which the backend accepts.
   Future<Either<Failure, RoleAssignment>> createRole({
     required String name,
     required String code,
     required int organizationId,
     required int departmentId,
+    int? parentId,
   });
 
   Future<Either<Failure, RoleAssignment>> toggleStatus(int id);

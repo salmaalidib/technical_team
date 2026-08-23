@@ -45,8 +45,8 @@ class ExtractedFieldsPicker extends StatelessWidget {
   /// backend widget_type → (FieldType for the dropdown/dialog, Arabic title).
   static const _typeMeta = <String, (FieldType, String)>{
     'text_field': (FieldType.textField, 'حقل نص'),
-    'dropdown': (FieldType.textDropdown, 'قائمة منسدلة'),
-    'check_list': (FieldType.checkList, 'قائمة تحقق'),
+    'dropdown': (FieldType.textDropdown, 'قائمة اختيار وحيد'),
+    'check_list': (FieldType.checkList, 'قائمة اختيار من متعدد'),
     'date_picker': (FieldType.datePicker, 'منتقي تاريخ'),
   };
 

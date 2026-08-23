@@ -28,6 +28,10 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
   late final int? _organizationId =
       getIt<ActiveOrganizationCubit>().activeOrgId;
   int? _departmentId;
+
+  /// Optional parent role (the link id of another assignment). Null means the
+  /// new role sits at the root of the hierarchy.
+  int? _parentId;
   bool _touched = false;
 
   /// Permissions ticked in the picker. Optional: an empty set creates the role
@@ -88,6 +92,7 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
             code: _codeController.text.trim(),
             organizationId: orgId,
             departmentId: _departmentId!,
+            parentId: _parentId,
             permissionIds: _selectedPermissionIds.toList(),
           ),
         );
@@ -154,6 +159,14 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                             value: _departmentId,
                             showError: _touched && _departmentId == null,
                             onChanged: (v) => setState(() => _departmentId = v),
+                          ),
+                          const SizedBox(height: 20),
+                          const _Label('الدور الأب'),
+                          const SizedBox(height: 8),
+                          _ParentRoleField(
+                            state: state,
+                            value: _parentId,
+                            onChanged: (v) => setState(() => _parentId = v),
                           ),
                           const SizedBox(height: 24),
                           const _Label('الصلاحيات *'),
@@ -301,6 +314,51 @@ class _DepartmentField extends StatelessWidget {
       value: value,
       items: {for (final d in state.leafDepartments) d.id: d.name},
       errorText: showError ? 'هذا الحقل مطلوب' : null,
+      onChanged: onChanged,
+    );
+  }
+}
+
+/// Optional parent-role dropdown. The options are the organization's existing
+/// role links, already loaded by the roles page into the same bloc — leaving it
+/// empty sends `parent_id: null`, i.e. a root role.
+class _ParentRoleField extends StatelessWidget {
+  final RolesState state;
+  final int? value;
+  final ValueChanged<int?> onChanged;
+
+  const _ParentRoleField({
+    required this.state,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.status == RequestStatus.loading) {
+      return const _DisabledField(
+        text: 'جاري تحميل الأدوار...',
+        showSpinner: true,
+      );
+    }
+
+    if (state.roles.isEmpty) {
+      return const _DisabledField(text: 'لا توجد أدوار — سيكون دوراً رئيسياً');
+    }
+
+    return _IdDropdown(
+      hint: 'بدون أب (دور رئيسي)',
+      value: value,
+      items: {
+        for (final r in state.roles)
+          r.id: r.departmentName == null
+              ? r.roleName
+              : '${r.roleName} — ${r.departmentName}',
+      },
+      // Optional field: an explicit entry to clear a previous pick, since a
+      // DropdownButtonFormField gives no other way back to null.
+      allowClear: true,
+      clearLabel: 'بدون أب (دور رئيسي)',
       onChanged: onChanged,
     );
   }
@@ -461,12 +519,19 @@ class _IdDropdown extends StatelessWidget {
   final ValueChanged<int?> onChanged;
   final String? errorText;
 
+  /// Prepends a null-valued entry so an optional field can be reset — a plain
+  /// DropdownButtonFormField offers no way back to no-selection.
+  final bool allowClear;
+  final String clearLabel;
+
   const _IdDropdown({
     required this.hint,
     required this.value,
     required this.items,
     required this.onChanged,
     this.errorText,
+    this.allowClear = false,
+    this.clearLabel = '',
   });
 
   @override
@@ -500,24 +565,39 @@ class _IdDropdown extends StatelessWidget {
         textAlign: TextAlign.right,
         style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
       ),
-      items: items.entries
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.key,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  e.value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
+      items: [
+        if (allowClear)
+          DropdownMenuItem<int>(
+            value: null,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                clearLabel,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
-          )
-          .toList(),
+          ),
+        ...items.entries.map(
+          (e) => DropdownMenuItem<int>(
+            value: e.key,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                e.value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
       onChanged: onChanged,
     );
   }

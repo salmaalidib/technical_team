@@ -141,6 +141,7 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
       code: event.code,
       organizationId: event.organizationId,
       departmentId: event.departmentId,
+      parentId: event.parentId,
     );
 
     await result.fold(

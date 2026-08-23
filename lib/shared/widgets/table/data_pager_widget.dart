@@ -3,6 +3,7 @@ import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import 'data_table_config.dart';
 
 /// شريط ترقيم مشترك مبني على [SfDataPager].
@@ -66,11 +67,13 @@ class DataPagerWidget extends StatelessWidget {
           data: const SfDataPagerThemeData(
             selectedItemColor: AppColors.primary,
             selectedItemTextStyle: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
               color: AppColors.white,
               fontWeight: FontWeight.w700,
             ),
             itemColor: AppColors.surface,
             itemTextStyle: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
               color: AppColors.textPrimary,
             ),
           ),

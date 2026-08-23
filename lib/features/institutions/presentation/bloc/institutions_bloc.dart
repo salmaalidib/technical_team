@@ -24,6 +24,11 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
     on<LoadInstitutions>(_onLoad);
     on<CreateInstitutionRequested>(_onCreate);
     on<CreateLocationRequested>(_onCreateLocation);
+    on<NavigateToChildren>(_onNavigateToChildren);
+    on<NavigateToCrumb>(_onNavigateToCrumb);
+    on<SearchChanged>(_onSearchChanged);
+    on<PageChanged>(_onPageChanged);
+    on<PageSizeChanged>(_onPageSizeChanged);
   }
 
   Future<void> _onLoad(
@@ -71,6 +76,7 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
 
     final result = await createInstitution(
       name: event.name,
+      parentId: event.parentId,
       locationId: event.locationId,
     );
 
@@ -84,6 +90,57 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
         add(const LoadInstitutions());
       },
     );
+  }
+
+  void _onNavigateToChildren(
+    NavigateToChildren event,
+    Emitter<InstitutionsState> emit,
+  ) {
+    emit(state.copyWith(
+      breadcrumb: [
+        ...state.breadcrumb,
+        InstitutionCrumb(id: event.parentId, name: event.parentName),
+      ],
+      searchQuery: '',
+      currentPage: 1,
+    ));
+  }
+
+  void _onNavigateToCrumb(
+    NavigateToCrumb event,
+    Emitter<InstitutionsState> emit,
+  ) {
+    // index == -1 -> root level, otherwise keep crumbs up to and including it.
+    final trail = event.index < 0
+        ? const <InstitutionCrumb>[]
+        : state.breadcrumb.sublist(0, event.index + 1);
+
+    emit(state.copyWith(
+      breadcrumb: trail,
+      searchQuery: '',
+      currentPage: 1,
+    ));
+  }
+
+  void _onSearchChanged(
+    SearchChanged event,
+    Emitter<InstitutionsState> emit,
+  ) {
+    emit(state.copyWith(searchQuery: event.query, currentPage: 1));
+  }
+
+  void _onPageChanged(
+    PageChanged event,
+    Emitter<InstitutionsState> emit,
+  ) {
+    emit(state.copyWith(currentPage: event.page));
+  }
+
+  void _onPageSizeChanged(
+    PageSizeChanged event,
+    Emitter<InstitutionsState> emit,
+  ) {
+    emit(state.copyWith(pageSize: event.size, currentPage: 1));
   }
 
   Future<void> _onCreateLocation(

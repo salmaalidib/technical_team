@@ -29,12 +29,12 @@ const Map<FieldType, FieldTypeMeta> kFieldTypeMeta = {
     description: 'اختيار خيار واحد من مجموعة',
   ),
   FieldType.textDropdown: FieldTypeMeta(
-    label: 'قائمة منسدلة',
+    label: 'قائمة اختيار وحيد',
     icon: Icons.arrow_drop_down_circle_outlined,
-    description: 'اختيار من قائمة منسدلة',
+    description: 'اختيار خيار واحد من قائمة',
   ),
   FieldType.checkList: FieldTypeMeta(
-    label: 'اختيار متعدد',
+    label: 'قائمة اختيار من متعدد',
     icon: Icons.checklist_rounded,
     description: 'اختيار أكثر من خيار واحد',
   ),

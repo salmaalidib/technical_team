@@ -49,6 +49,10 @@ class CreateRoleRequested extends RolesEvent {
   final int organizationId;
   final int departmentId;
 
+  /// Link id of the parent role, or null for a root role. Optional in the
+  /// form and nullable in the backend.
+  final int? parentId;
+
   /// Optional: the role is created first, then these are attached in a second
   /// request. Empty means "create the role with no permissions".
   final List<int> permissionIds;
@@ -58,12 +62,13 @@ class CreateRoleRequested extends RolesEvent {
     required this.code,
     required this.organizationId,
     required this.departmentId,
+    this.parentId,
     this.permissionIds = const [],
   });
 
   @override
   List<Object?> get props =>
-      [name, code, organizationId, departmentId, permissionIds];
+      [name, code, organizationId, departmentId, parentId, permissionIds];
 }
 
 class ToggleRoleStatus extends RolesEvent {

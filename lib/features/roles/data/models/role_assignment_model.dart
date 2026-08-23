@@ -10,6 +10,8 @@ class RoleAssignmentModel extends RoleAssignment {
     super.organizationName,
     required super.departmentId,
     super.departmentName,
+    super.parentId,
+    super.parentRoleName,
     super.camundaGroupKey,
     super.isActive,
   });
@@ -18,6 +20,10 @@ class RoleAssignmentModel extends RoleAssignment {
     final role = json['role'];
     final organization = json['organization'];
     final department = json['department'];
+    // The embedded `parent` summary carries ids only (no role name), so the
+    // top-level `parent_id` is the reliable source and the name stays null
+    // unless a response happens to embed the parent's role relation.
+    final parent = json['parent'];
 
     return RoleAssignmentModel(
       id: json['id'] as int,
@@ -31,6 +37,11 @@ class RoleAssignmentModel extends RoleAssignment {
           organization is Map ? organization['name'] as String? : null,
       departmentId: (json['department_id'] ?? 0) as int,
       departmentName: department is Map ? department['name'] as String? : null,
+      parentId:
+          (json['parent_id'] ?? (parent is Map ? parent['id'] : null)) as int?,
+      parentRoleName: parent is Map && parent['role'] is Map
+          ? parent['role']['name'] as String?
+          : null,
       camundaGroupKey: json['camunda_group_key'] as String?,
       isActive: (json['is_active'] ?? true) as bool,
     );

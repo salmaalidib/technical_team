@@ -12,7 +12,16 @@ import 'add_location_dialog.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 class CreateInstitutionDialog extends StatefulWidget {
-  const CreateInstitutionDialog({super.key});
+  /// When opened inside a level, the new institution inherits this parent and
+  /// no parent picker is shown.
+  final int? fixedParentId;
+  final String? fixedParentName;
+
+  const CreateInstitutionDialog({
+    super.key,
+    this.fixedParentId,
+    this.fixedParentName,
+  });
 
   @override
   State<CreateInstitutionDialog> createState() =>
@@ -21,8 +30,13 @@ class CreateInstitutionDialog extends StatefulWidget {
 
 class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
   final _nameController = TextEditingController();
+  // The parent is inherited silently from the current drill-down level (null
+  // at root). No picker is shown.
+  late final int? _parentId = widget.fixedParentId;
   int? _locationId;
   bool _nameTouched = false;
+
+  bool get _parentLocked => widget.fixedParentId != null;
 
   @override
   void dispose() {
@@ -38,6 +52,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
     context.read<InstitutionsBloc>().add(
           CreateInstitutionRequested(
             name: name,
+            parentId: _parentId,
             locationId: _locationId,
           ),
         );
@@ -73,8 +88,16 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
         }
       },
       builder: (context, state) {
-        final submitting =
-            state.formStatus == FormStatus.submitting;
+        final submitting = state.formStatus == FormStatus.submitting;
+        final title = _parentLocked ? 'إضافة مؤسسة تابعة' : 'إنشاء مؤسسة جديدة';
+        final nameLabel =
+            _parentLocked ? 'اسم المؤسسة التابعة *' : 'اسم المؤسسة *';
+        final nameHint = _parentLocked
+            ? 'أدخل اسم المؤسسة التابعة...'
+            : 'أدخل اسم المؤسسة...';
+        final subtitle = _parentLocked
+            ? 'ستُضاف ضمن: ${widget.fixedParentName}'
+            : 'قم بإدخال بيانات المؤسسة الجديدة';
 
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -88,20 +111,21 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _DialogHeader(onClose: () => Navigator.pop(context)),
+                  _DialogHeader(
+                      title: title, onClose: () => Navigator.pop(context)),
                   const Divider(height: 1, color: AppColors.border),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(28, 28, 28, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _DialogSubtitle(),
+                        _DialogSubtitle(text: subtitle),
                         const SizedBox(height: 30),
-                        const _FieldLabel('اسم المؤسسة *'),
+                        _FieldLabel(nameLabel),
                         const SizedBox(height: 8),
                         _TextInput(
                           controller: _nameController,
-                          hint: 'أدخل اسم المؤسسة...',
+                          hint: nameHint,
                           errorText: _nameTouched &&
                                   _nameController.text.trim().isEmpty
                               ? 'هذا الحقل مطلوب'
@@ -150,9 +174,10 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
 }
 
 class _DialogHeader extends StatelessWidget {
+  final String title;
   final VoidCallback onClose;
 
-  const _DialogHeader({required this.onClose});
+  const _DialogHeader({required this.title, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -160,9 +185,9 @@ class _DialogHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
       child: Row(
         children: [
-          const Text(
-            'إنشاء مؤسسة جديدة',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: AppColors.primary,
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -193,18 +218,25 @@ class _DialogHeader extends StatelessWidget {
 }
 
 class _DialogSubtitle extends StatelessWidget {
-  const _DialogSubtitle();
+  final String text;
+
+  const _DialogSubtitle({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.apartment_outlined, color: AppColors.primary, size: 25),
-        SizedBox(width: 10),
-        Text(
-          'قم بإدخال بيانات المؤسسة الجديدة',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+        const Icon(Icons.apartment_outlined,
+            color: AppColors.primary, size: 25),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style:
+                const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+          ),
         ),
       ],
     );
@@ -293,7 +325,8 @@ class _TextInput extends StatelessWidget {
           color: AppColors.textSecondary,
           fontSize: 15,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),
@@ -349,7 +382,7 @@ class _DialogActions extends StatelessWidget {
                       ),
                     )
                   : const Text(
-                      'حفظ المؤسسة',
+                      'حفظ',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

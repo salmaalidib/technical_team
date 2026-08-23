@@ -5,6 +5,17 @@ import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/institution.dart';
 import '../../domain/entities/location_option.dart';
 
+/// One hop in the drill-down trail (root -> parent -> sub-institution ...).
+class InstitutionCrumb extends Equatable {
+  final int id;
+  final String name;
+
+  const InstitutionCrumb({required this.id, required this.name});
+
+  @override
+  List<Object?> get props => [id, name];
+}
+
 class InstitutionsState extends Equatable {
   final RequestStatus status;
   final List<Institution> institutions;
@@ -19,6 +30,16 @@ class InstitutionsState extends Equatable {
   final FormStatus locationFormStatus;
   final String? locationFormError;
 
+  /// Drill-down trail. Empty == root level (top-level institutions).
+  final List<InstitutionCrumb> breadcrumb;
+
+  /// Client-side search within the current level.
+  final String searchQuery;
+
+  /// Client-side pagination (1-based) of the current level.
+  final int currentPage;
+  final int pageSize;
+
   const InstitutionsState({
     this.status = RequestStatus.initial,
     this.institutions = const [],
@@ -28,7 +49,40 @@ class InstitutionsState extends Equatable {
     this.formError,
     this.locationFormStatus = FormStatus.idle,
     this.locationFormError,
+    this.breadcrumb = const [],
+    this.searchQuery = '',
+    this.currentPage = 1,
+    this.pageSize = 10,
   });
+
+  /// The parent whose children are currently shown, or null at root.
+  int? get currentParentId => breadcrumb.isEmpty ? null : breadcrumb.last.id;
+
+  /// Institutions belonging to the current level, after search filtering.
+  List<Institution> get levelInstitutions {
+    final parentId = currentParentId;
+    final query = searchQuery.trim();
+    return institutions.where((i) {
+      if (i.parentId != parentId) return false;
+      if (query.isEmpty) return true;
+      return i.name.contains(query);
+    }).toList();
+  }
+
+  int get pageCount {
+    final total = levelInstitutions.length;
+    if (total == 0) return 1;
+    return (total / pageSize).ceil();
+  }
+
+  /// The slice of [levelInstitutions] for [currentPage].
+  List<Institution> get pagedInstitutions {
+    final level = levelInstitutions;
+    final start = (currentPage - 1) * pageSize;
+    if (start >= level.length) return const [];
+    final end = (start + pageSize).clamp(0, level.length);
+    return level.sublist(start, end);
+  }
 
   InstitutionsState copyWith({
     RequestStatus? status,
@@ -39,6 +93,10 @@ class InstitutionsState extends Equatable {
     String? formError,
     FormStatus? locationFormStatus,
     String? locationFormError,
+    List<InstitutionCrumb>? breadcrumb,
+    String? searchQuery,
+    int? currentPage,
+    int? pageSize,
   }) {
     return InstitutionsState(
       status: status ?? this.status,
@@ -49,6 +107,10 @@ class InstitutionsState extends Equatable {
       formError: formError,
       locationFormStatus: locationFormStatus ?? this.locationFormStatus,
       locationFormError: locationFormError,
+      breadcrumb: breadcrumb ?? this.breadcrumb,
+      searchQuery: searchQuery ?? this.searchQuery,
+      currentPage: currentPage ?? this.currentPage,
+      pageSize: pageSize ?? this.pageSize,
     );
   }
 
@@ -62,5 +124,9 @@ class InstitutionsState extends Equatable {
         formError,
         locationFormStatus,
         locationFormError,
+        breadcrumb,
+        searchQuery,
+        currentPage,
+        pageSize,
       ];
 }

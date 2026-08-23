@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import '../../../../shared/widgets/table/grid_font_scope.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/table/data_pager_widget.dart';
@@ -74,22 +75,24 @@ class _EmployeesTableState extends State<EmployeesTable> {
       child: Column(
         children: [
           Expanded(
-            child: SfDataGridTheme(
-              data: const SfDataGridThemeData(
-                headerColor: AppColors.surfaceAlt,
-                gridLineColor: AppColors.border,
-              ),
-              child: SfDataGrid(
-                source: _dataSource,
-                rowHeight: 72,
-                headerRowHeight: 56,
-                // يربط الجدول بالـ pager. الخادم يرسل صفحة واحدة (= limit)،
-                // لذا نعرض كل الصفوف الواصلة.
-                rowsPerPage: state.limit,
-                gridLinesVisibility: GridLinesVisibility.horizontal,
-                headerGridLinesVisibility: GridLinesVisibility.horizontal,
-                columnWidthMode: ColumnWidthMode.fill,
-                columns: _columns,
+            child: GridFontScope(
+              child: SfDataGridTheme(
+                data: const SfDataGridThemeData(
+                  headerColor: AppColors.surfaceAlt,
+                  gridLineColor: AppColors.border,
+                ),
+                child: SfDataGrid(
+                  source: _dataSource,
+                  rowHeight: 72,
+                  headerRowHeight: 56,
+                  // يربط الجدول بالـ pager. الخادم يرسل صفحة واحدة (= limit)،
+                  // لذا نعرض كل الصفوف الواصلة.
+                  rowsPerPage: state.limit,
+                  gridLinesVisibility: GridLinesVisibility.horizontal,
+                  headerGridLinesVisibility: GridLinesVisibility.horizontal,
+                  columnWidthMode: ColumnWidthMode.fill,
+                  columns: _columns,
+                ),
               ),
             ),
           ),

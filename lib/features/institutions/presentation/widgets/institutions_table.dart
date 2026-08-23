@@ -2,49 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import '../../../../shared/widgets/table/grid_font_scope.dart';
 
-import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
-import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../../shared/theme/app_dimens.dart';
+import '../../../../shared/widgets/table/data_pager_widget.dart';
 import '../../../../shared/widgets/table/grid_column.dart';
-import '../../domain/entities/institution.dart';
 import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
 import 'institutions_data_source.dart';
-import '../../../../shared/theme/app_dimens.dart';
 
-/// جدول المؤسسات مبني على [SfDataGrid]. عرض كامل بدون ترقيم؛ البحث على جهة
-/// العميل يُعيد بناء مصدر البيانات بالقائمة المُرشَّحة.
+/// جدول المؤسسات مبني على [SfDataGrid] بنفس تصميم جدول الأقسام. الترقيم من جهة
+/// العميل داخل المستوى الحالي (الجذور أو المؤسسات التابعة)، عبر
+/// [DataPagerWidget].
 class InstitutionsTable extends StatefulWidget {
-  const InstitutionsTable({super.key});
+  final InstitutionsState state;
 
-  /// ارتفاع منطقة الشبكة (الجدول داخل صفحة قابلة للتمرير عمودياً).
-  static const double gridHeight = 520;
+  const InstitutionsTable({super.key, required this.state});
 
   @override
   State<InstitutionsTable> createState() => _InstitutionsTableState();
 }
 
 class _InstitutionsTableState extends State<InstitutionsTable> {
-  final _searchController = TextEditingController();
-  String _query = '';
+  late InstitutionsDataSource _dataSource;
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _dataSource = _buildSource();
   }
 
-  List<Institution> _filter(List<Institution> all) {
-    final q = _query.trim();
-    if (q.isEmpty) return all;
-    return all.where((i) => i.name.contains(q)).toList();
+  @override
+  void didUpdateWidget(covariant InstitutionsTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final old = oldWidget.state;
+    final now = widget.state;
+    // أعد بناء الصفوف عند تغيّر محتوى المستوى أو حجم الصفحة. نُبقي نفس المصدر
+    // حفاظاً على تزامن الـ pager.
+    if (old.levelInstitutions != now.levelInstitutions ||
+        old.pageSize != now.pageSize) {
+      _dataSource.updateData(now.levelInstitutions, pageSize: now.pageSize);
+    }
+  }
+
+  InstitutionsDataSource _buildSource() {
+    final bloc = context.read<InstitutionsBloc>();
+    return InstitutionsDataSource(
+      institutions: widget.state.levelInstitutions,
+      pageSize: widget.state.pageSize,
+      onOpenChildren: (i) => bloc.add(
+        NavigateToChildren(parentId: i.id, parentName: i.name),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+    final bloc = context.read<InstitutionsBloc>();
+    final total = state.levelInstitutions.length;
+
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -57,193 +78,51 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
           ),
         ],
       ),
-      child: BlocBuilder<InstitutionsBloc, InstitutionsState>(
-        builder: (context, state) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TableSearch(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _query = v),
-              ),
-              _buildBody(context, state),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, InstitutionsState state) {
-    switch (state.status) {
-      case RequestStatus.initial:
-      case RequestStatus.loading:
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: AppSkeleton.table(columns: 5),
-        );
-      case RequestStatus.failure:
-        return _ErrorState(
-          message: state.error ?? 'حدث خطأ غير متوقع',
-          onRetry: () =>
-              context.read<InstitutionsBloc>().add(const LoadInstitutions()),
-        );
-      case RequestStatus.success:
-        final items = _filter(state.institutions);
-        if (items.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 60),
-            child: Center(
-              child: Text(
-                'لا توجد مؤسسات لعرضها',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          );
-        }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: InstitutionsTable.gridHeight,
+      child: Column(
+        children: [
+          Expanded(
+            child: GridFontScope(
               child: SfDataGridTheme(
                 data: const SfDataGridThemeData(
                   headerColor: AppColors.surfaceAlt,
                   gridLineColor: AppColors.border,
                 ),
                 child: SfDataGrid(
-                  source: InstitutionsDataSource(institutions: items),
-                  rowHeight: 64,
+                  source: _dataSource,
+                  rowHeight: 72,
                   headerRowHeight: 56,
+                  rowsPerPage: state.pageSize,
                   gridLinesVisibility: GridLinesVisibility.horizontal,
                   headerGridLinesVisibility: GridLinesVisibility.horizontal,
                   columnWidthMode: ColumnWidthMode.fill,
-                  columns: [
-                    buildGridColumn(
-                      columnName: 'number',
-                      label: '#',
-                      width: 80,
-                    ),
-                    buildGridColumn(columnName: 'name', label: 'اسم المؤسسة'),
-                    buildGridColumn(columnName: 'location', label: 'الموقع'),
-                  ],
+                  columns: _columns,
                 ),
               ),
             ),
-            _TableFooter(
-              shown: items.length,
-              total: state.institutions.length,
-            ),
-          ],
-        );
-    }
-  }
-}
-
-class _TableSearch extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _TableSearch({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        height: 52,
-        child: TextField(
-          controller: controller,
-          onChanged: onChanged,
-          textDirection: TextDirection.rtl,
-          textAlign: TextAlign.right,
-          decoration: InputDecoration(
-            hintText: 'البحث عن مؤسسة...',
-            hintStyle: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 15,
-            ),
-            suffixIcon: const Icon(
-              Icons.search,
-              color: AppColors.textSecondary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.primary),
-            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 40),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('إعادة المحاولة'),
+          DataPagerWidget(
+            dataSource: _dataSource,
+            pageNumber: state.currentPage,
+            pageSize: state.pageSize,
+            total: total,
+            onPageChanged: (page) => bloc.add(PageChanged(page)),
+            onPageSizeChanged: (size) => bloc.add(PageSizeChanged(size)),
           ),
         ],
       ),
     );
   }
-}
 
-class _TableFooter extends StatelessWidget {
-  final int shown;
-  final int total;
-
-  const _TableFooter({required this.shown, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 74,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      alignment: Alignment.centerRight,
-      child: Text(
-        'عرض $shown من $total',
-        style: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
+  List<GridColumn> get _columns => [
+        buildGridColumn(columnName: 'id', label: '#', width: 90),
+        buildGridColumn(columnName: 'name', label: 'اسم المؤسسة'),
+        buildGridColumn(columnName: 'parent', label: 'المؤسسة الأم'),
+        buildGridColumn(columnName: 'location', label: 'الموقع'),
+        buildGridColumn(
+          columnName: 'actions',
+          label: 'الإجراءات',
+          width: 140,
+          alignment: Alignment.center,
         ),
-      ),
-    );
-  }
+      ];
 }

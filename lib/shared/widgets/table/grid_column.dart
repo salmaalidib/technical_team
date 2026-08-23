@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 
 /// منشئ موحّد لأعمدة [SfDataGrid] — يضمن نفس ستايل الرأس (خط Cairo، عريض،
 /// خلفية بيج فاتحة) عبر كل جداول التطبيق.
@@ -25,10 +26,10 @@ GridColumn buildGridColumn({
       alignment: alignment,
       child: Text(
         label,
-        textAlign: alignment == Alignment.center
-            ? TextAlign.center
-            : TextAlign.right,
+        textAlign:
+            alignment == Alignment.center ? TextAlign.center : TextAlign.right,
         style: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
