@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import 'notification_action_config.dart';
 import 'process_stage.dart';
+import 'sync_self_card_config.dart';
 import 'stage_assignment_target.dart';
 import 'widget_config.dart';
 
@@ -13,8 +14,8 @@ enum AssigneeType { employee, citizen }
 /// backend `stages[]` entry on submit.
 ///
 /// USER_TASK → form (widgets) + assignment (org/dept/role) [+ signature].
-/// SERVICE_TASK → optional [actions] (GENERATE_PDF / SEND_NOTIFICATION; the
-/// backend does not support SEND_EMAIL).
+/// SERVICE_TASK → optional [actions] (GENERATE_PDF / SEND_NOTIFICATION /
+/// SYNC_SELF_CARD; the backend does not support SEND_EMAIL).
 class StageConfigDraft extends Equatable {
   final ProcessStage stage;
 
@@ -68,6 +69,10 @@ class StageConfigDraft extends Equatable {
   /// run-time generation finds no `document_instance`.
   final int? generatePdfTemplateId;
 
+  /// Config for the SYNC_SELF_CARD action (target table + field map). Only
+  /// meaningful while `actions` contains `SYNC_SELF_CARD`.
+  final SyncSelfCardConfig syncSelfCard;
+
   /// True when this stage already has a saved `stage_config` (complete-mode:
   /// the wizard opened an existing process). Locked stages are read-only and
   /// are NOT re-submitted — the backend rejects re-creating an existing config.
@@ -87,6 +92,7 @@ class StageConfigDraft extends Equatable {
     this.actions = const [],
     this.notification = const NotificationActionConfig(),
     this.generatePdfTemplateId,
+    this.syncSelfCard = const SyncSelfCardConfig(),
     this.locked = false,
   });
 
@@ -95,6 +101,15 @@ class StageConfigDraft extends Equatable {
 
   /// Whether GENERATE_PDF is selected on this stage.
   bool get hasGeneratePdf => actions.contains('GENERATE_PDF');
+
+  /// Whether SYNC_SELF_CARD is selected on this stage.
+  bool get hasSyncSelfCard => actions.contains('SYNC_SELF_CARD');
+
+  /// Whether this USER_TASK carries the `employee_picker` (self card) widget.
+  /// A SYNC_SELF_CARD action can only resolve a card if some earlier USER_TASK
+  /// has one, so the wizard uses this to warn before saving.
+  bool get hasSelfCardPicker =>
+      widgets.any((w) => w.widgetType == 'employee_picker');
 
   /// Whether the picker row currently holds a complete, addable triple.
   bool get canAddAssignment =>
@@ -122,6 +137,11 @@ class StageConfigDraft extends Equatable {
     if (hasGeneratePdf && generatePdfTemplateId == null) {
       return false;
     }
+    // An empty field_map is rejected by the backend schema (`.min(1)`), and a
+    // missing required column fails the write at run-time.
+    if (hasSyncSelfCard && !syncSelfCard.isComplete) {
+      return false;
+    }
     return true;
   }
 
@@ -141,6 +161,7 @@ class StageConfigDraft extends Equatable {
     NotificationActionConfig? notification,
     int? generatePdfTemplateId,
     bool clearGeneratePdfTemplate = false,
+    SyncSelfCardConfig? syncSelfCard,
     bool? locked,
   }) {
     return StageConfigDraft(
@@ -159,6 +180,7 @@ class StageConfigDraft extends Equatable {
       generatePdfTemplateId: clearGeneratePdfTemplate
           ? null
           : (generatePdfTemplateId ?? this.generatePdfTemplateId),
+      syncSelfCard: syncSelfCard ?? this.syncSelfCard,
       locked: locked ?? this.locked,
     );
   }
@@ -220,7 +242,8 @@ class StageConfigDraft extends Equatable {
   }
 
   /// The `payload` for a given action name. SEND_NOTIFICATION carries the
-  /// message + recipient; GENERATE_PDF carries the template_id. Any other name
+  /// message + recipient; GENERATE_PDF carries the template_id;
+  /// SYNC_SELF_CARD carries the target table + field map. Any other name
   /// falls back to an empty payload.
   Map<String, dynamic> _payloadFor(String name) {
     if (name == 'SEND_NOTIFICATION') {
@@ -230,6 +253,9 @@ class StageConfigDraft extends Equatable {
       return generatePdfTemplateId == null
           ? <String, dynamic>{}
           : {'template_id': generatePdfTemplateId};
+    }
+    if (name == 'SYNC_SELF_CARD') {
+      return syncSelfCard.toPayloadJson();
     }
     return <String, dynamic>{};
   }
@@ -249,6 +275,7 @@ class StageConfigDraft extends Equatable {
         actions,
         notification,
         generatePdfTemplateId,
+        syncSelfCard,
         locked,
       ];
 }

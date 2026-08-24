@@ -93,32 +93,78 @@ class WizardDropdown<T> extends StatelessWidget {
     return DropdownButtonFormField<T>(
       value: items.containsKey(value) ? value : null,
       isExpanded: true,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: AppColors.textPrimary),
+      icon: Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: enabled ? AppColors.textSecondary : AppColors.iconMuted,
+      ),
+      // The default Material menu is a full-bleed grey sheet; these give it a
+      // card look that matches the wizard's inputs.
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      dropdownColor: AppColors.surface,
+      elevation: 3,
+      menuMaxHeight: 320,
       decoration: _wizardInputDecoration(hint: null, errorText: errorText),
       hint: Text(
         hint,
         textAlign: TextAlign.right,
         style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
       ),
-      items: items.entries
+      // `selectedItemBuilder` renders the closed field, so the open menu is
+      // free to show the selected/hover styling without leaking into the field.
+      selectedItemBuilder: (_) => items.entries
           .map(
-            (e) => DropdownMenuItem<T>(
-              value: e.key,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  e.value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
+            (e) => Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                e.value,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
           )
           .toList(),
+      items: items.entries.map((e) {
+        final selected = e.key == value;
+        return DropdownMenuItem<T>(
+          value: e.key,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.lightPrimary : null,
+              borderRadius: AppRadius.allSm,
+            ),
+            child: Row(
+              children: [
+                if (selected)
+                  const Icon(Icons.check_rounded,
+                      size: 18, color: AppColors.primary),
+                Expanded(
+                  child: Text(
+                    e.value,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
       onChanged: enabled ? onChanged : null,
     );
   }

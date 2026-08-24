@@ -8,7 +8,9 @@ import '../../../roles/domain/entities/role_by_department.dart';
 import '../../../templates/domain/entities/doc_template.dart';
 import '../../../type_processes/domain/entities/type_process.dart';
 import '../../domain/entities/created_process.dart';
+import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
+import '../../domain/entities/widget_config.dart';
 
 class ProcessBuilderState extends Equatable {
   /// Current wizard step (1..4).
@@ -112,6 +114,43 @@ class ProcessBuilderState extends Equatable {
         if (d.stage.isUserTask) ...d.templateIds,
     };
     return templates.where((t) => linkedIds.contains(t.id)).toList();
+  }
+
+  /// The widgets a SYNC_SELF_CARD on [stageId] can read values from: every
+  /// widget of the USER_TASK stages that come BEFORE it in the BPMN order.
+  ///
+  /// The sync reads a *sealed* snapshot of an earlier USER_TASK
+  /// (`source_stage: PREVIOUS_USER_TASK`), so a widget from a later stage —
+  /// or from the service task itself — has no value at run-time. Offering only
+  /// upstream widgets keeps an unresolvable mapping from being built at all.
+  List<WidgetConfig> sourceWidgetsFor(int stageId) {
+    final ordered = createdProcess?.stages ?? const <ProcessStage>[];
+    final index = ordered.indexWhere((s) => s.id == stageId);
+    if (index < 0) return const [];
+
+    final seen = <String>{};
+    final result = <WidgetConfig>[];
+    for (final stage in ordered.take(index)) {
+      if (!stage.isUserTask) continue;
+      for (final w in drafts[stage.id]?.widgets ?? const <WidgetConfig>[]) {
+        // The picker itself is the card selector, not a value to map.
+        if (w.widgetType == 'employee_picker') continue;
+        if (seen.add(w.widgetId)) result.add(w);
+      }
+    }
+    return result;
+  }
+
+  /// Whether any USER_TASK before [stageId] carries the `employee_picker`.
+  /// Without one the sync cannot resolve which card to write to and fails at
+  /// run-time, so the wizard warns about it up front.
+  bool hasUpstreamSelfCardPicker(int stageId) {
+    final ordered = createdProcess?.stages ?? const <ProcessStage>[];
+    final index = ordered.indexWhere((s) => s.id == stageId);
+    if (index < 0) return false;
+    return ordered.take(index).any(
+          (s) => s.isUserTask && (drafts[s.id]?.hasSelfCardPicker ?? false),
+        );
   }
 
   ProcessBuilderState copyWith({

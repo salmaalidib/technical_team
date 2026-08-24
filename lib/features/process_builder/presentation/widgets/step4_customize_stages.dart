@@ -8,6 +8,8 @@ import '../../../fields/domain/entities/field_type.dart';
 import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_config_draft.dart';
+import '../../domain/entities/sync_self_card_config.dart';
+import '../../domain/entities/widget_config.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
@@ -309,6 +311,14 @@ class _UserTaskEditor extends StatelessWidget {
         const WizardLabel('حقل التوجيه (Exclusive Gateway)'),
         const SizedBox(height: 12),
         _GatewayFieldSection(draft: draft),
+        const SizedBox(height: 20),
+
+        // self card (employee_picker) — selects WHICH HR file a later
+        // SYNC_SELF_CARD writes to. Kept out of the dynamic fields above
+        // because it is not a field-library entry (see _SelfCardSection).
+        const WizardLabel('البطاقة الذاتية'),
+        const SizedBox(height: 12),
+        _SelfCardSection(draft: draft),
         const SizedBox(height: 20),
 
         // linked document templates — feed run-time PDF generation
@@ -1059,17 +1069,75 @@ class _SelectedChip extends StatelessWidget {
   }
 }
 
+// ════════════════════════ self card (employee_picker) ════════════════════════
+
+/// Toggle for the `employee_picker` widget — the picker that chooses WHICH
+/// employee self card (`employee_self_cards.id`) a later `SYNC_SELF_CARD`
+/// writes to.
+///
+/// It is deliberately NOT part of [_DynamicFieldsEditor]. Every widget there is
+/// picked from the reusable field library, but the backend schema for this one
+/// (`employeePickerDataSchema`) accepts exactly `{ id, label, is_required,
+/// options_source }` and nothing else — its options are fetched at run-time
+/// from `GET /api/self-cards/search`. There is no library entry to select, so
+/// the widget is a fixed constant toggled on or off here.
+///
+/// `data.id` is pinned to `self_card_id` because a `SYNC_SELF_CARD` action
+/// finds the card through `self_card_id_widget`, which references it by name.
+class _SelfCardSection extends StatelessWidget {
+  final StageConfigDraft draft;
+  const _SelfCardSection({required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final enabled = draft.hasSelfCardPicker;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'أضف حقل اختيار البطاقة الذاتية إلى هذه المرحلة إذا كان الموظف '
+          'سيحدّد الملف الوظيفي الذي ستُكتب عليه البيانات لاحقاً.',
+          textAlign: TextAlign.right,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+        const SizedBox(height: 10),
+        _CheckRow(
+          label: 'إضافة حقل «البطاقة الذاتية» لهذه المرحلة',
+          checked: enabled,
+          onChanged: (v) =>
+              bloc.add(StageSelfCardPickerToggled(draft.stage.id, v)),
+        ),
+        if (enabled) ...[
+          const SizedBox(height: 10),
+          const _WarningBox(
+            title: 'البطاقة الذاتية ليست حساب الموظف',
+            body: 'هذا الحقل يختار «الملف الوظيفي» (البطاقة الذاتية) وليس '
+                'حساب الدخول. ليس لكل مواطن بطاقة ذاتية، وقد لا يكون صاحب '
+                'المعاملة هو صاحب البطاقة — يجب على الموظف اختيار البطاقة '
+                'الصحيحة يدوياً وقت التنفيذ.\n\n'
+                'ولن تُكتب أي بيانات على البطاقة بمجرد اختيارها: الكتابة تتم '
+                'فقط عبر إجراء «تحديث البطاقة الذاتية» في مرحلة نظام لاحقة.',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 // ════════════════════════ SERVICE TASK editor ════════════════════════
 class _ServiceTaskEditor extends StatelessWidget {
   final ProcessBuilderState state;
   final StageConfigDraft draft;
   const _ServiceTaskEditor({required this.state, required this.draft});
 
-  // SEND_EMAIL is not supported by the backend (only SEND_NOTIFICATION and
-  // GENERATE_PDF are accepted), so it is not offered here.
+  // SEND_EMAIL is not supported by the backend (only SEND_NOTIFICATION,
+  // GENERATE_PDF and SYNC_SELF_CARD are accepted), so it is not offered here.
   static const _actions = {
     'GENERATE_PDF': 'توليد مستند PDF',
     'SEND_NOTIFICATION': 'إرسال إشعار',
+    'SYNC_SELF_CARD': 'تحديث البطاقة الذاتية',
   };
 
   @override
@@ -1104,6 +1172,10 @@ class _ServiceTaskEditor extends StatelessWidget {
           if (entry.key == 'GENERATE_PDF' &&
               selected.contains('GENERATE_PDF'))
             _GeneratePdfConfigEditor(state: state, draft: draft),
+          // SYNC_SELF_CARD needs a target table + a non-empty field map.
+          if (entry.key == 'SYNC_SELF_CARD' &&
+              selected.contains('SYNC_SELF_CARD'))
+            _SyncSelfCardConfigEditor(state: state, draft: draft),
         ],
       ],
     );
@@ -1154,6 +1226,176 @@ class _GeneratePdfConfigEditor extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Inline editor for the SYNC_SELF_CARD payload: which self-card table to
+/// write to, and how each of its columns maps to a widget of an earlier
+/// USER_TASK.
+///
+/// Two failure modes this editor exists to prevent:
+///
+/// 1. **A 400 on the whole batch.** The backend schema requires
+///    `field_map` to have at least one entry (`.min(1).required()`), so an
+///    enabled-but-unmapped action rejects every stage being saved, not just
+///    this one.
+/// 2. **A silent run-time no-op.** The sync reads a *sealed* snapshot of an
+///    earlier USER_TASK, resolves the card from the `employee_picker` value,
+///    and drops any column it does not recognise. A mapping that points at a
+///    downstream widget, or a target with no upstream picker, therefore fails
+///    (or writes nothing) only once a real transaction runs. Columns come from
+///    a fixed per-target list and sources only from upstream stages so neither
+///    can be expressed here.
+class _SyncSelfCardConfigEditor extends StatelessWidget {
+  final ProcessBuilderState state;
+  final StageConfigDraft draft;
+  const _SyncSelfCardConfigEditor({required this.state, required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProcessBuilderBloc>();
+    final stageId = draft.stage.id;
+    final config = draft.syncSelfCard;
+    final target = config.target;
+    final sources = state.sourceWidgetsFor(stageId);
+    final hasPicker = state.hasUpstreamSelfCardPicker(stageId);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 6),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Blocking problem: without an upstream picker the action cannot
+          // resolve a card and fails at run-time, long after saving.
+          if (!hasPicker) ...[
+            const _WarningBox(
+              title: 'لا توجد بطاقة ذاتية في أي مرحلة سابقة',
+              body: 'هذا الإجراء يحتاج إلى حقل «البطاقة الذاتية» في مرحلة '
+                  'مستخدم سابقة ليعرف أي بطاقة سيحدّث. بدونه سيُحفظ الإعداد '
+                  'بنجاح، لكنه سيفشل وقت تنفيذ المعاملة.\n\n'
+                  'ارجع إلى مرحلة مستخدم سابقة وفعّل «إضافة حقل البطاقة '
+                  'الذاتية».',
+            ),
+            const SizedBox(height: 12),
+          ],
+          const _MiniLabel('الجدول المُحدَّث *'),
+          const SizedBox(height: 6),
+          WizardDropdown<SelfCardTarget>(
+            hint: 'اختر الجدول...',
+            value: target,
+            items: {
+              for (final t in SelfCardTarget.values) t: t.label,
+            },
+            onChanged: (v) {
+              if (v != null) bloc.add(StageSyncTargetChanged(stageId, v));
+            },
+          ),
+          const SizedBox(height: 12),
+          const _MiniLabel('ربط الحقول *'),
+          const SizedBox(height: 4),
+          const Text(
+            'اختر لكل عمود الحقل الذي تُؤخذ منه قيمته من المرحلة السابقة. '
+            'الأعمدة غير المربوطة لن تُكتب.',
+            textAlign: TextAlign.right,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          if (sources.isEmpty)
+            const _Hint(
+              'لا توجد حقول في المراحل السابقة — أضف حقولاً إلى مرحلة مستخدم '
+              'قبل هذه المرحلة أولاً.',
+            )
+          else
+            for (final column in target.columns) ...[
+              _SyncFieldMapRow(
+                column: column,
+                label: target.labelFor(column),
+                isRequired: target.requiredColumns.contains(column),
+                sources: sources,
+                selectedWidgetId: config.fieldMap[column],
+                onChanged: (widgetId) =>
+                    bloc.add(StageSyncFieldMapped(stageId, column, widgetId)),
+              ),
+              const SizedBox(height: 8),
+            ],
+          // Mirror of the backend rules, surfaced before the save is attempted.
+          if (sources.isNotEmpty && !config.isComplete) ...[
+            const SizedBox(height: 4),
+            _WarningBox(
+              title: 'الإعداد غير مكتمل',
+              body: config.fieldMap.isEmpty
+                  ? 'يجب ربط حقل واحد على الأقل، وإلا سيُرفض حفظ كل المراحل.'
+                  : 'الحقول الإلزامية التالية غير مربوطة، وسيفشل التحديث وقت '
+                      'التنفيذ: '
+                      '${config.missingRequiredColumns.map(target.labelFor).join('، ')}.',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One `field_map` row: a fixed target column on the right, and the upstream
+/// widget its value comes from on the left.
+class _SyncFieldMapRow extends StatelessWidget {
+  final String column;
+  final String label;
+  final bool isRequired;
+  final List<WidgetConfig> sources;
+  final String? selectedWidgetId;
+  final ValueChanged<String?> onChanged;
+
+  const _SyncFieldMapRow({
+    required this.column,
+    required this.label,
+    required this.isRequired,
+    required this.sources,
+    required this.selectedWidgetId,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // A source widget removed upstream must not keep a stale mapping alive.
+    final value =
+        sources.any((w) => w.widgetId == selectedWidgetId) ? selectedWidgetId : null;
+
+    return Row(
+      textDirection: TextDirection.rtl,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 150,
+          child: Text(
+            isRequired ? '$label *' : label,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: isRequired ? FontWeight.w700 : FontWeight.w500,
+              color: isRequired && value == null
+                  ? AppColors.errorDark
+                  : AppColors.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: WizardDropdown<String>(
+            hint: 'بدون ربط',
+            value: value,
+            items: {for (final w in sources) w.widgetId: w.label},
+            onChanged: onChanged,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1411,6 +1653,65 @@ class _Badge extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+/// A prominent, high-contrast warning panel. Used for the cases where a
+/// configuration saves cleanly but misbehaves later — a wrong self card, or a
+/// SYNC_SELF_CARD that cannot resolve its card at run-time — so the risk is
+/// visible at the moment of configuring rather than after a failed
+/// transaction.
+class _WarningBox extends StatelessWidget {
+  final String title;
+  final String body;
+  const _WarningBox({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: AppColors.errorLight,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.error.withOpacity(0.45), width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.error, size: 21),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: AppColors.errorDark,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  body,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12.5,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

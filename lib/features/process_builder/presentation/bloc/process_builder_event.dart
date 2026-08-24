@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/stage_assignment_target.dart';
 import '../../domain/entities/stage_config_draft.dart';
+import '../../domain/entities/sync_self_card_config.dart';
 import '../../domain/entities/widget_config.dart';
 
 abstract class ProcessBuilderEvent extends Equatable {
@@ -273,6 +274,39 @@ class StageGeneratePdfTemplateChanged extends ProcessBuilderEvent {
   const StageGeneratePdfTemplateChanged(this.stageId, this.templateId);
   @override
   List<Object?> get props => [stageId, templateId];
+}
+
+// ── SYNC_SELF_CARD config (SERVICE_TASK) ────────────────────────────────────
+/// Picks which self-card table the SYNC_SELF_CARD action writes to. Changing
+/// the target clears the field map, since the columns differ per target.
+class StageSyncTargetChanged extends ProcessBuilderEvent {
+  final int stageId;
+  final SelfCardTarget target;
+  const StageSyncTargetChanged(this.stageId, this.target);
+  @override
+  List<Object?> get props => [stageId, target];
+}
+
+/// Maps (or unmaps) one target column to a source widget id taken from an
+/// earlier USER_TASK. `widgetId == null` removes the mapping.
+class StageSyncFieldMapped extends ProcessBuilderEvent {
+  final int stageId;
+  final String column;
+  final String? widgetId;
+  const StageSyncFieldMapped(this.stageId, this.column, this.widgetId);
+  @override
+  List<Object?> get props => [stageId, column, widgetId];
+}
+
+// ── employee_picker (self card) on a USER_TASK ──────────────────────────────
+/// Adds/removes the fixed `employee_picker` widget on a USER_TASK stage. It is
+/// not part of the field library, so it is toggled rather than picked.
+class StageSelfCardPickerToggled extends ProcessBuilderEvent {
+  final int stageId;
+  final bool value;
+  const StageSelfCardPickerToggled(this.stageId, this.value);
+  @override
+  List<Object?> get props => [stageId, value];
 }
 
 /// Final action: `POST /api/stage_config/create` only (no review/approve).

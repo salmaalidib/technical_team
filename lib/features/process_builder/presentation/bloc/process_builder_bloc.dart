@@ -17,6 +17,7 @@ import '../../domain/entities/process_details.dart';
 import '../../domain/entities/process_stage.dart';
 import '../../domain/entities/stage_assignment_target.dart';
 import '../../domain/entities/stage_config_draft.dart';
+import '../../domain/entities/sync_self_card_config.dart';
 import '../../domain/usecases/configure_stages_usecase.dart';
 import '../../domain/usecases/create_process_definition_usecase.dart';
 import '../../domain/usecases/get_process_details_usecase.dart';
@@ -77,6 +78,9 @@ class ProcessBuilderBloc
     on<StageNotificationDeptChanged>(_onNotificationDept);
     on<StageNotificationRoleChanged>(_onNotificationRole);
     on<StageGeneratePdfTemplateChanged>(_onGeneratePdfTemplate);
+    on<StageSyncTargetChanged>(_onSyncTarget);
+    on<StageSyncFieldMapped>(_onSyncFieldMapped);
+    on<StageSelfCardPickerToggled>(_onSelfCardPickerToggled);
     on<SubmitStageConfigs>(_onSubmitStageConfigs);
   }
 
@@ -781,6 +785,64 @@ class ProcessBuilderBloc
     }
   }
 
+  // ── SYNC_SELF_CARD config ───────────────────────────────────────────────
+  /// Changing the target resets the field map: each target writes to a
+  /// different table, so columns mapped for the previous one are invalid (the
+  /// backend silently drops unknown columns, which would look like a working
+  /// sync that writes nothing).
+  void _onSyncTarget(
+    StageSyncTargetChanged event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    final target = state.drafts[event.stageId];
+    if (target == null || !target.stage.isServiceTask) return;
+
+    _updateDraft(event.stageId, emit, (d) {
+      if (d.syncSelfCard.target == event.target) return d;
+      return d.copyWith(
+        syncSelfCard: SyncSelfCardConfig(target: event.target),
+      );
+    });
+  }
+
+  void _onSyncFieldMapped(
+    StageSyncFieldMapped event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    final target = state.drafts[event.stageId];
+    if (target == null || !target.stage.isServiceTask) return;
+
+    _updateDraft(event.stageId, emit, (d) {
+      final map = Map<String, String>.from(d.syncSelfCard.fieldMap);
+      if (event.widgetId == null || event.widgetId!.isEmpty) {
+        map.remove(event.column);
+      } else {
+        map[event.column] = event.widgetId!;
+      }
+      return d.copyWith(syncSelfCard: d.syncSelfCard.copyWith(fieldMap: map));
+    });
+  }
+
+  // ── employee_picker (self card) ─────────────────────────────────────────
+  /// The self-card picker is a fixed widget, not a field-library entry, so it
+  /// is added/removed wholesale here instead of going through
+  /// [StageWidgetToggled].
+  void _onSelfCardPickerToggled(
+    StageSelfCardPickerToggled event,
+    Emitter<ProcessBuilderState> emit,
+  ) {
+    final target = state.drafts[event.stageId];
+    if (target == null || !target.stage.isUserTask) return;
+
+    _updateDraft(event.stageId, emit, (d) {
+      final widgets = d.widgets
+          .where((w) => w.widgetType != 'employee_picker')
+          .toList();
+      if (event.value) widgets.add(buildSelfCardPickerWidget());
+      return d.copyWith(widgets: widgets);
+    });
+  }
+
   // ── final submit: stage_config only ─────────────────────────────────────
   Future<void> _onSubmitStageConfigs(
     SubmitStageConfigs event,
@@ -799,8 +861,30 @@ class ProcessBuilderBloc
             d.hasGeneratePdf &&
             d.generatePdfTemplateId == null,
       );
+      final syncIncomplete = state.drafts.values.any(
+        (d) =>
+            !d.locked &&
+            d.stage.isServiceTask &&
+            d.hasSyncSelfCard &&
+            !d.syncSelfCard.isComplete,
+      );
       final String message;
-      if (pdfIncomplete) {
+      if (syncIncomplete) {
+        // Name the missing required columns when that is the reason, since an
+        // empty map and a missing mandatory column fail for different reasons.
+        final offender = state.drafts.values.firstWhere(
+          (d) =>
+              !d.locked &&
+              d.stage.isServiceTask &&
+              d.hasSyncSelfCard &&
+              !d.syncSelfCard.isComplete,
+        );
+        final missing = offender.syncSelfCard.missingRequiredColumns;
+        message = missing.isEmpty
+            ? 'اربط حقلاً واحداً على الأقل في «تحديث البطاقة الذاتية» قبل الحفظ.'
+            : 'أكمل الحقول الإلزامية في «تحديث البطاقة الذاتية»: '
+                '${missing.map(offender.syncSelfCard.target.labelFor).join('، ')}.';
+      } else if (pdfIncomplete) {
         message = 'اختر القالب لإجراء «توليد PDF» قبل الحفظ.';
       } else if (notifIncomplete) {
         message =
