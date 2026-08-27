@@ -39,7 +39,23 @@ class AppUpdateRemoteDataSource {
   static const _endPoints = EndPoints();
 
   /// عارٍ بلا interceptors — يُستخدم أيضاً لتنزيل المثبت (لا Authorization).
-  Dio get downloadClient => _dio;
+  ///
+  /// مهلة الاستقبال هنا **معطَّلة** (`Duration.zero`) عمداً وعلى خلاف [_dio]
+  /// المستخدم في `fetchSettings`: مثبِّت Inno Setup يتجاوز 30 ميغابايت، ومهلة
+  /// الـ 15 ثانية الموروثة من `BaseOptions` كانت تقطع التنزيل على أي اتصال
+  /// أبطأ من ~2 MB/s فينتج ملف `.exe` ناقص يفشل تشغيله لاحقاً بصمت تام
+  /// (`/VERYSILENT /SUPPRESSMSGBOXES` يكتمان رسالة الخطأ). في Dio تُطبَّق
+  /// `receiveTimeout` على المهلة بين حزمتَي بيانات متتاليتين لا على مدة
+  /// التنزيل الكلية، لكن تعطيلها يبقى الخيار الآمن هنا لأن انقطاع التنزيل
+  /// محكوم أصلاً بـ `connectTimeout` وبإمكان المستخدم الإلغاء يدوياً.
+  late final Dio _downloadDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: Duration.zero,
+    ),
+  );
+
+  Dio get downloadClient => _downloadDio;
 
   Future<Map<String, dynamic>> fetchSettings({
     required int currentVersionCode,

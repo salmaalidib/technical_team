@@ -22,6 +22,10 @@ class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
 
   dio.CancelToken? _cancelToken;
 
+  /// أدنى حجم معقول لمثبِّت Inno Setup لهذا التطبيق (~30MB فعلياً). أي ملف
+  /// أصغر بكثير يعني تنزيلاً مبتوراً أو صفحة خطأ HTML حُفظت باسم `.exe`.
+  static const int _minPlausibleInstallerBytes = 5 * 1024 * 1024;
+
   AppUpdateBloc({
     required this.checkForUpdate,
     required this.remote,
@@ -123,6 +127,34 @@ class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
       );
 
       if (isClosed) return;
+
+      // تحقّق من سلامة الملف قبل تشغيله. تشغيل مثبِّت ناقص بـ `/VERYSILENT`
+      // يفشل بلا أي رسالة (الوسائط تكتم صناديق الحوار)، وبما أننا نُنهي
+      // التطبيق بعدها مباشرة كان الفشل يمرّ صامتاً تماماً ويعود المستخدم
+      // ليجد نفس نافذة التحديث. نتحقق هنا بدل الاعتماد على نجاح `download`.
+      final downloadedLength = await file.length();
+      if (downloadedLength < _minPlausibleInstallerBytes) {
+        await _safeDelete(file);
+        emit(state.copyWith(
+          phase: AppUpdatePhase.error,
+          errorMessage: 'الملف المُنزَّل غير مكتمل، يرجى المحاولة مرة أخرى.',
+        ));
+        return;
+      }
+
+      // `apk_size` المعلن قد لا يطابق الملف الفعلي بدقة (فرق بضع مئات من
+      // البايتات مرصود بين قاعدة البيانات والملف المرفوع)، لذا نتسامح بهامش
+      // بدل المطابقة التامة — الهدف كشف التنزيل المبتور لا التحقق التعمّي.
+      final expected = info.fileSize ?? 0;
+      if (expected > 0 && downloadedLength < expected * 0.99) {
+        await _safeDelete(file);
+        emit(state.copyWith(
+          phase: AppUpdatePhase.error,
+          errorMessage: 'الملف المُنزَّل غير مكتمل، يرجى المحاولة مرة أخرى.',
+        ));
+        return;
+      }
+
       emit(state.copyWith(phase: AppUpdatePhase.installing, downloadProgress: 1.0));
 
       await _launchSilentInstaller(savePath, emit);
@@ -164,9 +196,22 @@ class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
     Emitter<AppUpdateState> emit,
   ) async {
     try {
+      // سجلّ المثبِّت. `/VERYSILENT /SUPPRESSMSGBOXES` يكتمان كل رسائل الفشل،
+      // فبدون `/LOG` لا يبقى أي أثر يُشخَّص منه سبب عدم اكتمال الترقية.
+      final logPath = '${Directory.systemTemp.path}\\technical_team_install.log';
+
+      // ينظَّف سجلّ المحاولة السابقة **قبل** الإطلاق لا بعده: حذفه بعد بدء
+      // المثبِّت قد يمحو السجلّ الذي أنشأه للتوّ فيُقرأ الأمر كفشل زائف.
+      await _safeDelete(File(logPath));
+
       final process = await Process.start(
         installerPath,
-        ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'],
+        [
+          '/VERYSILENT',
+          '/SUPPRESSMSGBOXES',
+          '/NORESTART',
+          '/LOG=$logPath',
+        ],
         mode: ProcessStartMode.detached,
       );
 
@@ -180,8 +225,27 @@ class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
         return;
       }
 
-      // نافذة قصيرة تسمح للمثبِّت بالانطلاق فعلياً (فتح ملف، حجز موارد) قبل
-      // أن يُغلَق هذا التطبيق ويحرّر قفل technical_team.exe للاستبدال.
+      // `ProcessStartMode.detached` يعيد pid صالحاً بمجرد أن يُنشئ Windows
+      // العملية — أي **قبل** أن يتحقق المثبِّت من سلامة نفسه أو يبدأ النسخ.
+      // لذا كان `exit(0)` غير المشروط يُغلق التطبيق حتى حين يفشل المثبِّت
+      // فوراً (ملف تالف، أو رفض الكتابة فوق technical_team.exe بصلاحيات
+      // `PrivilegesRequired=lowest`)، فيخرج المستخدم بلا تحديث وبلا رسالة.
+      // ننتظر هنا ظهور ملف السجل كدليل ملموس على أن المثبِّت وصل فعلاً إلى
+      // مرحلة التنفيذ، ولا نُنهي التطبيق إلا عندها.
+      final started = await _installerDidStart(logPath);
+
+      if (!started) {
+        if (!isClosed) {
+          emit(state.copyWith(
+            phase: AppUpdatePhase.error,
+            errorMessage:
+                'تعذّر إكمال التثبيت. يرجى إغلاق التطبيق وتشغيل ملف التحديث يدوياً:\n$installerPath',
+          ));
+        }
+        return;
+      }
+
+      // المثبِّت انطلق فعلاً — نُخلي له technical_team.exe ليستبدله.
       await Future<void>.delayed(const Duration(seconds: 2));
       exit(0);
     } catch (e) {
@@ -191,6 +255,30 @@ class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
           errorMessage: 'تعذّر تشغيل ملف التثبيت: $e',
         ));
       }
+    }
+  }
+
+  /// ينتظر ظهور ملف سجلّ Inno Setup كدليل على أن المثبِّت تجاوز مرحلة الإقلاع
+  /// وبدأ التنفيذ فعلاً. المثبِّت يُنشئ السجلّ في وقت مبكّر جداً من دورته، لذا
+  /// غيابه بعد هذه المهلة يعني أن العملية ماتت فور انطلاقها.
+  ///
+  /// يفترض أن المستدعي حذف سجلّ المحاولة السابقة قبل إطلاق المثبِّت.
+  Future<bool> _installerDidStart(String logPath) async {
+    final log = File(logPath);
+
+    const attempts = 20; // 20 × 500ms = 10 ثوانٍ
+    for (var i = 0; i < attempts; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (await log.exists() && await log.length() > 0) return true;
+    }
+    return false;
+  }
+
+  Future<void> _safeDelete(File file) async {
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // حذف تنظيفي — فشله لا يمنع المتابعة.
     }
   }
 }

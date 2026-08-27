@@ -29,7 +29,12 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-CloseApplications=yes
+; `force` يجعل Restart Manager يُنهي technical_team.exe قسراً بدل الاكتفاء
+; بطلب لطيف قد تتجاهله العملية القديمة فيفشل النسخ فوقها ويتوقف التثبيت
+; بصمت (`/SUPPRESSMSGBOXES`). التطبيق يُنهي ذاته بعد إطلاق المثبِّت، وهذه
+; شبكة أمان للحالة التي لا يصل فيها إلى ذلك.
+CloseApplications=force
+CloseApplicationsFilter=technical_team.exe
 RestartApplications=no
 
 [Languages]
