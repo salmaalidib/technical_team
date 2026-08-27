@@ -18,7 +18,8 @@ class EmployeesHeader extends StatelessWidget {
       runSpacing: 18,
       children: [
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          // في RTL: start = اليمين (end كانت تُبعد صفّ العنوان عن الحافة).
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               textDirection: TextDirection.rtl,

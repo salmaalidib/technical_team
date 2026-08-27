@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/notification_item.dart';
 import '../cubit/notifications_cubit.dart';
 import '../cubit/notifications_state.dart';
+import 'notification_details_dialog.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// القائمة المنسدلة التي تظهر عند الضغط على جرس الإشعارات.
@@ -50,11 +51,37 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
   final _scrollController = ScrollController();
   late final NotificationsCubit _cubit;
 
+  /// معرّفات ما كان غير مقروء لحظةَ الفتح. الخادم يعلّمها مقروءةً فوراً، لكنّ
+  /// إبقاء التمييز البصري طوال بقاء القائمة مفتوحة هو ما يُري المستخدم الجديد.
+  final _highlighted = <int>{};
+
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<NotificationsCubit>()..load();
+    // فتح القائمة نفسه يُعدّ اطّلاعاً: نحمّل ثم نعلّم الوارد غير المقروء كمقروء.
+    _cubit = getIt<NotificationsCubit>();
+    _openAndMarkRead();
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _openAndMarkRead() async {
+    await _cubit.load();
+    await _markVisibleAsRead();
+  }
+
+  /// يميّز ما هو غير مقروء حالياً ثم يعلّمه مقروءاً على الخادم. يُستدعى بعد
+  /// التحميل الأول وبعد كل صفحة إضافية، فالمعروض كلّه يُعتبر مطّلَعاً عليه.
+  Future<void> _markVisibleAsRead() async {
+    if (!mounted) return;
+
+    final fresh = _cubit.state.items
+        .where((e) => !e.isRead)
+        .map((e) => e.id)
+        .toList();
+    if (fresh.isEmpty) return;
+
+    setState(() => _highlighted.addAll(fresh));
+    await _cubit.markAllAsRead();
   }
 
   @override
@@ -70,7 +97,7 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 120) {
-      _cubit.loadMore();
+      _cubit.loadMore().then((_) => _markVisibleAsRead());
     }
   }
 
@@ -87,11 +114,11 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
                 color: AppColors.shadowMedium,
                 blurRadius: 24,
-                offset: const Offset(0, 8),
+                offset: Offset(0, 8),
               ),
             ],
           ),
@@ -162,7 +189,8 @@ class _NotificationsPanelState extends State<NotificationsPanel> {
         final item = state.items[i];
         return _NotificationTile(
           item: item,
-          onTap: () => _cubit.markAsRead(item.id),
+          highlighted: _highlighted.contains(item.id),
+          onTap: () => NotificationDetailsDialog.show(context, item),
         );
       },
     );
@@ -207,19 +235,6 @@ class _Header extends StatelessWidget {
             ),
           ],
           const Spacer(),
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: context.read<NotificationsCubit>().markAllAsRead,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(0, 34),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                foregroundColor: AppColors.primary,
-              ),
-              child: const Text(
-                'تعليم الكل كمقروء',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-            ),
         ],
       ),
     );
@@ -227,18 +242,26 @@ class _Header extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item, required this.onTap});
+  const _NotificationTile({
+    required this.item,
+    required this.highlighted,
+    required this.onTap,
+  });
 
   final NotificationItem item;
+
+  /// كان غير مقروء عند فتح القائمة — يبقى مميّزاً رغم تعليمه مقروءاً.
+  final bool highlighted;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: item.isRead ? null : onTap,
+      // المقروء يبقى قابلاً للضغط: الضغط يفتح التفاصيل، لا تعليم القراءة فقط.
+      onTap: onTap,
       child: Container(
-        // غير المقروء بخلفية مميّزة كي يُميَّز بلمحة.
-        color: item.isRead ? AppColors.surface : AppColors.lightPrimary,
+        // الجديد بخلفية مميّزة كي يُميَّز بلمحة.
+        color: highlighted ? AppColors.lightPrimary : AppColors.surface,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +271,7 @@ class _NotificationTile extends StatelessWidget {
               height: 8,
               margin: const EdgeInsets.only(top: 6),
               decoration: BoxDecoration(
-                color: item.isRead ? AppColors.transparent : AppColors.primary,
+                color: highlighted ? AppColors.primary : AppColors.transparent,
                 shape: BoxShape.circle,
               ),
             ),
@@ -265,7 +288,7 @@ class _NotificationTile extends StatelessWidget {
                       color: AppColors.textPrimary,
                       fontSize: 14,
                       fontWeight:
-                          item.isRead ? FontWeight.w600 : FontWeight.w800,
+                          highlighted ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),

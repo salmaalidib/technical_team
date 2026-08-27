@@ -34,6 +34,7 @@ const _navItems = <_NavItem>[
   _NavItem(Icons.description_outlined, 'قوالب المستندات', '/templates'),
   _NavItem(
       Icons.system_update_alt_outlined, 'إصدارات التطبيقات', '/app-versions'),
+  _NavItem(Icons.receipt_long_outlined, 'سجلات التدقيق', '/audit-logs'),
   // _NavItem(Icons.settings_outlined, 'الإعدادات', '/settings'),
 ];
 

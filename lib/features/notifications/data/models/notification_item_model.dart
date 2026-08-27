@@ -10,6 +10,11 @@ class NotificationItemModel {
       title: json['title']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       type: json['type']?.toString(),
+      channel: json['channel']?.toString(),
+      status: json['status']?.toString(),
+      senderName: json['sent_by'] is Map
+          ? (json['sent_by'] as Map)['user_name']?.toString()
+          : null,
       // الخادم يشتقّ is_read من read_at؛ نقبل غياب الحقل بالرجوع إلى read_at.
       isRead: json['is_read'] == true || json['read_at'] != null,
       readAt: _date(json['read_at']),

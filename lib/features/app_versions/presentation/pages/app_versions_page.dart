@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/layouts/page_header_row.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
@@ -87,73 +88,73 @@ class _Header extends StatelessWidget {
       builder: (context, state) {
         final app = state.selectedApplication;
 
-        return Wrap(
-          textDirection: TextDirection.rtl,
-          // start لا spaceBetween: مع spaceBetween كان العنصر الوحيد على السطر
-          // يُوسَّط (فيظهر العنوان في المنتصف حين تنتقل الأزرار إلى سطر جديد)،
-          // بينما start في RTL يُثبِّت كل شيء إلى اليمين.
-          alignment: WrapAlignment.start,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 20,
-          runSpacing: 16,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  textDirection: TextDirection.rtl,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.system_update_alt_rounded,
-                        color: AppColors.primary, size: 34),
-                    const SizedBox(width: 10),
-                    Text(
-                      'إصدارات التطبيقات',
-                      style:
-                          Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'تسجيل إصدار جديد وإدارة التحديثات للتطبيقات الثلاثة',
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-            if (app != null)
-              // ارتفاع ثابت بلا Align: الـ Wrap يمنح ابنه عرضه الطبيعي، أما
-              // Align فيتمدّد لملء العرض المتاح ويشدّ الزر معه شريطاً عملاقاً.
-              SizedBox(
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openVersionForm(context, app),
-                  icon: const Icon(Icons.add_rounded, size: 20),
-                  label: const Text(
-                    'تسجيل إصدار جديد',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.5,
-                    ),
+        return PageHeaderRow(
+          title: Column(
+            // في RTL: start = اليمين (end كانت تُبعد صفّ العنوان عن الحافة).
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                textDirection: TextDirection.rtl,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.system_update_alt_rounded,
+                      color: AppColors.primary, size: 34),
+                  const SizedBox(width: 10),
+                  Text(
+                    'إصدارات التطبيقات',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                  ),
-                ),
+                ],
               ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'تسجيل إصدار جديد وإدارة التحديثات للتطبيقات الثلاثة',
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ],
+          ),
+          // عرض وارتفاع ثابتان مطابقان لزر «إنشاء دور جديد»: بدون تقييد
+          // العرض يفرض ثيم الأزرار `minimumSize: infinity` فيتمدّد الزر
+          // شريطاً بعرض الصفحة.
+          action: app == null
+              ? null
+              : SizedBox(
+                  width: 210,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: () => _openVersionForm(context, app),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        const Icon(Icons.add_rounded, size: 24),
+                        const SizedBox(width: 10),
+                        Text(
+                          'تسجيل إصدار جديد',
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         );
       },
     );

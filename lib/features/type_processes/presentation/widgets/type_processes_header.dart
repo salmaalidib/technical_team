@@ -19,7 +19,8 @@ class TypeProcessesHeader extends StatelessWidget {
       runSpacing: 16,
       children: [
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          // في RTL: start = اليمين (end كانت تُبعد صفّ العنوان عن الحافة).
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               textDirection: TextDirection.rtl,

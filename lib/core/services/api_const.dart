@@ -54,6 +54,10 @@ class EndPoints {
   String get rolePermissions =>
       'api/auth/role-permissions'; // GET ?organization_id&department_id&role_id · POST إضافة · PUT استبدال كامل
 
+  // ===== audit logs (authMiddleware + authorize('VIEW_AUDIT_LOGS')) =====
+  String get auditLogs =>
+      'api/auth/audit-logs'; // GET ?user_id&action&status&resource_type&from_date&to_date&cursor&limit
+
   // ===== typeProcess (bearer token required) =====
   String get typeProcesses => 'api/typeProcess'; // GET list · POST create
   String  typeProcessById(Object id) =>
