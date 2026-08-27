@@ -128,31 +128,27 @@ class _Header extends StatelessWidget {
               ],
             ),
             if (app != null)
-              // ملفوف بـ Align لا مُمدَّد: الأب يستخدم
-              // crossAxisAlignment.stretch، فبدونه يُشدّ الزر إلى كامل عرض
-              // الشاشة ويظهر شريطاً عملاقاً بدل زر بحجم طبيعي.
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openVersionForm(context, app),
-                    icon: const Icon(Icons.add_rounded, size: 20),
-                    label: const Text(
-                      'تسجيل إصدار جديد',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                      ),
+              // ارتفاع ثابت بلا Align: الـ Wrap يمنح ابنه عرضه الطبيعي، أما
+              // Align فيتمدّد لملء العرض المتاح ويشدّ الزر معه شريطاً عملاقاً.
+              SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openVersionForm(context, app),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: const Text(
+                    'تسجيل إصدار جديد',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ),
