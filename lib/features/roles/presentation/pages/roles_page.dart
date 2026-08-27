@@ -124,10 +124,18 @@ class _RolesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = 22.0;
-        final columns = constraints.maxWidth >= 700 ? 2 : 1;
-        final cardWidth =
-            (constraints.maxWidth - (columns - 1) * gap) / columns;
+        const gap = 18.0;
+        // The card is compact now, so a wide screen fits more than two before
+        // they start looking stretched.
+        final width = constraints.maxWidth;
+        final columns = width >= 1500
+            ? 4
+            : width >= 1100
+                ? 3
+                : width >= 700
+                    ? 2
+                    : 1;
+        final cardWidth = (width - (columns - 1) * gap) / columns;
 
         return Wrap(
           spacing: gap,

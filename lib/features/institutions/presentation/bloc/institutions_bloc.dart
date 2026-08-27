@@ -6,6 +6,8 @@ import '../../domain/usecases/create_institution_usecase.dart';
 import '../../domain/usecases/create_location_usecase.dart';
 import '../../domain/usecases/get_institutions_usecase.dart';
 import '../../domain/usecases/get_locations_usecase.dart';
+import '../../domain/usecases/get_type_locations_usecase.dart';
+import '../../domain/usecases/create_type_location_usecase.dart';
 import 'institutions_event.dart';
 import 'institutions_state.dart';
 
@@ -14,16 +16,21 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
   final GetLocationsUseCase getLocations;
   final CreateInstitutionUseCase createInstitution;
   final CreateLocationUseCase createLocation;
+  final GetTypeLocationsUseCase getTypeLocations;
+  final CreateTypeLocationUseCase createTypeLocation;
 
   InstitutionsBloc({
     required this.getInstitutions,
     required this.getLocations,
     required this.createInstitution,
     required this.createLocation,
+    required this.getTypeLocations,
+    required this.createTypeLocation,
   }) : super(const InstitutionsState()) {
     on<LoadInstitutions>(_onLoad);
     on<CreateInstitutionRequested>(_onCreate);
     on<CreateLocationRequested>(_onCreateLocation);
+    on<CreateTypeLocationRequested>(_onCreateTypeLocation);
     on<NavigateToChildren>(_onNavigateToChildren);
     on<NavigateToCrumb>(_onNavigateToCrumb);
     on<SearchChanged>(_onSearchChanged);
@@ -55,10 +62,15 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
         final locationsResult = await getLocations();
         final locations = locationsResult.getOrElse(() => state.locations);
 
+        final typesResult = await getTypeLocations();
+        final typeLocations =
+            typesResult.getOrElse(() => state.typeLocations);
+
         emit(state.copyWith(
           status: RequestStatus.success,
           institutions: institutions,
           locations: locations,
+          typeLocations: typeLocations,
           error: null,
         ));
       },
@@ -172,6 +184,37 @@ class InstitutionsBloc extends Bloc<InstitutionsEvent, InstitutionsState> {
         emit(state.copyWith(
           locationFormStatus: FormStatus.success,
           locations: locations,
+        ));
+      },
+    );
+  }
+
+  Future<void> _onCreateTypeLocation(
+    CreateTypeLocationRequested event,
+    Emitter<InstitutionsState> emit,
+  ) async {
+    emit(state.copyWith(
+      typeLocationFormStatus: FormStatus.submitting,
+      typeLocationFormError: null,
+    ));
+
+    final result = await createTypeLocation(name: event.name);
+
+    await result.fold(
+      (failure) async => emit(state.copyWith(
+        typeLocationFormStatus: FormStatus.failure,
+        typeLocationFormError: failure.message,
+      )),
+      (created) async {
+        // Reload so the list stays server-ordered; fall back to appending the
+        // created one so the caller can still select it.
+        final typesResult = await getTypeLocations();
+        final typeLocations = typesResult.getOrElse(
+          () => [...state.typeLocations, created],
+        );
+        emit(state.copyWith(
+          typeLocationFormStatus: FormStatus.success,
+          typeLocations: typeLocations,
         ));
       },
     );

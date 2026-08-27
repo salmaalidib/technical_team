@@ -8,13 +8,14 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_event.dart';
 import '../bloc/institutions_state.dart';
+import 'add_type_location_dialog.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// Small dialog to add a new location, opened from the location picker inside
 /// the create-institution dialog. Reuses the same [InstitutionsBloc].
 ///
-/// There is no dedicated "list location types" endpoint, so the type options
-/// are derived from the types already present on the loaded locations.
+/// Types come from `GET /api/type-location`, so a type with no locations yet
+/// is still selectable, and the "+" button can add a new one inline.
 class AddLocationDialog extends StatefulWidget {
   const AddLocationDialog({super.key});
 
@@ -42,15 +43,38 @@ class _AddLocationDialogState extends State<AddLocationDialog> {
     super.dispose();
   }
 
-  /// `{ typeId: typeName }` derived from the loaded locations.
+  /// `{ typeId: typeName }` from the dedicated location-types endpoint.
   Map<int, String> _typeItems(InstitutionsState state) {
-    final map = <int, String>{};
-    for (final l in state.locations) {
-      if (l.typeId != null) {
-        map[l.typeId!] = l.typeName ?? 'نوع #${l.typeId}';
-      }
+    return {for (final t in state.typeLocations) t.id: t.name};
+  }
+
+  /// Opens the add-type dialog and selects whatever it created, so the user
+  /// does not have to find it in the list afterwards.
+  Future<void> _addType(BuildContext context) async {
+    final bloc = context.read<InstitutionsBloc>();
+    final beforeIds = bloc.state.typeLocations.map((t) => t.id).toSet();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: const AddTypeLocationDialog(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    final created = bloc.state.typeLocations
+        .where((t) => !beforeIds.contains(t.id))
+        .toList();
+
+    if (created.isNotEmpty) {
+      setState(() {
+        _typeId = created.last.id;
+        _typeTouched = true;
+      });
     }
-    return map;
   }
 
   void _submit(BuildContext context) {
@@ -122,17 +146,30 @@ class _AddLocationDialogState extends State<AddLocationDialog> {
                         const SizedBox(height: 22),
                         const _FieldLabel('نوع الموقع *'),
                         const SizedBox(height: 8),
-                        AppIdDropdown(
-                          hint: 'اختر نوع الموقع...',
-                          value: _typeId,
-                          items: typeItems,
-                          onChanged: (v) => setState(() {
-                            _typeId = v;
-                            _typeTouched = true;
-                          }),
-                          errorText: _typeTouched && _typeId == null
-                              ? 'هذا الحقل مطلوب'
-                              : null,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: AppIdDropdown(
+                                hint: 'اختر نوع الموقع...',
+                                value: _typeId,
+                                items: typeItems,
+                                onChanged: (v) => setState(() {
+                                  _typeId = v;
+                                  _typeTouched = true;
+                                }),
+                                errorText: _typeTouched && _typeId == null
+                                    ? 'هذا الحقل مطلوب'
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            _AddTypeButton(
+                              onTap: submitting
+                                  ? null
+                                  : () => _addType(context),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 26),
                         const Divider(height: 1, color: AppColors.border),
@@ -151,6 +188,45 @@ class _AddLocationDialogState extends State<AddLocationDialog> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Square "+" beside the type dropdown. Sized to the dropdown's height so the
+/// two read as one control.
+class _AddTypeButton extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const _AddTypeButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
+    return Tooltip(
+      message: 'إضافة نوع موقع جديد',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: enabled
+                ? AppColors.lightPrimary
+                : AppColors.inputBackground,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: enabled ? AppColors.primary : AppColors.border,
+            ),
+          ),
+          child: Icon(
+            Icons.add_rounded,
+            size: 24,
+            color: enabled ? AppColors.primary : AppColors.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }

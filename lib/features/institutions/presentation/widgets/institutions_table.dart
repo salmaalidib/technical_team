@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import '../../../../shared/widgets/table/grid_font_scope.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_dimens.dart';
@@ -81,22 +80,20 @@ class _InstitutionsTableState extends State<InstitutionsTable> {
       child: Column(
         children: [
           Expanded(
-            child: GridFontScope(
-              child: SfDataGridTheme(
-                data: const SfDataGridThemeData(
-                  headerColor: AppColors.surfaceAlt,
-                  gridLineColor: AppColors.border,
-                ),
-                child: SfDataGrid(
-                  source: _dataSource,
-                  rowHeight: 72,
-                  headerRowHeight: 56,
-                  rowsPerPage: state.pageSize,
-                  gridLinesVisibility: GridLinesVisibility.horizontal,
-                  headerGridLinesVisibility: GridLinesVisibility.horizontal,
-                  columnWidthMode: ColumnWidthMode.fill,
-                  columns: _columns,
-                ),
+            child: SfDataGridTheme(
+              data: const SfDataGridThemeData(
+                headerColor: AppColors.surfaceAlt,
+                gridLineColor: AppColors.border,
+              ),
+              child: SfDataGrid(
+                source: _dataSource,
+                rowHeight: 72,
+                headerRowHeight: 56,
+                rowsPerPage: state.pageSize,
+                gridLinesVisibility: GridLinesVisibility.horizontal,
+                headerGridLinesVisibility: GridLinesVisibility.horizontal,
+                columnWidthMode: ColumnWidthMode.fill,
+                columns: _columns,
               ),
             ),
           ),

@@ -8,6 +8,7 @@ import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../fields/presentation/bloc/fields_bloc.dart';
+import '../../../templates/presentation/bloc/templates_bloc.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
@@ -73,6 +74,8 @@ class CreateProcessPage extends StatelessWidget {
         ),
         // Each field-type dropdown loads its own first page lazily on open.
         BlocProvider(create: (_) => getIt<FieldsBloc>()),
+        // Drives the searchable template dropdown (search + infinite scroll).
+        BlocProvider(create: (_) => getIt<TemplatesBloc>()),
       ],
       child: const _WizardView(),
     );

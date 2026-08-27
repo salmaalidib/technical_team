@@ -107,6 +107,7 @@ class EndPoints {
 
   // ===== location (bearer token required) =====
   String get locations => 'api/location'; // GET list · POST create
+  String get typeLocations => 'api/type-location'; // GET list · POST create
 
   // ===== employee registration =====
 String get registerEmployee => 'api/auth/register/employee/';
@@ -127,6 +128,16 @@ String get registerEmployee => 'api/auth/register/employee/';
   // ===== app updates (بلا مصادقة — انظر AppUpdateRemoteDataSource) =====
   String get appUpdateSettings =>
       'api/app-updates/settings'; // GET ?app=&platform=&current_version_code=
+
+  // ===== app versions admin (authMiddleware + authorize('APP_VERSION_MANAGE')) =====
+  String get appUpdateApplications =>
+      'api/app-updates/admin/applications'; // GET list
+  String appUpdateApplication(int appId) =>
+      'api/app-updates/admin/applications/$appId'; // PUT update strategy/store links
+  String appUpdateVersions(int appId) =>
+      'api/app-updates/admin/applications/$appId/versions'; // GET list · POST create
+  String appUpdateVersion(int appId, int versionId) =>
+      'api/app-updates/admin/applications/$appId/versions/$versionId'; // PUT update · DELETE
 }
 
 /// Base API configuration. The base url is read from the loaded environment

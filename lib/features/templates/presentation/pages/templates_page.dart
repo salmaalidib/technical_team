@@ -28,8 +28,40 @@ class TemplatesPage extends StatelessWidget {
   }
 }
 
-class _TemplatesView extends StatelessWidget {
+class _TemplatesView extends StatefulWidget {
   const _TemplatesView();
+
+  @override
+  State<_TemplatesView> createState() => _TemplatesViewState();
+}
+
+class _TemplatesViewState extends State<_TemplatesView> {
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.removeListener(_onScroll);
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Fetch the next page as the bottom comes into view.
+  void _onScroll() {
+    if (!_scrollCtrl.hasClients) return;
+    final pos = _scrollCtrl.position;
+    // `maxScrollExtent == 0` means the content doesn't overflow, so the bottom
+    // is always "reached" — never treat that as a scroll to the end.
+    if (pos.maxScrollExtent <= 0) return;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      context.read<TemplatesBloc>().add(const TemplatesNextPageRequested());
+    }
+  }
 
   Future<void> _openForm(BuildContext context, {DocTemplate? template}) async {
     final bloc = context.read<TemplatesBloc>();
@@ -51,13 +83,84 @@ class _TemplatesView extends StatelessWidget {
       color: AppColors.surfaceAlt,
       padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 30),
       child: SingleChildScrollView(
+        controller: _scrollCtrl,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Header(onCreate: () => _openForm(context)),
-            const SizedBox(height: 28),
+            const SizedBox(height: 18),
+            const _SearchBar(),
+            const SizedBox(height: 22),
             _Body(onEdit: (t) => _openForm(context, template: t)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Debounced search over the templates list. The debounce lives in the bloc's
+/// event transformer, so every keystroke can be dispatched safely.
+class _SearchBar extends StatefulWidget {
+  const _SearchBar();
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: TextField(
+        controller: _controller,
+        textAlign: TextAlign.right,
+        onChanged: (v) =>
+            context.read<TemplatesBloc>().add(TemplatesSearchChanged(v)),
+        decoration: InputDecoration(
+          hintText: 'ابحث باسم القالب...',
+          prefixIcon: const Icon(Icons.search_rounded,
+              color: AppColors.textSecondary, size: 22),
+          suffixIcon: _controller.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  color: AppColors.textSecondary,
+                  onPressed: () {
+                    _controller.clear();
+                    context
+                        .read<TemplatesBloc>()
+                        .add(const TemplatesSearchChanged(''));
+                    setState(() {});
+                  },
+                ),
+          filled: true,
+          fillColor: AppColors.surface,
+          hintStyle: const TextStyle(
+              color: AppColors.textSecondary, fontSize: 15),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
         ),
       ),
     );
@@ -121,7 +224,10 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TemplatesBloc, TemplatesState>(
-      buildWhen: (p, c) => p.status != c.status || p.templates != c.templates,
+      buildWhen: (p, c) =>
+          p.status != c.status ||
+          p.templates != c.templates ||
+          p.loadingMore != c.loadingMore,
       builder: (context, state) {
         switch (state.status) {
           case RequestStatus.initial:
@@ -135,17 +241,39 @@ class _Body extends StatelessWidget {
             );
           case RequestStatus.success:
             if (state.templates.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 80),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 80),
                 child: Center(
                   child: Text(
-                    'لا توجد قوالب لعرضها — أنشئ قالبك الأول',
-                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
+                    state.search.isEmpty
+                        ? 'لا توجد قوالب لعرضها — أنشئ قالبك الأول'
+                        : 'لا توجد قوالب مطابقة لـ «${state.search}»',
+                    style: const TextStyle(
+                        color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );
             }
-            return _Grid(templates: state.templates, onEdit: onEdit);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Grid(templates: state.templates, onEdit: onEdit),
+                if (state.loadingMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: SizedBox(
+                        height: 26,
+                        width: 26,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
         }
       },
     );

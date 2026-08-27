@@ -74,6 +74,15 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
   final _searchCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
+  /// Placement decided when the panel opens, then held until it closes.
+  ///
+  /// Recomputing it on every rebuild made the panel jump: picking an item adds
+  /// a chip under the trigger, which grows the form, pushes the trigger down
+  /// and shrinks the space below it — so the next rebuild flipped the open
+  /// panel above the trigger mid-interaction.
+  bool _flip = false;
+  double _maxHeight = _kMaxPanelHeight;
+
   @override
   void initState() {
     super.initState();
@@ -117,10 +126,34 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
     });
   }
 
+  /// Measures the free space around the trigger and freezes the placement for
+  /// this open session.
+  void _measurePlacement() {
+    final box = context.findRenderObject() as RenderBox?;
+    final media = MediaQuery.of(context);
+    final screenH = media.size.height;
+
+    var below = screenH;
+    var above = 0.0;
+    if (box != null && box.hasSize) {
+      final top = box.localToGlobal(Offset.zero).dy;
+      final bottom = top + box.size.height;
+      below = screenH - media.padding.bottom - bottom;
+      above = top - media.padding.top;
+    }
+
+    // Flip up only when below is genuinely cramped and above has more room.
+    _flip = below < _kMinPanelHeight && above > below;
+    _maxHeight = ((_flip ? above : below) - 16)
+        .clamp(_kMinPanelHeight, _kMaxPanelHeight)
+        .toDouble();
+  }
+
   void _open() {
     // Reset the box so the panel opens on the full (unfiltered) list — the
     // bloc slice is shared by every dropdown of this type.
     _searchCtrl.clear();
+    _measurePlacement();
     // Ensure the first page is loaded when the panel opens.
     context.read<FieldsBloc>().add(FieldTypeOpened(widget.type));
     _controller.show();
@@ -169,27 +202,10 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
   }
 
   Widget _buildPanel(BuildContext context) {
-    // Where the trigger sits on screen decides whether the panel drops below it
-    // or flips above: anchoring it below unconditionally makes it run past the
-    // bottom of the window (and behind the sticky action bar) for any field in
-    // the lower half of a long form.
-    final box = context.findRenderObject() as RenderBox?;
-    final media = MediaQuery.of(context);
-    final screenH = media.size.height;
-
-    var below = screenH;
-    var above = 0.0;
-    if (box != null && box.hasSize) {
-      final top = box.localToGlobal(Offset.zero).dy;
-      final bottom = top + box.size.height;
-      below = screenH - media.padding.bottom - bottom;
-      above = top - media.padding.top;
-    }
-
-    // Flip up only when below is genuinely cramped and above has more room.
-    final flip = below < _kMinPanelHeight && above > below;
-    final maxHeight =
-        ((flip ? above : below) - 16).clamp(_kMinPanelHeight, _kMaxPanelHeight);
+    // Placement is whatever [_measurePlacement] decided at open time — never
+    // recomputed here, or the panel would move while the user is using it.
+    final flip = _flip;
+    final maxHeight = _maxHeight;
 
     return Stack(
       children: [
@@ -212,7 +228,7 @@ class _SearchableFieldDropdownState extends State<SearchableFieldDropdown> {
                 type: widget.type,
                 title: widget.title,
                 mode: widget.mode,
-                maxHeight: maxHeight.toDouble(),
+                maxHeight: maxHeight,
                 selectedIds: widget.selectedIds,
                 searchCtrl: _searchCtrl,
                 scrollCtrl: _scrollCtrl,

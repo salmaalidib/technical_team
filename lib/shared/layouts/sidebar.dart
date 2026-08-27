@@ -29,8 +29,11 @@ const _navItems = <_NavItem>[
   _NavItem(Icons.group_outlined, 'الموظفين', '/employees'),
   _NavItem(Icons.account_tree_outlined, 'المعاملات', '/transactions'),
   _NavItem(Icons.report_gmailerrorred_outlined, 'الشكاوى', '/complaints'),
-  _NavItem(Icons.fact_check_outlined, 'اعتماد المعاملات', '/transactions/admin'),
+  _NavItem(
+      Icons.fact_check_outlined, 'اعتماد المعاملات', '/transactions/admin'),
   _NavItem(Icons.description_outlined, 'قوالب المستندات', '/templates'),
+  _NavItem(
+      Icons.system_update_alt_outlined, 'إصدارات التطبيقات', '/app-versions'),
   // _NavItem(Icons.settings_outlined, 'الإعدادات', '/settings'),
 ];
 
@@ -375,6 +378,9 @@ class _LogoutButtonState extends State<_LogoutButton> {
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
                       style: TextStyle(
+                        // AnimatedDefaultTextStyle يستبدل النمط بالكامل، فيجب
+                        // تثبيت خط الثيم هنا وإلا سقط النص للخط الافتراضي.
+                        fontFamily: AppTextStyles.fontFamily,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: foreground,

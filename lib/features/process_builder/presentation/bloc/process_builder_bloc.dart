@@ -10,6 +10,8 @@ import '../../../institutions/domain/usecases/get_institutions_usecase.dart';
 import '../../../roles/domain/entities/role_by_department.dart';
 import '../../../roles/domain/usecases/get_roles_by_department_usecase.dart';
 import '../../../templates/domain/usecases/get_templates_usecase.dart';
+import '../../../templates/presentation/bloc/templates_bloc.dart'
+    show kTemplatesAllPageSize;
 import '../../../type_processes/domain/usecases/get_type_processes_usecase.dart';
 import '../../domain/entities/created_process.dart';
 import '../../domain/entities/notification_action_config.dart';
@@ -107,13 +109,15 @@ class ProcessBuilderBloc
     final orgsResult = await getOrganizations();
     final typesResult = await getTypeProcesses();
     // Templates feed the USER_TASK template picker and the GENERATE_PDF action.
-    final templatesResult = await getTemplates();
+    // Both must be able to render a template already linked to a stage, so the
+    // whole list is requested rather than the server's default first page.
+    final templatesResult = await getTemplates(limit: kTemplatesAllPageSize);
 
     emit(state.copyWith(
       bootStatus: RequestStatus.success,
       organizations: orgsResult.getOrElse(() => const []),
       typeProcesses: typesResult.getOrElse(() => const []),
-      templates: templatesResult.getOrElse(() => const []),
+      templates: templatesResult.fold((_) => const [], (p) => p.items),
       // The organization is the active one — no step-1 picker.
       organizationId: _activeOrgId,
       // The classification comes from the entry point (complaints page vs.
@@ -137,7 +141,7 @@ class ProcessBuilderBloc
 
     // Cascade dropdowns + the template picker need orgs/templates loaded too.
     final orgsResult = await getOrganizations();
-    final templatesResult = await getTemplates();
+    final templatesResult = await getTemplates(limit: kTemplatesAllPageSize);
     final detailsResult = await getProcessDetails(event.processId);
 
     final details = detailsResult.fold((_) => null, (d) => d);
@@ -166,7 +170,7 @@ class ProcessBuilderBloc
     emit(state.copyWith(
       bootStatus: RequestStatus.success,
       organizations: orgsResult.getOrElse(() => const []),
-      templates: templatesResult.getOrElse(() => const []),
+      templates: templatesResult.fold((_) => const [], (p) => p.items),
       createdProcess: CreatedProcess(
         id: details.process.id,
         name: details.process.name,

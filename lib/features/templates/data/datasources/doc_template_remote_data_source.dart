@@ -28,10 +28,22 @@ class DocTemplateRemoteDataSource {
 
   static const _ep = EndPoints();
 
-  Future<Either<Failure, dynamic>> getTemplates() {
+  /// `GET /api/document-templates` — server-side paginated + searched.
+  ///
+  /// The endpoint applies `defaultLimit: 10` when no `limit` is sent, so
+  /// omitting these silently truncates the list to the first 10 rows.
+  Future<Either<Failure, dynamic>> getTemplates({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) {
+    final q = <String, dynamic>{'page': '$page', 'limit': '$limit'};
+    if (search != null && search.trim().isNotEmpty) q['search'] = search.trim();
+
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: _ep.documentTemplates,
+      queryParameters: q,
     );
   }
 

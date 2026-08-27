@@ -4,6 +4,7 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../domain/entities/institution.dart';
 import '../../domain/entities/location_option.dart';
+import '../../domain/entities/type_location_option.dart';
 
 /// One hop in the drill-down trail (root -> parent -> sub-institution ...).
 class InstitutionCrumb extends Equatable {
@@ -20,6 +21,10 @@ class InstitutionsState extends Equatable {
   final RequestStatus status;
   final List<Institution> institutions;
   final List<LocationOption> locations;
+
+  /// Location types from `GET /api/type-location`. Their own list (not derived
+  /// from [locations]) so a freshly-created type with no locations still shows.
+  final List<TypeLocationOption> typeLocations;
   final String? error;
 
   final FormStatus formStatus;
@@ -29,6 +34,10 @@ class InstitutionsState extends Equatable {
   /// institution create form.
   final FormStatus locationFormStatus;
   final String? locationFormError;
+
+  /// Separate again for the nested "add location type" form.
+  final FormStatus typeLocationFormStatus;
+  final String? typeLocationFormError;
 
   /// Drill-down trail. Empty == root level (top-level institutions).
   final List<InstitutionCrumb> breadcrumb;
@@ -44,11 +53,14 @@ class InstitutionsState extends Equatable {
     this.status = RequestStatus.initial,
     this.institutions = const [],
     this.locations = const [],
+    this.typeLocations = const [],
     this.error,
     this.formStatus = FormStatus.idle,
     this.formError,
     this.locationFormStatus = FormStatus.idle,
     this.locationFormError,
+    this.typeLocationFormStatus = FormStatus.idle,
+    this.typeLocationFormError,
     this.breadcrumb = const [],
     this.searchQuery = '',
     this.currentPage = 1,
@@ -88,11 +100,14 @@ class InstitutionsState extends Equatable {
     RequestStatus? status,
     List<Institution>? institutions,
     List<LocationOption>? locations,
+    List<TypeLocationOption>? typeLocations,
     String? error,
     FormStatus? formStatus,
     String? formError,
     FormStatus? locationFormStatus,
     String? locationFormError,
+    FormStatus? typeLocationFormStatus,
+    String? typeLocationFormError,
     List<InstitutionCrumb>? breadcrumb,
     String? searchQuery,
     int? currentPage,
@@ -102,11 +117,15 @@ class InstitutionsState extends Equatable {
       status: status ?? this.status,
       institutions: institutions ?? this.institutions,
       locations: locations ?? this.locations,
+      typeLocations: typeLocations ?? this.typeLocations,
       error: error,
       formStatus: formStatus ?? this.formStatus,
       formError: formError,
       locationFormStatus: locationFormStatus ?? this.locationFormStatus,
       locationFormError: locationFormError,
+      typeLocationFormStatus:
+          typeLocationFormStatus ?? this.typeLocationFormStatus,
+      typeLocationFormError: typeLocationFormError,
       breadcrumb: breadcrumb ?? this.breadcrumb,
       searchQuery: searchQuery ?? this.searchQuery,
       currentPage: currentPage ?? this.currentPage,
@@ -119,11 +138,14 @@ class InstitutionsState extends Equatable {
         status,
         institutions,
         locations,
+        typeLocations,
         error,
         formStatus,
         formError,
         locationFormStatus,
         locationFormError,
+        typeLocationFormStatus,
+        typeLocationFormError,
         breadcrumb,
         searchQuery,
         currentPage,

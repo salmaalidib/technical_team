@@ -6,6 +6,7 @@ import '../bloc/institutions_bloc.dart';
 import '../bloc/institutions_state.dart';
 import 'create_institution_dialog.dart';
 import '../../../../shared/theme/app_dimens.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 
 class InstitutionsHeader extends StatelessWidget {
   const InstitutionsHeader({super.key});
@@ -112,10 +113,9 @@ class InstitutionsHeader extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  // styleFrom يستبدل نمط الثيم بالكامل، فيجب تثبيت الخط هنا
+                  // وإلا سقط النص إلى خط النظام.
+                  textStyle: AppTextStyles.labelLarge,
                 ),
               ),
             ),

@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/active_org/active_organization_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
+import '../../../institutions/presentation/bloc/institutions_bloc.dart';
+import '../../../institutions/presentation/bloc/institutions_event.dart';
+import '../../../institutions/presentation/widgets/create_institution_dialog.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/theme/app_dimens.dart';
@@ -33,6 +36,34 @@ class _SelectOrganizationPageState extends State<SelectOrganizationPage> {
     // arriving here straight after login (no prior load) still shows options.
     if (_cubit.state.organizations.isEmpty) {
       _cubit.load();
+    }
+  }
+
+  /// Escape hatch for an account that lands here with zero organizations:
+  /// creating one from this screen is the only way forward, since `/institutions`
+  /// sits behind the dashboard this user cannot reach yet.
+  ///
+  /// A fresh [InstitutionsBloc] is created for the dialog (the page has none of
+  /// its own) and `LoadInstitutions` primes the locations its optional picker
+  /// shows. On success the organization list is reloaded so the new institution
+  /// appears as a selectable card.
+  Future<void> _openCreateInstitution(BuildContext context) async {
+    final bloc = getIt<InstitutionsBloc>()..add(const LoadInstitutions());
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierColor: AppColors.scrim,
+        builder: (_) => BlocProvider.value(
+          value: bloc,
+          child: const CreateInstitutionDialog(),
+        ),
+      );
+      // The dialog pops itself only after a successful create, but it can also
+      // be dismissed — reloading either way costs one request and keeps the
+      // list honest.
+      await _cubit.load();
+    } finally {
+      await bloc.close();
     }
   }
 
@@ -75,8 +106,8 @@ class _SelectOrganizationPageState extends State<SelectOrganizationPage> {
     }
 
     if (state.organizations.isEmpty) {
-      return _ErrorState(
-        message: 'لا توجد مؤسسات متاحة لحسابك',
+      return _EmptyState(
+        onCreate: () => _openCreateInstitution(context),
         onRetry: () => _cubit.load(),
       );
     }
@@ -270,6 +301,98 @@ class _ErrorState extends StatelessWidget {
               foregroundColor: AppColors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 28),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Shown when the account resolves to zero organizations. Unlike [_ErrorState]
+/// this is not a failure — nothing went wrong, there is simply nothing to pick
+/// yet — so it leads with the create action and keeps the reload secondary.
+class _EmptyState extends StatelessWidget {
+  final VoidCallback onCreate;
+  final VoidCallback onRetry;
+
+  const _EmptyState({required this.onCreate, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: const BoxDecoration(
+            color: AppColors.lightPrimary,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.apartment_rounded,
+            color: AppColors.primary,
+            size: 56,
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'لا توجد مؤسسات متاحة لحسابك',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          'ابدأ بإنشاء مؤسسة لتتمكن من الدخول إلى النظام والعمل بها.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 28),
+        SizedBox(
+          height: 52,
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add_rounded, size: 24),
+            label: const Text(
+              'إنشاء مؤسسة',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 48,
+          width: double.infinity,
+          child: TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text(
+              'إعادة المحاولة',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.inputBackground,
+              foregroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),

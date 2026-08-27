@@ -81,6 +81,15 @@ class PageSizeChanged extends InstitutionsEvent {
 }
 
 /// Submits a new location.
+class CreateTypeLocationRequested extends InstitutionsEvent {
+  final String name;
+
+  const CreateTypeLocationRequested({required this.name});
+
+  @override
+  List<Object?> get props => [name];
+}
+
 class CreateLocationRequested extends InstitutionsEvent {
   final String name;
   final int typeLocationId;

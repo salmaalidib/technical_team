@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/form_status.dart';
@@ -10,6 +12,60 @@ import '../../domain/usecases/update_template_usecase.dart';
 import 'templates_event.dart';
 import 'templates_state.dart';
 
+/// Page size used by the templates list screen (infinite scroll) and by the
+/// wizard's searchable template dropdown.
+const int kTemplatesPageSize = 10;
+
+/// Page size for callers that need every template at once — the wizard picker
+/// must render templates already linked to a stage even when they fall on a
+/// later page.
+const int kTemplatesAllPageSize = 70;
+
+const Duration _kSearchDebounce = Duration(milliseconds: 350);
+
+/// Restartable debounce: each new event cancels the pending one. Mirrors the
+/// transformer in `FieldsBloc` so both dropdowns feel identical.
+EventTransformer<E> _debounceRestartable<E>(Duration duration) {
+  return (events, mapper) {
+    return events
+        .transform(_DebounceStreamTransformer<E>(duration))
+        .asyncExpand(mapper);
+  };
+}
+
+class _DebounceStreamTransformer<T> extends StreamTransformerBase<T, T> {
+  final Duration duration;
+  const _DebounceStreamTransformer(this.duration);
+
+  @override
+  Stream<T> bind(Stream<T> stream) {
+    Timer? timer;
+    late StreamController<T> controller;
+
+    controller = StreamController<T>(
+      onListen: () {
+        final sub = stream.listen(
+          (data) {
+            timer?.cancel();
+            timer = Timer(duration, () => controller.add(data));
+          },
+          onError: controller.addError,
+          onDone: () {
+            timer?.cancel();
+            controller.close();
+          },
+        );
+        controller.onCancel = () {
+          timer?.cancel();
+          return sub.cancel();
+        };
+      },
+    );
+
+    return controller.stream;
+  }
+}
+
 class TemplatesBloc extends Bloc<TemplatesEvent, TemplatesState> {
   final GetTemplatesUseCase getTemplates;
   final CreateTemplateUseCase createTemplate;
@@ -17,14 +73,24 @@ class TemplatesBloc extends Bloc<TemplatesEvent, TemplatesState> {
   final ExtractTemplateFieldsUseCase extractFields;
   final ExtractFieldsFromUploadUseCase extractFieldsFromUpload;
 
+  /// Page size for this bloc instance — set by [LoadTemplates.limit] so the
+  /// wizard picker and the list screen can use different sizes.
+  int _pageLimit;
+
   TemplatesBloc({
     required this.getTemplates,
     required this.createTemplate,
     required this.updateTemplate,
     required this.extractFields,
     required this.extractFieldsFromUpload,
-  }) : super(const TemplatesState()) {
+  })  : _pageLimit = kTemplatesPageSize,
+        super(const TemplatesState()) {
     on<LoadTemplates>(_onLoad);
+    on<TemplatesSearchChanged>(
+      _onSearchChanged,
+      transformer: _debounceRestartable(_kSearchDebounce),
+    );
+    on<TemplatesNextPageRequested>(_onNextPage);
     on<ResetTemplateForm>(_onResetForm);
     on<ExtractFromUploadRequested>(_onExtractFromUpload);
     on<CreateTemplateRequested>(_onCreate);
@@ -36,19 +102,85 @@ class TemplatesBloc extends Bloc<TemplatesEvent, TemplatesState> {
     LoadTemplates event,
     Emitter<TemplatesState> emit,
   ) async {
-    emit(state.copyWith(status: RequestStatus.loading, error: null));
+    _pageLimit = event.limit;
+    await _loadFirstPage('', emit);
+  }
 
-    final result = await getTemplates();
+  Future<void> _onSearchChanged(
+    TemplatesSearchChanged event,
+    Emitter<TemplatesState> emit,
+  ) async {
+    await _loadFirstPage(event.query.trim(), emit);
+  }
+
+  /// Loads page 1 with [search], replacing the accumulated items.
+  Future<void> _loadFirstPage(
+    String search,
+    Emitter<TemplatesState> emit,
+  ) async {
+    emit(state.copyWith(
+      status: RequestStatus.loading,
+      error: null,
+      search: search,
+      loadingMore: false,
+    ));
+
+    final result = await getTemplates(
+      page: 1,
+      limit: _pageLimit,
+      search: search.isEmpty ? null : search,
+    );
 
     result.fold(
       (failure) => emit(state.copyWith(
         status: RequestStatus.failure,
         error: failure.message,
       )),
-      (items) => emit(state.copyWith(
+      (page) => emit(state.copyWith(
         status: RequestStatus.success,
-        templates: items,
+        templates: page.items,
+        meta: page.meta,
+        error: null,
       )),
+    );
+  }
+
+  Future<void> _onNextPage(
+    TemplatesNextPageRequested event,
+    Emitter<TemplatesState> emit,
+  ) async {
+    if (state.loadingMore ||
+        state.status == RequestStatus.loading ||
+        !state.hasMore) {
+      return;
+    }
+
+    emit(state.copyWith(loadingMore: true, error: null));
+
+    final result = await getTemplates(
+      page: state.nextPage,
+      limit: _pageLimit,
+      search: state.search.isEmpty ? null : state.search,
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        loadingMore: false,
+        error: failure.message,
+      )),
+      (page) {
+        // Guard against a page arriving twice (double-fire, or a reload racing
+        // the append): keep only ids not already held.
+        final seen = state.templates.map((t) => t.id).toSet();
+        final fresh = page.items.where((t) => seen.add(t.id)).toList();
+
+        emit(state.copyWith(
+          loadingMore: false,
+          templates: [...state.templates, ...fresh],
+          meta: page.meta,
+          error: null,
+        ));
+      },
     );
   }
 

@@ -13,6 +13,7 @@ import 'package:technical_team/core/services/push_socket.dart';
 import 'package:technical_team/core/services/tray_service.dart';
 
 import 'package:technical_team/features/app_update/di/injection.dart';
+import 'package:technical_team/features/app_versions/di/injection.dart';
 import 'package:technical_team/features/app_update/presentation/bloc/app_update_bloc.dart';
 import 'package:technical_team/features/auth/di/injection.dart';
 import 'package:technical_team/features/departments/di/injection.dart';
@@ -65,6 +66,7 @@ void main() async {
   await setupEmployeesInjection();
   await setupProcessBuilderInjection();
   await setupAppUpdateInjection();
+  await setupAppVersionsInjection();
   await setupNotificationsInjection();
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق

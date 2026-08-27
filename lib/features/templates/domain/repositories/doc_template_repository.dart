@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/models/paginated_result.dart';
 import '../entities/doc_template.dart';
 import '../entities/extract_fields_result.dart';
 import '../entities/extracted_field.dart';
@@ -23,7 +24,11 @@ import '../entities/form_config.dart';
 /// Plus the read:
 /// * [getTemplates]   → `GET  /api/document-templates`
 abstract class DocTemplateRepository {
-  Future<Either<Failure, List<DocTemplate>>> getTemplates();
+  Future<Either<Failure, Paginated<DocTemplate>>> getTemplates({
+    int page,
+    int limit,
+    String? search,
+  });
 
   /// Create step 1: uploads the PDF and returns its extracted fields together
   /// with the `path`/`url` the backend assigned (fed into [createTemplate]).

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/searchable_field_dropdown.dart';
+import '../../../../shared/widgets/searchable_template_dropdown.dart';
 import '../../../fields/domain/entities/field_type.dart';
 import '../../domain/entities/notification_action_config.dart';
 import '../../domain/entities/process_stage.dart';
@@ -501,8 +502,16 @@ class _AssigneeToggle extends StatelessWidget {
   }
 }
 
-/// Multi-select for linking document templates to a USER_TASK stage. Mirrors
-/// the dynamic-fields picker: a popup checkbox list + chips for the selected.
+/// Links document templates to a USER_TASK stage.
+///
+/// Uses [SearchableTemplateDropdown] so it behaves exactly like the dynamic
+/// field pickers above it: a search box with server-side filtering and a
+/// lazily-paginated list, instead of a single popup holding every template.
+///
+/// Selection lives in the stage draft (not in `TemplatesBloc`), and the chips
+/// read from `state.templates` — loaded in full at wizard boot — so a template
+/// already linked to the stage still renders even when it is not on the page
+/// the dropdown currently shows.
 class _TemplatePicker extends StatelessWidget {
   final ProcessBuilderState state;
   final StageConfigDraft draft;
@@ -511,133 +520,18 @@ class _TemplatePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<ProcessBuilderBloc>();
-    final all = state.templates;
     final selectedIds = draft.templateIds.toSet();
     final selected =
-        all.where((t) => selectedIds.contains(t.id)).toList();
+        state.templates.where((t) => selectedIds.contains(t.id)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PopupMenuButton<void>(
-          tooltip: 'اختر القوالب',
-          enabled: all.isNotEmpty,
-          position: PopupMenuPosition.under,
-          constraints: const BoxConstraints(minWidth: 260, maxWidth: 360),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-          itemBuilder: (context) {
-            final localSelected = {...selectedIds};
-            return [
-              PopupMenuItem<void>(
-                enabled: false,
-                padding: EdgeInsets.zero,
-                child: StatefulBuilder(
-                  builder: (context, setLocal) {
-                    if (all.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          'لا توجد قوالب — أنشئ قوالب من صفحة القوالب',
-                          style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                      );
-                    }
-                    return ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 320),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final t in all)
-                              InkWell(
-                                onTap: () {
-                                  final nowSelected =
-                                      !localSelected.contains(t.id);
-                                  if (nowSelected) {
-                                    localSelected.add(t.id);
-                                  } else {
-                                    localSelected.remove(t.id);
-                                  }
-                                  bloc.add(StageTemplateToggled(
-                                      draft.stage.id, t.id, nowSelected));
-                                  setLocal(() {});
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  child: Row(
-                                    textDirection: TextDirection.rtl,
-                                    children: [
-                                      Checkbox(
-                                        value: localSelected.contains(t.id),
-                                        activeColor: AppColors.primary,
-                                        visualDensity: VisualDensity.compact,
-                                        onChanged: (v) {
-                                          final sel = v ?? false;
-                                          if (sel) {
-                                            localSelected.add(t.id);
-                                          } else {
-                                            localSelected.remove(t.id);
-                                          }
-                                          bloc.add(StageTemplateToggled(
-                                              draft.stage.id, t.id, sel));
-                                          setLocal(() {});
-                                        },
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          t.name,
-                                          textAlign: TextAlign.right,
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ];
-          },
-          child: Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              textDirection: TextDirection.rtl,
-              children: [
-                Expanded(
-                  child: Text(
-                    all.isEmpty
-                        ? 'لا توجد قوالب'
-                        : (selected.isEmpty
-                            ? 'اختر القوالب...'
-                            : '${selected.length} قالب محدد'),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: selected.isEmpty
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight:
-                          selected.isEmpty ? FontWeight.normal : FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textPrimary),
-              ],
-            ),
+        SearchableTemplateDropdown(
+          selectedIds: selectedIds,
+          selectedTemplates: selected,
+          onToggle: (template, isSelected) => bloc.add(
+            StageTemplateToggled(draft.stage.id, template.id, isSelected),
           ),
         ),
         if (selected.isNotEmpty) ...[

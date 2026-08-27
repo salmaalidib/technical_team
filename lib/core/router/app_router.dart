@@ -20,6 +20,7 @@ import '../../features/process_builder/presentation/widgets/create_process_wizar
 import '../../features/templates/presentation/pages/templates_page.dart';
 import '../../features/settings/presentation/pages/sett_page.dart' as settings;
 import '../../features/app_update/presentation/pages/force_update_page.dart';
+import '../../features/app_versions/presentation/pages/app_versions_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -193,6 +194,12 @@ class AppRouter {
                 child: ProcessDetailsPage(id: id),
               );
             },
+          ),
+          GoRoute(
+            path: '/app-versions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: AppVersionsPage(),
+            ),
           ),
           GoRoute(
             path: '/settings',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../domain/entities/institution.dart';
 import 'institution_action_button.dart';
 
@@ -113,6 +114,7 @@ class InstitutionsDataSource extends DataGridSource {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 14,
           height: 1.4,
           color: muted ? AppColors.textSecondary : AppColors.textPrimary,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../domain/entities/employee.dart';
 import 'employee_action_button.dart';
 import 'employee_status_badge.dart';
@@ -33,8 +34,7 @@ class EmployeesDataSource extends DataGridSource {
               DataGridCell<String>(columnName: 'name', value: e.fullName),
               DataGridCell<String>(columnName: 'userName', value: e.userName),
               DataGridCell<String>(columnName: 'email', value: e.email),
-              DataGridCell<String>(
-                  columnName: 'phone', value: e.phoneNumber),
+              DataGridCell<String>(columnName: 'phone', value: e.phoneNumber),
               DataGridCell<String>(
                   columnName: 'department', value: e.department?.name ?? '-'),
               DataGridCell<String>(
@@ -116,6 +116,7 @@ class EmployeesDataSource extends DataGridSource {
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 14,
           height: 1.4,
           color: muted ? AppColors.textSecondary : AppColors.textPrimary,

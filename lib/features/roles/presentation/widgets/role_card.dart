@@ -23,31 +23,28 @@ class RoleCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: AppColors.shadowFaint,
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _TopRow(role: role, toggling: toggling),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
+            // The Camunda group key is shown next to the role name as
+            // `roleCode`, so repeating it as its own field only made the card
+            // taller without adding information.
             _InfoField(label: 'المؤسسة', value: role.organizationName ?? '—'),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             _InfoField(label: 'القسم', value: role.departmentName ?? '—'),
-            const SizedBox(height: 14),
-            _InfoField(
-              label: 'مفتاح Camunda',
-              value: role.camundaGroupKey ?? '—',
-              monospace: true,
-            ),
           ],
         ),
       ),
@@ -68,16 +65,16 @@ class _TopRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child:
-              const Icon(Icons.shield_outlined, color: AppColors.white, size: 24),
+              const Icon(Icons.shield_outlined, color: AppColors.white, size: 19),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,30 +82,36 @@ class _TopRow extends StatelessWidget {
               Text(
                 role.roleName,
                 textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Directionality(
                 textDirection: TextDirection.ltr,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      role.roleCode,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                    Flexible(
+                      child: Text(
+                        role.roleCode,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     const Icon(Icons.code_rounded,
-                        size: 15, color: AppColors.textSecondary),
+                        size: 13, color: AppColors.textSecondary),
                   ],
                 ),
               ),
@@ -143,8 +146,11 @@ class _EditPermissionsButton extends StatelessWidget {
 
     return IconButton(
       tooltip: 'تعديل الصلاحيات',
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
       icon: const Icon(Icons.tune_rounded,
-          size: 22, color: AppColors.textSecondary),
+          size: 19, color: AppColors.textSecondary),
       onPressed: () {
         bloc.add(OpenEditPermissions(
           organizationId: role.organizationId,
@@ -175,8 +181,8 @@ class _StatusToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     if (toggling) {
       return const SizedBox(
-        width: 46,
-        height: 28,
+        width: 40,
+        height: 24,
         child: Center(
           child: SizedBox(
             width: 18,
@@ -190,6 +196,7 @@ class _StatusToggle extends StatelessWidget {
     return Switch.adaptive(
       value: role.isActive,
       activeColor: AppColors.primary,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       onChanged: (_) =>
           context.read<RolesBloc>().add(ToggleRoleStatus(role.id)),
     );
@@ -199,13 +206,8 @@ class _StatusToggle extends StatelessWidget {
 class _InfoField extends StatelessWidget {
   final String label;
   final String value;
-  final bool monospace;
 
-  const _InfoField({
-    required this.label,
-    required this.value,
-    this.monospace = false,
-  });
+  const _InfoField({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -217,21 +219,20 @@ class _InfoField extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 13,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 2),
         Text(
           value,
           textAlign: TextAlign.center,
-          textDirection: monospace ? TextDirection.ltr : null,
-          style: TextStyle(
-            color: monospace ? AppColors.primary : AppColors.textPrimary,
-            fontSize: monospace ? 13.5 : 15,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
-            fontFeatures:
-                monospace ? const [FontFeature.tabularFigures()] : null,
           ),
         ),
       ],

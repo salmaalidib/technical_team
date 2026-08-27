@@ -38,6 +38,23 @@ class InstitutionRemoteDataSource {
     );
   }
 
+  Future<Either<Failure, dynamic>> getTypeLocations() {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.typeLocations,
+    );
+  }
+
+  Future<Either<Failure, dynamic>> createTypeLocation(
+    Map<String, dynamic> body,
+  ) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.typeLocations,
+      body: body,
+    );
+  }
+
   Future<Either<Failure, dynamic>> createInstitution(
     Map<String, dynamic> body,
   ) {

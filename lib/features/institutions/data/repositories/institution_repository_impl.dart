@@ -7,6 +7,8 @@ import '../../domain/repositories/institution_repository.dart';
 import '../datasources/institution_remote_data_source.dart';
 import '../models/institution_model.dart';
 import '../models/location_model.dart';
+import '../models/type_location_model.dart';
+import '../../domain/entities/type_location_option.dart';
 
 class InstitutionRepositoryImpl implements InstitutionRepository {
   final InstitutionRemoteDataSource remote;
@@ -49,6 +51,46 @@ class InstitutionRepositoryImpl implements InstitutionRepository {
           return Right(list);
         } catch (_) {
           return const Left(ServerFailure('تعذّر قراءة قائمة المواقع.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<TypeLocationOption>>> getTypeLocations() async {
+    final result = await remote.getTypeLocations();
+    return result.fold<Either<Failure, List<TypeLocationOption>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final list = (_payload(body) as List)
+              .map((e) =>
+                  TypeLocationOptionModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return Right(list);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة أنواع المواقع.'));
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, TypeLocationOption>> createTypeLocation({
+    required String name,
+  }) async {
+    final result = await remote.createTypeLocation({'name': name.trim()});
+    return result.fold<Either<Failure, TypeLocationOption>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          return Right(
+            TypeLocationOptionModel.fromJson(
+              _payload(body) as Map<String, dynamic>,
+            ),
+          );
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة استجابة الخادم.'));
         }
       },
     );

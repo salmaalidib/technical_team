@@ -8,6 +8,8 @@ import '../domain/usecases/create_institution_usecase.dart';
 import '../domain/usecases/create_location_usecase.dart';
 import '../domain/usecases/get_institutions_usecase.dart';
 import '../domain/usecases/get_locations_usecase.dart';
+import '../domain/usecases/get_type_locations_usecase.dart';
+import '../domain/usecases/create_type_location_usecase.dart';
 import '../presentation/bloc/institutions_bloc.dart';
 
 Future<void> setupInstitutionsInjection() async {
@@ -47,12 +49,26 @@ Future<void> setupInstitutionsInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetTypeLocationsUseCase>()) {
+    getIt.registerLazySingleton<GetTypeLocationsUseCase>(
+      () => GetTypeLocationsUseCase(getIt<InstitutionRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<CreateTypeLocationUseCase>()) {
+    getIt.registerLazySingleton<CreateTypeLocationUseCase>(
+      () => CreateTypeLocationUseCase(getIt<InstitutionRepository>()),
+    );
+  }
+
   getIt.registerFactory<InstitutionsBloc>(
     () => InstitutionsBloc(
       getInstitutions: getIt<GetInstitutionsUseCase>(),
       getLocations: getIt<GetLocationsUseCase>(),
       createInstitution: getIt<CreateInstitutionUseCase>(),
       createLocation: getIt<CreateLocationUseCase>(),
+      getTypeLocations: getIt<GetTypeLocationsUseCase>(),
+      createTypeLocation: getIt<CreateTypeLocationUseCase>(),
     ),
   );
 }

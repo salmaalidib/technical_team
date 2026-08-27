@@ -9,9 +9,34 @@ abstract class TemplatesEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Loads the active document-templates list.
+/// Loads page 1 of the active document-templates list.
+///
+/// [limit] lets a caller that needs the whole list in one shot (the wizard's
+/// template picker, which must render already-linked templates) ask for a
+/// large page instead of the server default of 10.
 class LoadTemplates extends TemplatesEvent {
-  const LoadTemplates();
+  final int limit;
+
+  const LoadTemplates({this.limit = 10});
+
+  @override
+  List<Object?> get props => [limit];
+}
+
+/// Debounced search over the templates list — reloads page 1 with the term.
+class TemplatesSearchChanged extends TemplatesEvent {
+  final String query;
+
+  const TemplatesSearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}
+
+/// Appends the next page (infinite scroll). No-op when a load is already in
+/// flight or the last page has been reached.
+class TemplatesNextPageRequested extends TemplatesEvent {
+  const TemplatesNextPageRequested();
 }
 
 /// Resets the form/wizard status (called when opening the create/edit form).

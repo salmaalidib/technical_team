@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/models/paginated_result.dart';
 import '../../domain/entities/doc_template.dart';
 import '../../domain/entities/extract_fields_result.dart';
 import '../../domain/entities/extracted_field.dart';
@@ -31,16 +32,30 @@ class DocTemplateRepositoryImpl implements DocTemplateRepository {
   }
 
   @override
-  Future<Either<Failure, List<DocTemplate>>> getTemplates() async {
-    final result = await remote.getTemplates();
-    return result.fold<Either<Failure, List<DocTemplate>>>(
+  Future<Either<Failure, Paginated<DocTemplate>>> getTemplates({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final result =
+        await remote.getTemplates(page: page, limit: limit, search: search);
+    return result.fold<Either<Failure, Paginated<DocTemplate>>>(
       (failure) => Left(failure),
       (body) {
         try {
-          final list = _listPayload(body)
+          final data = _payload(body);
+          final items = _listPayload(body)
               .map((e) => DocTemplateModel.fromJson(e as Map<String, dynamic>))
               .toList();
-          return Right(list);
+
+          // A plain list (no envelope) means the whole result came back at
+          // once — treat it as a single complete page.
+          final meta = data is Map<String, dynamic> && data['pagination'] is Map
+              ? PageMeta.fromJson(
+                  (data['pagination'] as Map).cast<String, dynamic>())
+              : PageMeta.empty;
+
+          return Right(Paginated<DocTemplate>(items: items, meta: meta));
         } catch (_) {
           return const Left(ServerFailure('تعذّر قراءة قائمة القوالب.'));
         }
