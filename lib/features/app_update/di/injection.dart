@@ -56,7 +56,10 @@ Future<void> setupAppUpdateInjection() async {
 
   if (!getIt.isRegistered<AppUpdateRemoteDataSource>()) {
     getIt.registerLazySingleton<AppUpdateRemoteDataSource>(
-      () => AppUpdateRemoteDataSource(),
+      () => AppUpdateRemoteDataSource(
+        currentVersion: packageInfo.version,
+        currentBuildNumber: packageInfo.buildNumber,
+      ),
     );
   }
 
