@@ -5,6 +5,7 @@ import '../../../../core/enums/request_status.dart';
 import '../../../departments/domain/usecases/get_leaf_departments_usecase.dart';
 import '../../domain/usecases/create_role_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
+import '../../domain/usecases/get_role_catalog_usecase.dart';
 import '../../domain/usecases/get_role_permissions_usecase.dart';
 import '../../domain/usecases/get_roles_by_department_usecase.dart';
 import '../../domain/usecases/get_roles_usecase.dart';
@@ -33,6 +34,10 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   /// boxes when the edit dialog opens.
   final GetRolePermissionsUseCase getRolePermissions;
 
+  /// Every role defined in the system — the create form's dropdown, so an
+  /// existing role is linked instead of redefined under a duplicate code.
+  final GetRoleCatalogUseCase getRoleCatalog;
+
   RolesBloc({
     required this.getRoles,
     required this.createRole,
@@ -42,10 +47,12 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
     required this.getPermissions,
     required this.saveRolePermissions,
     required this.getRolePermissions,
+    required this.getRoleCatalog,
   }) : super(const RolesState()) {
     on<LoadRoles>(_onLoad);
     on<LoadLeafDepartments>(_onLoadLeaves);
     on<LoadPermissions>(_onLoadPermissions);
+    on<LoadRoleCatalog>(_onLoadRoleCatalog);
     on<CreateRoleRequested>(_onCreate);
     on<ToggleRoleStatus>(_onToggle);
     on<LoadRolesByDepartment>(_onLoadByDepartment);
@@ -121,6 +128,26 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
     );
   }
 
+  Future<void> _onLoadRoleCatalog(
+    LoadRoleCatalog event,
+    Emitter<RolesState> emit,
+  ) async {
+    emit(state.copyWith(catalogStatus: RequestStatus.loading));
+
+    final result = await getRoleCatalog();
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        catalogStatus: RequestStatus.failure,
+        actionError: failure.message,
+      )),
+      (catalog) => emit(state.copyWith(
+        catalogStatus: RequestStatus.success,
+        roleCatalog: catalog,
+      )),
+    );
+  }
+
   /// Creating a role with permissions is two requests: the role first, then the
   /// permission links (which key off the returned `role_id`).
   ///
@@ -137,6 +164,7 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
     ));
 
     final result = await createRole(
+      roleId: event.roleId,
       name: event.name,
       code: event.code,
       organizationId: event.organizationId,
@@ -181,6 +209,9 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
         // under — they are the same in practice, but the list must stay
         // consistent with what was last loaded.
         add(LoadRoles(state.loadedOrgId ?? event.organizationId));
+        // Defining a new role adds a row to `roles`, so the dropdown's
+        // options are stale — linking an existing one leaves them unchanged.
+        if (event.roleId == null) add(const LoadRoleCatalog());
       },
     );
   }

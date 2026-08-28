@@ -14,6 +14,11 @@ import '../bloc/roles_state.dart';
 import 'permission_picker.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
+/// How the form supplies the role: reuse one already defined in `roles`, or
+/// define a new one. The backend enforces the same split — it accepts either
+/// `role_id` or `name` + `code`, never both.
+enum _RoleMode { existing, create }
+
 class CreateRoleDialog extends StatefulWidget {
   const CreateRoleDialog({super.key});
 
@@ -24,6 +29,13 @@ class CreateRoleDialog extends StatefulWidget {
 class _CreateRoleDialogState extends State<CreateRoleDialog> {
   final _nameController = TextEditingController();
   final _codeController = TextEditingController();
+
+  /// Defaults to reusing an existing role — the common case, and the one that
+  /// keeps `roles` free of duplicate definitions.
+  _RoleMode _mode = _RoleMode.existing;
+
+  /// The picked `roles.id` in [_RoleMode.existing]. Null until chosen.
+  int? _selectedRoleId;
   // The organization is the user's active one, chosen once after login.
   late final int? _organizationId =
       getIt<ActiveOrganizationCubit>().activeOrgId;
@@ -51,9 +63,10 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
       if (!mounted) return;
       final bloc = context.read<RolesBloc>();
       if (orgId != null) bloc.add(LoadLeafDepartments(orgId));
-      // Permission options don't depend on the organization, so they load
-      // regardless of whether one is active.
+      // Neither the permission options nor the role catalog depend on the
+      // organization, so both load regardless of whether one is active.
       bloc.add(const LoadPermissions());
+      bloc.add(const LoadRoleCatalog());
     });
   }
 
@@ -74,22 +87,31 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
     return null;
   }
 
+  /// True when the fields the active mode needs are filled in.
+  bool get _roleFieldsValid => switch (_mode) {
+        _RoleMode.existing => _selectedRoleId != null,
+        _RoleMode.create =>
+          _nameController.text.trim().isNotEmpty && _codeError == null,
+      };
+
   void _submit(BuildContext context) {
     setState(() => _touched = true);
-    final name = _nameController.text.trim();
     final orgId = _organizationId;
-    if (name.isEmpty ||
-        _codeError != null ||
+    if (!_roleFieldsValid ||
         orgId == null ||
         _departmentId == null ||
         _selectedPermissionIds.isEmpty) {
       return;
     }
 
+    final existing = _mode == _RoleMode.existing;
+
     context.read<RolesBloc>().add(
           CreateRoleRequested(
-            name: name,
-            code: _codeController.text.trim(),
+            // Exactly one mode travels: the backend rejects both together.
+            roleId: existing ? _selectedRoleId : null,
+            name: existing ? null : _nameController.text.trim(),
+            code: existing ? null : _codeController.text.trim(),
             organizationId: orgId,
             departmentId: _departmentId!,
             parentId: _parentId,
@@ -149,7 +171,7 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _nameAndCode(narrow),
+                          _roleSection(state, narrow),
                           const SizedBox(height: 20),
                           const _Label('القسم *'),
                           const SizedBox(height: 8),
@@ -207,6 +229,32 @@ class _CreateRoleDialogState extends State<CreateRoleDialog> {
           ),
         );
       },
+    );
+  }
+
+  /// The role picker: a segmented switch between reusing an existing role and
+  /// defining a new one, followed by whichever input that mode needs.
+  Widget _roleSection(RolesState state, bool narrow) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _Label('الدور *'),
+        const SizedBox(height: 8),
+        _ModeSwitch(
+          mode: _mode,
+          onChanged: (m) => setState(() => _mode = m),
+        ),
+        const SizedBox(height: 16),
+        if (_mode == _RoleMode.existing)
+          _ExistingRoleField(
+            state: state,
+            value: _selectedRoleId,
+            showError: _touched && _selectedRoleId == null,
+            onChanged: (v) => setState(() => _selectedRoleId = v),
+          )
+        else
+          _nameAndCode(narrow),
+      ],
     );
   }
 
@@ -359,6 +407,129 @@ class _ParentRoleField extends StatelessWidget {
       // DropdownButtonFormField gives no other way back to null.
       allowClear: true,
       clearLabel: 'بدون أب (دور رئيسي)',
+      onChanged: onChanged,
+    );
+  }
+}
+
+/// Segmented control choosing between linking an existing role and defining a
+/// new one.
+class _ModeSwitch extends StatelessWidget {
+  final _RoleMode mode;
+  final ValueChanged<_RoleMode> onChanged;
+
+  const _ModeSwitch({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.inputBackground,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ModeTab(
+              label: 'دور موجود',
+              selected: mode == _RoleMode.existing,
+              onTap: () => onChanged(_RoleMode.existing),
+            ),
+          ),
+          Expanded(
+            child: _ModeTab(
+              label: 'دور جديد',
+              selected: mode == _RoleMode.create,
+              onTap: () => onChanged(_RoleMode.create),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ModeTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dropdown over every role defined in the system. Picking one links it to the
+/// chosen department instead of defining a duplicate under a new code.
+class _ExistingRoleField extends StatelessWidget {
+  final RolesState state;
+  final int? value;
+  final bool showError;
+  final ValueChanged<int?> onChanged;
+
+  const _ExistingRoleField({
+    required this.state,
+    required this.value,
+    required this.showError,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.catalogStatus == RequestStatus.loading ||
+        state.catalogStatus == RequestStatus.initial) {
+      return const _DisabledField(
+        text: 'جاري تحميل الأدوار...',
+        showSpinner: true,
+      );
+    }
+
+    if (state.catalogStatus == RequestStatus.failure) {
+      return const _DisabledField(text: 'تعذّر تحميل الأدوار');
+    }
+
+    if (state.roleCatalog.isEmpty) {
+      return const _DisabledField(
+        text: 'لا توجد أدوار معرّفة — أنشئ دوراً جديداً',
+      );
+    }
+
+    return _IdDropdown(
+      hint: 'اختر الدور...',
+      value: value,
+      items: {
+        for (final r in state.roleCatalog) r.id: '${r.name} — ${r.code}',
+      },
+      errorText: showError ? 'هذا الحقل مطلوب' : null,
       onChanged: onChanged,
     );
   }

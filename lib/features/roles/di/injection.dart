@@ -7,6 +7,7 @@ import '../data/repositories/role_repository_impl.dart';
 import '../domain/repositories/role_repository.dart';
 import '../domain/usecases/create_role_usecase.dart';
 import '../domain/usecases/get_permissions_usecase.dart';
+import '../domain/usecases/get_role_catalog_usecase.dart';
 import '../domain/usecases/get_role_permissions_usecase.dart';
 import '../domain/usecases/get_roles_by_department_usecase.dart';
 import '../domain/usecases/get_roles_usecase.dart';
@@ -60,6 +61,12 @@ Future<void> setupRolesInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetRoleCatalogUseCase>()) {
+    getIt.registerLazySingleton<GetRoleCatalogUseCase>(
+      () => GetRoleCatalogUseCase(getIt<RoleRepository>()),
+    );
+  }
+
   if (!getIt.isRegistered<GetRolePermissionsUseCase>()) {
     getIt.registerLazySingleton<GetRolePermissionsUseCase>(
       () => GetRolePermissionsUseCase(getIt<RoleRepository>()),
@@ -82,6 +89,7 @@ Future<void> setupRolesInjection() async {
       getPermissions: getIt<GetPermissionsUseCase>(),
       saveRolePermissions: getIt<SaveRolePermissionsUseCase>(),
       getRolePermissions: getIt<GetRolePermissionsUseCase>(),
+      getRoleCatalog: getIt<GetRoleCatalogUseCase>(),
     ),
   );
 }

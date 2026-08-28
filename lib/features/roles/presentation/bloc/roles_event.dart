@@ -43,9 +43,22 @@ class LoadPermissions extends RolesEvent {
   List<Object?> get props => [audience];
 }
 
+/// Loads every role defined in `roles` — the create form's dropdown of
+/// existing roles, so a role already in the system is linked rather than
+/// redefined under a duplicate code.
+class LoadRoleCatalog extends RolesEvent {
+  const LoadRoleCatalog();
+}
+
 class CreateRoleRequested extends RolesEvent {
-  final String name;
-  final String code;
+  /// Id of an existing role to link. Mutually exclusive with [name] / [code];
+  /// exactly one of the two modes must be set.
+  final int? roleId;
+
+  /// Name and code of a role to define. Both null when [roleId] is used.
+  final String? name;
+  final String? code;
+
   final int organizationId;
   final int departmentId;
 
@@ -58,8 +71,9 @@ class CreateRoleRequested extends RolesEvent {
   final List<int> permissionIds;
 
   const CreateRoleRequested({
-    required this.name,
-    required this.code,
+    this.roleId,
+    this.name,
+    this.code,
     required this.organizationId,
     required this.departmentId,
     this.parentId,
@@ -67,8 +81,15 @@ class CreateRoleRequested extends RolesEvent {
   });
 
   @override
-  List<Object?> get props =>
-      [name, code, organizationId, departmentId, parentId, permissionIds];
+  List<Object?> get props => [
+        roleId,
+        name,
+        code,
+        organizationId,
+        departmentId,
+        parentId,
+        permissionIds,
+      ];
 }
 
 class ToggleRoleStatus extends RolesEvent {

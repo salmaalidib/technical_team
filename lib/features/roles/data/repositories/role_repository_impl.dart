@@ -4,12 +4,14 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/permission.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../../domain/entities/role_by_department.dart';
+import '../../domain/entities/role_catalog_item.dart';
 import '../../domain/entities/role_permissions.dart';
 import '../../domain/repositories/role_repository.dart';
 import '../datasources/role_remote_data_source.dart';
 import '../models/permission_model.dart';
 import '../models/role_assignment_model.dart';
 import '../models/role_by_department_model.dart';
+import '../models/role_catalog_item_model.dart';
 import '../models/role_permissions_model.dart';
 
 class RoleRepositoryImpl implements RoleRepository {
@@ -43,16 +45,42 @@ class RoleRepositoryImpl implements RoleRepository {
   }
 
   @override
+  Future<Either<Failure, List<RoleCatalogItem>>> getRoleCatalog() async {
+    final result = await remote.getRoleCatalog();
+    return result.fold<Either<Failure, List<RoleCatalogItem>>>(
+      (failure) => Left(failure),
+      (body) {
+        try {
+          final list = (_payload(body) as List)
+              .map((e) =>
+                  RoleCatalogItemModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return Right(list);
+        } catch (_) {
+          return const Left(ServerFailure('تعذّر قراءة قائمة الأدوار المعرّفة.'));
+        }
+      },
+    );
+  }
+
+  @override
   Future<Either<Failure, RoleAssignment>> createRole({
-    required String name,
-    required String code,
+    int? roleId,
+    String? name,
+    String? code,
     required int organizationId,
     required int departmentId,
     int? parentId,
   }) async {
     final result = await remote.createRole({
-      'name': name.trim(),
-      'code': code.trim(),
+      // The backend rejects unknown keys and treats `role_id` and `name`/`code`
+      // as mutually exclusive, so only the chosen mode's keys are sent.
+      if (roleId != null)
+        'role_id': roleId
+      else ...{
+        'name': name?.trim(),
+        'code': code?.trim(),
+      },
       'organization_id': organizationId,
       'department_id': departmentId,
       // The backend validates `parent_id` as a positive integer or null, so a

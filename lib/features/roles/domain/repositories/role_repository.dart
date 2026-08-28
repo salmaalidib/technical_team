@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/permission.dart';
 import '../entities/role_assignment.dart';
 import '../entities/role_by_department.dart';
+import '../entities/role_catalog_item.dart';
 import '../entities/role_permissions.dart';
 
 /// Role-assignment operations backed by `/api/role`.
@@ -16,11 +17,22 @@ abstract class RoleRepository {
   /// without it.
   Future<Either<Failure, List<RoleAssignment>>> getRoles(int organizationId);
 
+  /// Every role defined in `roles`, independent of any organization — the
+  /// option list for linking an existing role rather than defining a new one.
+  Future<Either<Failure, List<RoleCatalogItem>>> getRoleCatalog();
+
+  /// Links a role to an (organization, department) pair.
+  ///
+  /// Exactly one of the two modes must be supplied, matching the backend's
+  /// validation: [roleId] reuses a role that already exists, while [name] +
+  /// [code] define a new one. Sending both, or neither, is a 400.
+  ///
   /// [parentId] is the link id of the role above this one in the hierarchy —
   /// null creates a root role, which the backend accepts.
   Future<Either<Failure, RoleAssignment>> createRole({
-    required String name,
-    required String code,
+    int? roleId,
+    String? name,
+    String? code,
     required int organizationId,
     required int departmentId,
     int? parentId,

@@ -6,6 +6,7 @@ import '../../../departments/domain/entities/leaf_department.dart';
 import '../../domain/entities/permission.dart';
 import '../../domain/entities/role_assignment.dart';
 import '../../domain/entities/role_by_department.dart';
+import '../../domain/entities/role_catalog_item.dart';
 
 class RolesState extends Equatable {
   /// Roles list load.
@@ -34,6 +35,11 @@ class RolesState extends Equatable {
   /// All permissions in the system: the create form's checkbox options.
   final RequestStatus permissionsStatus;
   final List<Permission> permissions;
+
+  /// Every role defined in `roles` — the create form's "existing role"
+  /// dropdown. Independent of [roles], which holds this organization's links.
+  final RequestStatus catalogStatus;
+  final List<RoleCatalogItem> roleCatalog;
 
   /// Set when the role was created but attaching its permissions failed.
   /// The role exists, so the dialog closes and this is surfaced as a warning
@@ -72,6 +78,8 @@ class RolesState extends Equatable {
     this.byDeptId,
     this.permissionsStatus = RequestStatus.initial,
     this.permissions = const [],
+    this.catalogStatus = RequestStatus.initial,
+    this.roleCatalog = const [],
     this.partialWarning,
     this.editPermsStatus = RequestStatus.initial,
     this.editInitialIds = const {},
@@ -96,6 +104,8 @@ class RolesState extends Equatable {
     int? byDeptId,
     RequestStatus? permissionsStatus,
     List<Permission>? permissions,
+    RequestStatus? catalogStatus,
+    List<RoleCatalogItem>? roleCatalog,
     String? partialWarning,
     RequestStatus? editPermsStatus,
     Set<int>? editInitialIds,
@@ -119,6 +129,8 @@ class RolesState extends Equatable {
       byDeptId: byDeptId ?? this.byDeptId,
       permissionsStatus: permissionsStatus ?? this.permissionsStatus,
       permissions: permissions ?? this.permissions,
+      catalogStatus: catalogStatus ?? this.catalogStatus,
+      roleCatalog: roleCatalog ?? this.roleCatalog,
       // One-shot, like actionError: cleared unless explicitly re-supplied.
       partialWarning: partialWarning,
       editPermsStatus: editPermsStatus ?? this.editPermsStatus,
@@ -146,6 +158,8 @@ class RolesState extends Equatable {
         byDeptId,
         permissionsStatus,
         permissions,
+        catalogStatus,
+        roleCatalog,
         partialWarning,
         editPermsStatus,
         editInitialIds,

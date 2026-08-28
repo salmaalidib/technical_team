@@ -39,6 +39,8 @@ class EndPoints {
 
   // ===== role (bearer token required) =====
   String get roles => 'api/role/'; // GET list · POST create
+  String get roleCatalog =>
+      'api/role/catalog'; // GET كل الأدوار المعرّفة في جدول roles (id + name + code)
   String roleToggleStatus(Object id) =>
       'api/role/$id/toggle-status'; // PATCH is_active
   String rolesByDepartment(Object departmentId) =>

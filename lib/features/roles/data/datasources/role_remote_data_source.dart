@@ -25,6 +25,15 @@ class RoleRemoteDataSource {
     );
   }
 
+  /// Every role defined in the system, regardless of organization — the
+  /// option list for picking an existing role instead of defining a new one.
+  Future<Either<Failure, dynamic>> getRoleCatalog() {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.roleCatalog,
+    );
+  }
+
   Future<Either<Failure, dynamic>> createRole(Map<String, dynamic> body) {
     return api.makeRequest(
       method: ApiMethod.post,

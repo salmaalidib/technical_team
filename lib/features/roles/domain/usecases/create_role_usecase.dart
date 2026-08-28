@@ -9,14 +9,18 @@ class CreateRoleUseCase {
 
   CreateRoleUseCase(this.repository);
 
+  /// Either [roleId] (link an existing role) or [name] + [code] (define a new
+  /// one) — the backend rejects both together and neither at all.
   Future<Either<Failure, RoleAssignment>> call({
-    required String name,
-    required String code,
+    int? roleId,
+    String? name,
+    String? code,
     required int organizationId,
     required int departmentId,
     int? parentId,
   }) {
     return repository.createRole(
+      roleId: roleId,
       name: name,
       code: code,
       organizationId: organizationId,
