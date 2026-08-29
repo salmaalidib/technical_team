@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import 'dialog_kit.dart';
 import 'field_form_kit.dart';
 import '../../../../shared/theme/app_dimens.dart';
@@ -124,7 +125,10 @@ class OptionsEditor extends StatelessWidget {
                   child: RichText(
                     textAlign: TextAlign.right,
                     text: TextSpan(
+                      // RichText لا يرث DefaultTextStyle كما يفعل Text، فيجب
+                      // تثبيت خط التطبيق هنا وإلا سقط النص للخط الافتراضي.
                       style: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
                         color: AppColors.textSecondary,
                         fontSize: 12,
                         height: 1.5,
@@ -133,6 +137,7 @@ class OptionsEditor extends StatelessWidget {
                         const TextSpan(
                           text: 'تنبيه: ',
                           style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
                             color: AppColors.error,
                             fontWeight: FontWeight.w800,
                           ),
@@ -146,6 +151,7 @@ class OptionsEditor extends StatelessWidget {
                         const TextSpan(
                           text: '\${value == "approved"}',
                           style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),

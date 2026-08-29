@@ -342,7 +342,7 @@ class _UpdateEmployeeDialogState extends State<UpdateEmployeeDialog> {
       final fingerprint = await getIt<KeyPackageCryptoService>()
           .fingerprintPublicKey(_generatedPublicKey!);
       debugPrint('[KeyRenewal] employeeId = ${_e.id}');
-      debugPrint('[KeyRenewal] endpoint = api/employees/${_e.id}');
+      debugPrint('[KeyRenewal] endpoint = api/employees/admin/${_e.id}');
       debugPrint(
         '[KeyRenewal] publicKey included = ${payload.containsKey('public_key')}',
       );

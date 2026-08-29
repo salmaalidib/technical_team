@@ -9,6 +9,7 @@ import '../../features/fields/presentation/bloc/fields_state.dart';
 import '../../features/fields/presentation/widgets/create_field_dialog.dart';
 import '../../features/process_builder/domain/entities/widget_config.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../../shared/theme/app_dimens.dart';
 
 /// Selection behaviour of [SearchableFieldDropdown].
@@ -676,7 +677,10 @@ class _HighlightedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // fontFamily صريح: هذا النمط يُستخدم أيضاً داخل RichText أدناه، وهو لا
+    // يرث DefaultTextStyle كما يفعل Text.
     final base = TextStyle(
+      fontFamily: AppTextStyles.fontFamily,
       fontSize: 14,
       color: AppColors.textPrimary,
       fontWeight: selected ? FontWeight.w700 : FontWeight.w400,

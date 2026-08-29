@@ -68,13 +68,14 @@ class ProcessDetailsModel extends ProcessDetails {
   static AssignmentRole _role(Map r) {
     return AssignmentRole(
       id: (r['id'] as num).toInt(),
+      name: _nameOf(r['name']),
       isActive: r['is_active'] == true,
       department: _nameOf(r['department']),
       organization: _nameOf(r['organization']),
     );
   }
 
-  /// The backend returns `organization`/`department` either as a plain name
+  /// The backend returns `name`/`organization`/`department` either as a plain name
   /// string or as an object `{ name: ... }` (or null). Normalize all three to
   /// the name string.
   static String? _nameOf(dynamic value) {

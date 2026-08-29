@@ -121,7 +121,7 @@ String get registerEmployee => 'api/auth/register/employee/';
   // ===== employees (bearer token required) =====
   String get employees => 'api/employees'; // GET list (paginated + search)
   String employeeById(Object id) =>
-      'api/employees/$id'; // GET one · PUT update
+      'api/employees/admin/$id'; // GET one · PUT update
 
   // ===== notifications (bearer token required) =====
   String get myNotifications =>

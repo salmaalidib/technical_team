@@ -46,7 +46,7 @@ class ApiService {
 
       final status = response.statusCode ?? 0;
       final isKeyRenewal = method == ApiMethod.put &&
-          RegExp(r'^api/employees/\d+$').hasMatch(endPoint) &&
+          RegExp(r'^api/employees/admin/\d+$').hasMatch(endPoint) &&
           body?.containsKey('public_key') == true;
       if (isKeyRenewal) {
         debugPrint('[KeyRenewal] response status = $status');
@@ -61,7 +61,7 @@ class ApiService {
       return Left(_mapResponse(response.statusCode, response.data));
     } on dio.DioException catch (e) {
       if (method == ApiMethod.put &&
-          RegExp(r'^api/employees/\d+$').hasMatch(endPoint) &&
+          RegExp(r'^api/employees/admin/\d+$').hasMatch(endPoint) &&
           body?.containsKey('public_key') == true) {
         debugPrint(
           '[KeyRenewal] response status = ${e.response?.statusCode ?? '(no response)'}',

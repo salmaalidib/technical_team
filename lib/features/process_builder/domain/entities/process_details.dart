@@ -114,19 +114,21 @@ class StageAssignment extends Equatable {
 
 class AssignmentRole extends Equatable {
   final int id;
+  final String? name;
   final bool isActive;
   final String? department;
   final String? organization;
 
   const AssignmentRole({
     required this.id,
+    this.name,
     required this.isActive,
     this.department,
     this.organization,
   });
 
   @override
-  List<Object?> get props => [id, isActive, department, organization];
+  List<Object?> get props => [id, name, isActive, department, organization];
 }
 
 class ProcessValidation extends Equatable {
