@@ -146,6 +146,7 @@ class _CreateInstitutionDialogState extends State<CreateInstitutionDialog> {
                           hint: state.locations.isEmpty
                               ? 'لا توجد مواقع — أضف موقعًا'
                               : 'اختر الموقع...',
+                          searchHint: 'ابحث في المواقع...',
                           value: _locationId,
                           items: {
                             for (final l in state.locations) l.id: l.name,

@@ -16,6 +16,7 @@ import '../../../key_management/domain/usecases/get_connected_usb_devices.dart';
 import '../../../key_management/domain/usecases/create_usb_bound_key.dart';
 import '../../../key_management/presentation/widgets/usb_device_picker_dialog.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/searchable_id_dropdown.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
 import '../bloc/employees_state.dart';
@@ -1124,47 +1125,12 @@ class _AppDropdown extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<int>(
-          initialValue: items.containsKey(value) ? value : null,
-          isExpanded: true,
-          decoration: InputDecoration(
-            errorText: errorText,
-            filled: true,
-            fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.6,
-              ),
-            ),
-          ),
-          hint: Text(
-            hint,
-            textAlign: TextAlign.right,
-          ),
-          items: items.entries
-              .map(
-                (e) => DropdownMenuItem<int>(
-                  value: e.key,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      e.value,
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
+        SearchableIdDropdown(
+          hint: hint,
+          value: value,
+          items: items,
+          errorText: errorText,
+          searchHint: 'ابحث في $label...',
           onChanged: onChanged,
         ),
       ],

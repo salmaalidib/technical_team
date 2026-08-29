@@ -14,6 +14,7 @@ import '../../domain/entities/widget_config.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
+import 'process_animations.dart';
 import 'wizard_kit.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -40,12 +41,15 @@ class Step4CustomizeStages extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 20),
-            for (final stage in stages)
-              _StageCard(
-                stage: stage,
-                draft: state.drafts[stage.id],
-                expanded: state.expandedStageId == stage.id,
-                state: state,
+            for (var i = 0; i < stages.length; i++)
+              AppEnter(
+                index: i,
+                child: _StageCard(
+                  stage: stages[i],
+                  draft: state.drafts[stages[i].id],
+                  expanded: state.expandedStageId == stages[i].id,
+                  state: state,
+                ),
               ),
           ],
         );
@@ -69,7 +73,9 @@ class _StageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: AppMotion.normal,
+      curve: AppMotion.curve,
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -78,6 +84,15 @@ class _StageCard extends StatelessWidget {
           color: expanded ? AppColors.primary : AppColors.border,
           width: expanded ? 1.6 : 1.2,
         ),
+        boxShadow: expanded
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,17 +104,29 @@ class _StageCard extends StatelessWidget {
                 .add(StageExpansionToggled(stage.id)),
             child: _CardHeader(stage: stage, draft: draft, expanded: expanded),
           ),
-          if (expanded && draft != null) ...[
-            const Divider(height: 1, color: AppColors.border),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
-              child: draft!.locked
-                  ? const _LockedStageNotice()
-                  : (stage.isUserTask
-                      ? _UserTaskEditor(state: state, draft: draft!)
-                      : _ServiceTaskEditor(state: state, draft: draft!)),
-            ),
-          ],
+          // المحرّر ينفتح وينطوي بحركة ارتفاع بدل الظهور المفاجئ.
+          AnimatedSize(
+            duration: AppMotion.normal,
+            curve: AppMotion.curve,
+            alignment: Alignment.topCenter,
+            child: (expanded && draft != null)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Divider(height: 1, color: AppColors.border),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+                        child: draft!.locked
+                            ? const _LockedStageNotice()
+                            : (stage.isUserTask
+                                ? _UserTaskEditor(state: state, draft: draft!)
+                                : _ServiceTaskEditor(
+                                    state: state, draft: draft!)),
+                      ),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
     );
@@ -153,11 +180,14 @@ class _CardHeader extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          Container(
+          AnimatedContainer(
+            duration: AppMotion.normal,
+            curve: AppMotion.curve,
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: expanded ? AppColors.primary : accent.withOpacity(0.12),
+              color:
+                  expanded ? AppColors.primary : accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             alignment: Alignment.center,
@@ -196,12 +226,17 @@ class _CardHeader extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  _subtitle,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+                // الملخّص يتغيّر مع كل تعديل في المحرّر، فيتبدّل بتلاشٍ قصير.
+                AnimatedSwitcher(
+                  duration: AppMotion.fast,
+                  child: Text(
+                    _subtitle,
+                    key: ValueKey(_subtitle),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -213,11 +248,15 @@ class _CardHeader extends StatelessWidget {
                 size: 18, color: AppColors.secondary),
             const SizedBox(width: 6),
           ],
-          Icon(
-            expanded
-                ? Icons.keyboard_arrow_up_rounded
-                : Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondary,
+          // سهم واحد يدور نصف دورة بدل تبديل أيقونتين.
+          AnimatedRotation(
+            duration: AppMotion.normal,
+            curve: AppMotion.curve,
+            turns: expanded ? 0.5 : 0,
+            child: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -361,7 +400,8 @@ class _IsAssignmentToggle extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         title: const Row(
           textDirection: TextDirection.rtl,
           children: [
@@ -544,8 +584,8 @@ class _TemplatePicker extends StatelessWidget {
               for (final t in selected)
                 _SelectedChip(
                   label: t.name,
-                  onRemove: () => bloc.add(
-                      StageTemplateToggled(draft.stage.id, t.id, false)),
+                  onRemove: () => bloc
+                      .add(StageTemplateToggled(draft.stage.id, t.id, false)),
                 ),
             ],
           ),
@@ -616,8 +656,7 @@ class _AssignmentsEditor extends StatelessWidget {
             label: const Text('إضافة التعيين'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
@@ -667,6 +706,7 @@ class _OrganizationDropdown extends StatelessWidget {
     }
     return WizardDropdown<int>(
       hint: 'اختر المؤسسة...',
+      searchHint: 'ابحث في المؤسسات...',
       value: draft.organizationId,
       items: {for (final o in state.organizations) o.id: o.name},
       onChanged: (v) => bloc.add(StageOrgChanged(draft.stage.id, v)),
@@ -694,6 +734,7 @@ class _DepartmentDropdown extends StatelessWidget {
     }
     return WizardDropdown<int>(
       hint: 'اختر القسم...',
+      searchHint: 'ابحث في الأقسام...',
       value: draft.departmentId,
       items: {for (final d in state.leafDepartments) d.id: d.name},
       onChanged: (v) => bloc.add(StageDeptChanged(draft.stage.id, v)),
@@ -721,6 +762,7 @@ class _RoleDropdown extends StatelessWidget {
     }
     return WizardDropdown<int>(
       hint: 'اختر الدور...',
+      searchHint: 'ابحث في الأدوار...',
       value: draft.roleId,
       items: {for (final r in state.rolesByDepartment) r.id: r.name},
       onChanged: (v) => bloc.add(StageRoleChanged(draft.stage.id, v)),
@@ -807,8 +849,8 @@ class _FieldTypeBlock extends StatelessWidget {
               for (final w in selected)
                 _SelectedChip(
                   label: w.label,
-                  onRemove: () => bloc
-                      .add(StageWidgetToggled(draft.stage.id, w, false)),
+                  onRemove: () =>
+                      bloc.add(StageWidgetToggled(draft.stage.id, w, false)),
                 ),
             ],
           ),
@@ -850,7 +892,8 @@ class _GatewayFieldSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.error.withOpacity(0.06),
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.error.withOpacity(0.4), width: 1.2),
+            border:
+                Border.all(color: AppColors.error.withOpacity(0.4), width: 1.2),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1063,8 +1106,7 @@ class _ServiceTaskEditor extends StatelessWidget {
               selected.contains('SEND_NOTIFICATION'))
             _NotificationConfigEditor(state: state, draft: draft),
           // GENERATE_PDF needs a template (linked in an earlier USER_TASK).
-          if (entry.key == 'GENERATE_PDF' &&
-              selected.contains('GENERATE_PDF'))
+          if (entry.key == 'GENERATE_PDF' && selected.contains('GENERATE_PDF'))
             _GeneratePdfConfigEditor(state: state, draft: draft),
           // SYNC_SELF_CARD needs a target table + a non-empty field map.
           if (entry.key == 'SYNC_SELF_CARD' &&
@@ -1259,8 +1301,9 @@ class _SyncFieldMapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // A source widget removed upstream must not keep a stale mapping alive.
-    final value =
-        sources.any((w) => w.widgetId == selectedWidgetId) ? selectedWidgetId : null;
+    final value = sources.any((w) => w.widgetId == selectedWidgetId)
+        ? selectedWidgetId
+        : null;
 
     return Row(
       textDirection: TextDirection.rtl,
@@ -1489,6 +1532,7 @@ class _NotificationDeptDropdown extends StatelessWidget {
     }
     return WizardDropdown<int>(
       hint: 'اختر القسم...',
+      searchHint: 'ابحث في الأقسام...',
       value: n.departmentId,
       items: {for (final d in state.leafDepartments) d.id: d.name},
       onChanged: (v) =>
@@ -1518,6 +1562,7 @@ class _NotificationRoleDropdown extends StatelessWidget {
     }
     return WizardDropdown<int>(
       hint: 'اختر الدور...',
+      searchHint: 'ابحث في الأدوار...',
       value: n.roleId,
       items: {for (final r in state.rolesByDepartment) r.id: r.name},
       onChanged: (v) =>
@@ -1570,7 +1615,8 @@ class _WarningBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.errorLight,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.error.withOpacity(0.45), width: 1.2),
+        border:
+            Border.all(color: AppColors.error.withOpacity(0.45), width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

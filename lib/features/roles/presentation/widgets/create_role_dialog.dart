@@ -8,10 +8,12 @@ import '../../../../core/enums/form_status.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../../shared/widgets/searchable_id_dropdown.dart';
 import '../bloc/roles_bloc.dart';
 import '../bloc/roles_event.dart';
 import '../bloc/roles_state.dart';
 import 'permission_picker.dart';
+import 'searchable_role_dropdown.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// How the form supplies the role: reuse one already defined in `roles`, or
@@ -523,12 +525,9 @@ class _ExistingRoleField extends StatelessWidget {
       );
     }
 
-    return _IdDropdown(
-      hint: 'اختر الدور...',
+    return SearchableRoleDropdown(
+      roles: state.roleCatalog,
       value: value,
-      items: {
-        for (final r in state.roleCatalog) r.id: '${r.name} — ${r.code}',
-      },
       errorText: showError ? 'هذا الحقل مطلوب' : null,
       onChanged: onChanged,
     );
@@ -690,8 +689,8 @@ class _IdDropdown extends StatelessWidget {
   final ValueChanged<int?> onChanged;
   final String? errorText;
 
-  /// Prepends a null-valued entry so an optional field can be reset — a plain
-  /// DropdownButtonFormField offers no way back to no-selection.
+  /// Prepends a null-valued entry so an optional field can be reset — there is
+  /// otherwise no way back to no-selection.
   final bool allowClear;
   final String clearLabel;
 
@@ -707,68 +706,13 @@ class _IdDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<int>(
-      value: items.containsKey(value) ? value : null,
-      isExpanded: true,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: AppColors.white,
-        errorText: errorText,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-      ),
-      hint: Text(
-        hint,
-        textAlign: TextAlign.right,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-      ),
-      items: [
-        if (allowClear)
-          DropdownMenuItem<int>(
-            value: null,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                clearLabel,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ...items.entries.map(
-          (e) => DropdownMenuItem<int>(
-            value: e.key,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                e.value,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+    return SearchableIdDropdown(
+      hint: hint,
+      value: value,
+      items: items,
+      errorText: errorText,
+      allowClear: allowClear,
+      clearLabel: clearLabel,
       onChanged: onChanged,
     );
   }

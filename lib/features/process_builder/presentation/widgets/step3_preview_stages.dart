@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/process_stage.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_state.dart';
+import 'process_animations.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// Step 3 — read-only preview of the stages generated from the uploaded BPMN.
@@ -21,21 +22,23 @@ class Step3PreviewStages extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              textDirection: TextDirection.rtl,
-              children: [
-                const Icon(Icons.account_tree_outlined,
-                    color: AppColors.primary, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  'معاينة خطوات المعاملة (${stages.length})',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+            AppEnterHeader(
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  const Icon(Icons.account_tree_outlined,
+                      color: AppColors.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'معاينة خطوات المعاملة (${stages.length})',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -50,7 +53,8 @@ class Step3PreviewStages extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'لم يتم توليد أي مرحلة من الملف',
-                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
+                    style:
+                        TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               )
@@ -68,9 +72,15 @@ class Step3PreviewStages extends StatelessWidget {
                       textDirection: TextDirection.rtl,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // البطاقات تظهر تباعاً بترتيب المراحل، فيُقرأ التسلسل
+                        // كتدفّق من اليمين إلى اليسار.
                         for (var i = 0; i < stages.length; i++) ...[
-                          _StageCard(stage: stages[i], order: i + 1),
-                          if (i < stages.length - 1) const _Connector(),
+                          AppEnter(
+                            index: i,
+                            child: _StageCard(stage: stages[i], order: i + 1),
+                          ),
+                          if (i < stages.length - 1)
+                            AppEnter(index: i, child: const _Connector()),
                         ],
                       ],
                     ),
@@ -151,7 +161,7 @@ class _StageCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.12),
+                  color: accent.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,

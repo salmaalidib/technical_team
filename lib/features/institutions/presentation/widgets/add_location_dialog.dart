@@ -152,6 +152,7 @@ class _AddLocationDialogState extends State<AddLocationDialog> {
                             Expanded(
                               child: AppIdDropdown(
                                 hint: 'اختر نوع الموقع...',
+                                searchHint: 'ابحث في الأنواع...',
                                 value: _typeId,
                                 items: typeItems,
                                 onChanged: (v) => setState(() {

@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
-import '../../shared/theme/app_dimens.dart';
+import 'searchable_id_dropdown.dart';
 
 /// Dropdown over an `{ id: name }` map that yields the selected int id.
 ///
 /// Shared across create/edit dialogs so every id-picker looks identical (RTL,
 /// white fill, primary focus border). Pass [errorText] to surface a validation
 /// message for required selections.
+///
+/// Delegates to [SearchableIdDropdown]: the lists behind these pickers
+/// (locations, location types, document types) grew past the point where
+/// scrolling a plain Material menu was workable, so every id-picker now opens
+/// a panel with a search box. The constructor is unchanged, so call sites keep
+/// working as-is.
 class AppIdDropdown extends StatelessWidget {
   final String hint;
   final int? value;
   final Map<int, String> items;
   final ValueChanged<int?> onChanged;
   final String? errorText;
+
+  /// Label of the search box inside the panel; defaults to a generic "ابحث...".
+  final String? searchHint;
 
   const AppIdDropdown({
     super.key,
@@ -22,56 +30,18 @@ class AppIdDropdown extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.errorText,
+    this.searchHint,
   });
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<int>(
-      value: items.containsKey(value) ? value : null,
-      isExpanded: true,
-      icon: const Icon(
-        Icons.keyboard_arrow_down_rounded,
-        color: AppColors.textPrimary,
-      ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: AppColors.white,
-        errorText: errorText,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: _border(AppColors.border),
-        enabledBorder: _border(AppColors.border),
-        focusedBorder: _border(AppColors.primary),
-      ),
-      hint: Text(
-        hint,
-        textAlign: TextAlign.right,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-      ),
-      items: items.entries
-          .map(
-            (e) => DropdownMenuItem<int>(
-              value: e.key,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  e.value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+    return SearchableIdDropdown(
+      hint: hint,
+      value: value,
+      items: items,
+      errorText: errorText,
+      searchHint: searchHint,
       onChanged: onChanged,
     );
   }
 }
-
-OutlineInputBorder _border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: BorderSide(color: color),
-    );

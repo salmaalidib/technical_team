@@ -51,12 +51,14 @@ class ProcessListBloc extends Bloc<ProcessListEvent, ProcessListState> {
   Future<void> _onLoadAll(
     LoadAllProcesses event,
     Emitter<ProcessListState> emit,
-  ) => _loadProcesses(0, emit);
+  ) =>
+      _loadProcesses(0, emit);
 
   Future<void> _onLoadByType(
     LoadProcessesByType event,
     Emitter<ProcessListState> emit,
-  ) => _loadProcesses(event.typeId, emit);
+  ) =>
+      _loadProcesses(event.typeId, emit);
 
   Future<void> _loadProcesses(
     int typeId,

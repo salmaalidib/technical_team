@@ -120,6 +120,7 @@ class TypeDocSelector extends StatelessWidget {
                   Expanded(
                     child: AppIdDropdown(
                       hint: loading ? 'جارٍ التحميل...' : 'اختر نوع المستند...',
+                      searchHint: 'ابحث في أنواع المستندات...',
                       value: value,
                       items: {for (final t in active) t.id: t.name},
                       onChanged: onChanged,

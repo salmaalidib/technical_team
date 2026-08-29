@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
+import 'process_animations.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// Step 2 — drag/drop or pick a BPMN/XML workflow file.
@@ -48,33 +49,52 @@ class Step2UploadBpmn extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: () => _pick(context),
           child: DottedBorderBox(
+            hasFile: state.hasFile,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 56, horizontal: 24),
               child: Column(
                 children: [
-                  Container(
+                  AnimatedContainer(
+                    duration: AppMotion.normal,
+                    curve: AppMotion.curve,
                     width: 92,
                     height: 92,
-                    decoration: const BoxDecoration(
-                      color: AppColors.inputBackground,
+                    decoration: BoxDecoration(
+                      color: state.hasFile
+                          ? AppColors.lightPrimary
+                          : AppColors.inputBackground,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      state.hasFile
-                          ? Icons.check_circle_rounded
-                          : Icons.file_upload_outlined,
-                      color: AppColors.primary,
-                      size: 40,
+                    // اختيار الملف يبدّل الأيقونة إلى علامة صح — تظهر بنبضة
+                    // قصيرة لتأكيد نجاح الاختيار.
+                    child: AnimatedSwitcher(
+                      duration: AppMotion.normal,
+                      switchInCurve: Curves.easeOutBack,
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: Icon(
+                        state.hasFile
+                            ? Icons.check_circle_rounded
+                            : Icons.file_upload_outlined,
+                        key: ValueKey(state.hasFile),
+                        color: AppColors.primary,
+                        size: 40,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Text(
-                    state.hasFile ? state.fileName! : 'رفع ملف سير العمل',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                  AnimatedSwitcher(
+                    duration: AppMotion.normal,
+                    switchInCurve: AppMotion.curve,
+                    child: Text(
+                      state.hasFile ? state.fileName! : 'رفع ملف سير العمل',
+                      key: ValueKey(state.fileName ?? 'empty'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -111,16 +131,29 @@ class Step2UploadBpmn extends StatelessWidget {
 /// simplicity — no extra dependency).
 class DottedBorderBox extends StatelessWidget {
   final Widget child;
-  const DottedBorderBox({super.key, required this.child});
+
+  /// يُبرز الإطار بلون أساسي بعد اختيار ملف.
+  final bool hasFile;
+
+  const DottedBorderBox({
+    super.key,
+    required this.child,
+    this.hasFile = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: AppMotion.normal,
+      curve: AppMotion.curve,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border, width: 1.4),
+        border: Border.all(
+          color: hasFile ? AppColors.primary : AppColors.border,
+          width: 1.4,
+        ),
       ),
       child: child,
     );

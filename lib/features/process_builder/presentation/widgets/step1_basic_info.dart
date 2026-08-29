@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
+import 'process_animations.dart';
 import 'wizard_kit.dart';
 
 /// Step 1 — basic info: name, transaction/complaint, type, organization,
@@ -21,37 +22,50 @@ class Step1BasicInfo extends StatelessWidget {
         final bloc = context.read<ProcessBuilderBloc>();
         final narrow = MediaQuery.sizeOf(context).width < 640;
 
+        // الحقول تدخل تباعاً من الأعلى، بنفس إيقاع بقية الشاشات.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // التصنيف (معاملة أو شكوى) محسوم من نقطة الدخول، فلا يُختار هنا.
-            WizardLabel(state.isComplaint ? 'اسم الشكوى *' : 'اسم المعاملة *'),
-            const SizedBox(height: 8),
-            WizardTextInput(
-              hint: state.isComplaint
-                  ? 'مثال: شكوى تأخر معاملة'
-                  : 'مثال: معاملة مدنية',
-              onChanged: (v) => bloc.add(NameChanged(v)),
-              errorText: showErrors && state.name.trim().isEmpty
-                  ? 'هذا الحقل مطلوب'
-                  : null,
+            AppEnter(
+              index: 0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WizardLabel(
+                      state.isComplaint ? 'اسم الشكوى *' : 'اسم المعاملة *'),
+                  const SizedBox(height: 8),
+                  WizardTextInput(
+                    hint: state.isComplaint
+                        ? 'مثال: شكوى تأخر معاملة'
+                        : 'مثال: معاملة مدنية',
+                    onChanged: (v) => bloc.add(NameChanged(v)),
+                    errorText: showErrors && state.name.trim().isEmpty
+                        ? 'هذا الحقل مطلوب'
+                        : null,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
             // النوع يُحدَّد مسبقاً من صفحة النوع، فلم يعد يُختار هنا.
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const WizardLabel('الأولوية *'),
-                const SizedBox(height: 8),
-                WizardDropdown<int>(
-                  hint: 'اختر الأولوية...',
-                  value: state.priority,
-                  items: _priorities,
-                  onChanged: (v) =>
-                      bloc.add(PriorityChanged(v ?? state.priority)),
-                ),
-              ],
+            AppEnter(
+              index: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const WizardLabel('الأولوية *'),
+                  const SizedBox(height: 8),
+                  WizardDropdown<int>(
+                    hint: 'اختر الأولوية...',
+                    value: state.priority,
+                    items: _priorities,
+                    onChanged: (v) =>
+                        bloc.add(PriorityChanged(v ?? state.priority)),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -99,17 +113,20 @@ class Step1BasicInfo extends StatelessWidget {
     if (narrow) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [first, const SizedBox(height: 20), second],
+        children: [
+          AppEnter(index: 2, child: first),
+          const SizedBox(height: 20),
+          AppEnter(index: 3, child: second),
+        ],
       );
     }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: first),
+        Expanded(child: AppEnter(index: 2, child: first)),
         const SizedBox(width: 16),
-        Expanded(child: second),
+        Expanded(child: AppEnter(index: 3, child: second)),
       ],
     );
   }
 }
-

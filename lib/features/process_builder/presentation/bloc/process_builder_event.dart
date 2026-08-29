@@ -111,7 +111,6 @@ class StageExpansionToggled extends ProcessBuilderEvent {
   List<Object?> get props => [stageId];
 }
 
-
 /// Toggles who executes a USER_TASK: a specific employee (org/dept/role
 /// cascade) or the transaction owner (citizen — a fixed role, no cascade).
 class StageAssigneeTypeChanged extends ProcessBuilderEvent {

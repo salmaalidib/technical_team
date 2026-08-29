@@ -12,6 +12,7 @@ import '../../../type_processes/presentation/bloc/type_processes_bloc.dart';
 import '../../../type_processes/presentation/bloc/type_processes_event.dart';
 import '../../../type_processes/presentation/bloc/type_processes_state.dart';
 import '../../../type_processes/presentation/widgets/create_type_process_dialog.dart';
+import '../widgets/process_animations.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
 /// Landing page for the technical team's transactions: manages process types
@@ -28,7 +29,8 @@ class ProcessTypesPage extends StatelessWidget {
         listenWhen: (p, c) => p.actionError != c.actionError,
         listener: (context, state) {
           if (state.actionError != null) {
-            AppSnackBar.show(context, message: state.actionError!, isError: true);
+            AppSnackBar.show(context,
+                message: state.actionError!, isError: true);
           }
         },
         child: const _ProcessTypesView(),
@@ -50,7 +52,7 @@ class _ProcessTypesView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Header(),
+            AppEnterHeader(child: _Header()),
             SizedBox(height: 28),
             _Body(),
           ],
@@ -160,31 +162,41 @@ class _Body extends StatelessWidget {
           p.typeProcesses != c.typeProcesses ||
           p.togglingIds != c.togglingIds,
       builder: (context, state) {
+        // كل فرع بمفتاح خاص كي يلتقط المبدّل الانتقال بين الحالات.
+        late final Widget child;
         switch (state.status) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return const AppSkeleton.cards();
+            child = const AppSkeleton.cards(key: ValueKey('loading'));
+            break;
           case RequestStatus.failure:
-            return _ErrorState(
+            child = _ErrorState(
+              key: const ValueKey('error'),
               message: state.error ?? 'حدث خطأ غير متوقع',
               onRetry: () => context
                   .read<TypeProcessesBloc>()
                   .add(const LoadTypeProcesses()),
             );
+            break;
           case RequestStatus.success:
             if (state.typeProcesses.isEmpty) {
-              return const Padding(
+              child = const Padding(
+                key: ValueKey('empty'),
                 padding: EdgeInsets.symmetric(vertical: 80),
                 child: Center(
                   child: Text(
                     'لا توجد أنواع معاملات لعرضها',
-                    style: TextStyle(color: AppColors.textTertiary, fontSize: 15),
+                    style:
+                        TextStyle(color: AppColors.textTertiary, fontSize: 15),
                   ),
                 ),
               );
+            } else {
+              child = _TypesGrid(key: const ValueKey('grid'), state: state);
             }
-            return _TypesGrid(state: state);
+            break;
         }
+        return AppStateSwitcher(child: child);
       },
     );
   }
@@ -194,7 +206,7 @@ class _Body extends StatelessWidget {
 class _TypesGrid extends StatelessWidget {
   final TypeProcessesState state;
 
-  const _TypesGrid({required this.state});
+  const _TypesGrid({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -210,13 +222,17 @@ class _TypesGrid extends StatelessWidget {
           runSpacing: gap,
           textDirection: TextDirection.rtl,
           children: [
-            for (final type in state.typeProcesses)
+            for (var i = 0; i < state.typeProcesses.length; i++)
               SizedBox(
                 width: cardWidth,
-                child: _TypeTile(
-                  key: ValueKey(type.id),
-                  type: type,
-                  toggling: state.togglingIds.contains(type.id),
+                child: AppEnter(
+                  index: i,
+                  child: _TypeTile(
+                    key: ValueKey(state.typeProcesses[i].id),
+                    type: state.typeProcesses[i],
+                    toggling:
+                        state.togglingIds.contains(state.typeProcesses[i].id),
+                  ),
                 ),
               ),
           ],
@@ -236,96 +252,107 @@ class _TypeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
+    // البطاقة غير المفعّلة تُخفَّف كتلتها العلوية فقط، وحركة التخفيف نفسها
+    // تتبع نفس مدّة تبديل المفتاح كي يبدو التغيير حركة واحدة.
+    final dim = type.isActive ? 1.0 : 0.55;
+
+    return AppHoverLift(
+      borderRadius: AppRadius.allMd,
+      child: Material(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: () =>
-            context.push('/transactions/type/${type.id}', extra: type.name),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                textDirection: TextDirection.rtl,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Opacity(
-                    opacity: type.isActive ? 1 : 0.55,
-                    child: Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: () =>
+              context.push('/transactions/type/${type.id}', extra: type.name),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  textDirection: TextDirection.rtl,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedOpacity(
+                      duration: AppMotion.normal,
+                      curve: AppMotion.curve,
+                      opacity: dim,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: const Icon(Icons.category_outlined,
+                            color: AppColors.white, size: 24),
                       ),
-                      child: const Icon(Icons.category_outlined,
-                          color: AppColors.white, size: 24),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Opacity(
-                      opacity: type.isActive ? 1 : 0.55,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            type.name,
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (type.code.isNotEmpty) ...[
-                            const SizedBox(height: 6),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AnimatedOpacity(
+                        duration: AppMotion.normal,
+                        curve: AppMotion.curve,
+                        opacity: dim,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              type.code,
-                              textDirection: TextDirection.ltr,
+                              type.name,
+                              textAlign: TextAlign.right,
                               style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
+                                color: AppColors.textPrimary,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
+                            if (type.code.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                type.code,
+                                textDirection: TextDirection.ltr,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  _StatusToggle(type: type, toggling: toggling),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: 12),
-              Row(
-                textDirection: TextDirection.rtl,
-                children: [
-                  _StatusChip(isActive: type.isActive),
-                  const Spacer(),
-                  const Text(
-                    'عرض المعاملات',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                    _StatusToggle(type: type, toggling: toggling),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 12),
+                Row(
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    _StatusChip(isActive: type.isActive),
+                    const Spacer(),
+                    const Text(
+                      'عرض المعاملات',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const Icon(Icons.chevron_right,
-                      size: 20, color: AppColors.primary),
-                ],
-              ),
-            ],
+                    const Icon(Icons.chevron_right,
+                        size: 20, color: AppColors.primary),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -342,26 +369,30 @@ class _StatusToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (toggling) {
-      return const SizedBox(
-        width: 46,
-        height: 28,
-        child: Center(
-          child: SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-
-    return Switch.adaptive(
-      value: type.isActive,
-      activeColor: AppColors.primary,
-      onChanged: (value) => context.read<TypeProcessesBloc>().add(
-            ToggleTypeProcessStatus(id: type.id, isActive: value),
-          ),
+    // المؤشّر والمفتاح يتبادلان مكانهما بتلاشٍ بدل قفزة مفاجئة أثناء الحفظ.
+    return AnimatedSwitcher(
+      duration: AppMotion.fast,
+      child: toggling
+          ? const SizedBox(
+              key: ValueKey('toggling'),
+              width: 46,
+              height: 28,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          : Switch.adaptive(
+              key: const ValueKey('switch'),
+              value: type.isActive,
+              activeColor: AppColors.primary,
+              onChanged: (value) => context.read<TypeProcessesBloc>().add(
+                    ToggleTypeProcessStatus(id: type.id, isActive: value),
+                  ),
+            ),
     );
   }
 }
@@ -378,19 +409,27 @@ class _StatusChip extends StatelessWidget {
       textDirection: TextDirection.rtl,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
-          size: 18,
-          color: color,
+        AnimatedSwitcher(
+          duration: AppMotion.fast,
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
+          child: Icon(
+            isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
+            key: ValueKey(isActive),
+            size: 18,
+            color: color,
+          ),
         ),
         const SizedBox(width: 6),
-        Text(
-          isActive ? 'مفعّل' : 'غير مفعّل',
+        AnimatedDefaultTextStyle(
+          duration: AppMotion.normal,
+          curve: AppMotion.curve,
           style: TextStyle(
             color: color,
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
+          child: Text(isActive ? 'مفعّل' : 'غير مفعّل'),
         ),
       ],
     );
@@ -401,7 +440,7 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({super.key, required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

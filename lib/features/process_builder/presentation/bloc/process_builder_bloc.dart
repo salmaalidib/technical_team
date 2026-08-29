@@ -51,13 +51,15 @@ class ProcessBuilderBloc
     on<LoadExistingForStageConfig>(_onLoadExisting);
     on<StepRequested>(_onStep);
     on<NameChanged>((e, emit) => emit(state.copyWith(name: e.name)));
-    on<TypeChanged>((e, emit) => emit(state.copyWith(typeTransId: e.typeTransId)));
+    on<TypeChanged>(
+        (e, emit) => emit(state.copyWith(typeTransId: e.typeTransId)));
     on<OrganizationChanged>(
         (e, emit) => emit(state.copyWith(organizationId: e.organizationId)));
-    on<PriorityChanged>((e, emit) => emit(state.copyWith(priority: e.priority)));
+    on<PriorityChanged>(
+        (e, emit) => emit(state.copyWith(priority: e.priority)));
     on<StartDateChanged>((e, emit) => emit(state.copyWith(startDate: e.date)));
-    on<EndDateChanged>((e, emit) => emit(
-        state.copyWith(endDate: e.date, clearEndDate: e.date == null)));
+    on<EndDateChanged>((e, emit) =>
+        emit(state.copyWith(endDate: e.date, clearEndDate: e.date == null)));
     on<FileSelected>((e, emit) =>
         emit(state.copyWith(fileBytes: e.bytes, fileName: e.fileName)));
     on<SubmitCreate>(_onSubmitCreate);
@@ -370,7 +372,6 @@ class ProcessBuilderBloc
     }
   }
 
-
   /// Toggles a USER_TASK between an employee assignee (org/dept/role cascade)
   /// and a citizen assignee (fixed role, no cascade). Mirrors
   /// [_onNotificationRecipient]: switching to employee seeds the active org and
@@ -463,8 +464,7 @@ class ProcessBuilderBloc
   }
 
   void _onStageRole(StageRoleChanged event, Emitter<ProcessBuilderState> emit) {
-    _updateDraft(
-        event.stageId, emit, (d) => d.copyWith(roleId: event.roleId));
+    _updateDraft(event.stageId, emit, (d) => d.copyWith(roleId: event.roleId));
   }
 
   /// Commits the picked dept/role (under the stage's active organization) as one
@@ -561,16 +561,16 @@ class ProcessBuilderBloc
     StageSignatureToggled event,
     Emitter<ProcessBuilderState> emit,
   ) {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(requiresSignature: event.value));
+    _updateDraft(
+        event.stageId, emit, (d) => d.copyWith(requiresSignature: event.value));
   }
 
   void _onStageIsAssignment(
     StageIsAssignmentToggled event,
     Emitter<ProcessBuilderState> emit,
   ) {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(isAssignment: event.value));
+    _updateDraft(
+        event.stageId, emit, (d) => d.copyWith(isAssignment: event.value));
   }
 
   void _onStageTemplate(
@@ -625,8 +625,11 @@ class ProcessBuilderBloc
     StageNotificationMessageChanged event,
     Emitter<ProcessBuilderState> emit,
   ) {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(notification: d.notification.copyWith(
+    _updateDraft(
+        event.stageId,
+        emit,
+        (d) => d.copyWith(
+                notification: d.notification.copyWith(
               message: event.message,
             )));
   }
@@ -635,8 +638,11 @@ class ProcessBuilderBloc
     StageNotificationTitleChanged event,
     Emitter<ProcessBuilderState> emit,
   ) {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(notification: d.notification.copyWith(
+    _updateDraft(
+        event.stageId,
+        emit,
+        (d) => d.copyWith(
+                notification: d.notification.copyWith(
               title: event.title,
             )));
   }
@@ -743,8 +749,11 @@ class ProcessBuilderBloc
     StageNotificationRoleChanged event,
     Emitter<ProcessBuilderState> emit,
   ) {
-    _updateDraft(event.stageId, emit,
-        (d) => d.copyWith(notification: d.notification.copyWith(
+    _updateDraft(
+        event.stageId,
+        emit,
+        (d) => d.copyWith(
+                notification: d.notification.copyWith(
               roleId: event.roleId,
             )));
   }
@@ -839,9 +848,8 @@ class ProcessBuilderBloc
     if (target == null || !target.stage.isUserTask) return;
 
     _updateDraft(event.stageId, emit, (d) {
-      final widgets = d.widgets
-          .where((w) => w.widgetType != 'employee_picker')
-          .toList();
+      final widgets =
+          d.widgets.where((w) => w.widgetType != 'employee_picker').toList();
       if (event.value) widgets.add(buildSelfCardPickerWidget());
       return d.copyWith(widgets: widgets);
     });
@@ -912,7 +920,8 @@ class ProcessBuilderBloc
       return;
     }
 
-    emit(state.copyWith(submitStatus: FormStatus.submitting, submitError: null));
+    emit(
+        state.copyWith(submitStatus: FormStatus.submitting, submitError: null));
 
     final stages = pending.map((d) => d.toRequestJson()).toList();
 

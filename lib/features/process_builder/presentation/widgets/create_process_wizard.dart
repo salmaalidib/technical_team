@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import '../../../templates/presentation/bloc/templates_bloc.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
+import 'process_animations.dart';
 import 'step1_basic_info.dart';
 import 'step2_upload_bpmn.dart';
 import 'step3_preview_stages.dart';
@@ -178,13 +180,18 @@ class _WizardViewState extends State<_WizardView> {
               // The step indicator is for the create flow; complete-mode opens
               // straight at step 4 and has nothing to step through.
               if (!state.completeMode) ...[
-                Container(
-                  color: AppColors.surface,
-                  padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
-                  child: WizardStepper(
-                    currentStep: state.currentStep,
-                    titles:
-                        state.isComplaint ? _complaintStepTitles : _stepTitles,
+                FadeInDown(
+                  from: 10,
+                  duration: AppMotion.entrance,
+                  child: Container(
+                    color: AppColors.surface,
+                    padding: const EdgeInsets.fromLTRB(28, 18, 28, 14),
+                    child: WizardStepper(
+                      currentStep: state.currentStep,
+                      titles: state.isComplaint
+                          ? _complaintStepTitles
+                          : _stepTitles,
+                    ),
                   ),
                 ),
               ],
@@ -221,33 +228,45 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.bootStatus == RequestStatus.loading &&
         (state.currentStep == 1 || state.completeMode)) {
-      return const Center(child: CircularProgressIndicator());
+      return const _WizardTransition(
+        child: Center(
+          key: ValueKey('boot'),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     // Complete-mode load failed (couldn't fetch the existing process).
-    if (state.completeMode &&
-        state.bootStatus == RequestStatus.failure) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            state.createError ?? 'تعذّر تحميل المعاملة.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.error),
+    if (state.completeMode && state.bootStatus == RequestStatus.failure) {
+      return _WizardTransition(
+        child: Center(
+          key: const ValueKey('bootError'),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              state.createError ?? 'تعذّر تحميل المعاملة.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error),
+            ),
           ),
         ),
       );
     }
     if (state.createStatus == RequestStatus.loading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('جاري إنشاء العملية وتوليد المراحل...',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ],
+      return const _WizardTransition(
+        child: Center(
+          key: ValueKey('creating'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('جاري إنشاء العملية وتوليد المراحل...',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ],
+          ),
         ),
       );
     }
@@ -268,8 +287,41 @@ class _Body extends StatelessWidget {
     }
 
     final horizontal = MediaQuery.sizeOf(context).width < 700 ? 16.0 : 40.0;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 28),
+    return _WizardTransition(
+      // المفتاح هو رقم الخطوة، فينزلق المحتوى القديم خارجاً والجديد داخلاً
+      // عند كل انتقال بدل أن يُستبدل فورياً.
+      child: SingleChildScrollView(
+        key: ValueKey('step-${state.currentStep}'),
+        padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 28),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// انتقال موحّد بين محتويات خطوات المعالج — تلاشٍ مع انزلاق أفقي خفيف باتجاه
+/// RTL (المحتوى الجديد يدخل من اليسار كما لو أن الصفحات تتقدّم يميناً).
+class _WizardTransition extends StatelessWidget {
+  final Widget child;
+
+  const _WizardTransition({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: AppMotion.normal,
+      switchInCurve: AppMotion.curve,
+      switchOutCurve: AppMotion.curve,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(-0.04, 0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      ),
       child: child,
     );
   }
@@ -353,7 +405,9 @@ class _Footer extends StatelessWidget {
     final busy = submitting || creating;
 
     final primaryLabel = isLast
-        ? (state.completeMode ? '✓  حفظ المراحل الناقصة' : '✓  حفظ واعتماد وتفعيل')
+        ? (state.completeMode
+            ? '✓  حفظ المراحل الناقصة'
+            : '✓  حفظ واعتماد وتفعيل')
         : 'التالي';
 
     return Padding(

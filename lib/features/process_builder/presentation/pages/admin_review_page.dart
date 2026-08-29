@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
+import '../widgets/process_animations.dart';
 import '../widgets/process_list_view.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -56,41 +57,52 @@ class _AdminReviewView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'اعتماد المعاملات',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primary,
+              const AppEnterHeader(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'اعتماد المعاملات',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'راجع المعاملات المكتملة للموافقة على نشرها، أو أكمل تهيئة المعاملات الناقصة.',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                          color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'راجع المعاملات المكتملة للموافقة على نشرها، أو أكمل تهيئة المعاملات الناقصة.',
-                textAlign: TextAlign.right,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 18),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const TabBar(
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.primary,
-                  labelPadding: EdgeInsets.symmetric(horizontal: 4),
-                  labelStyle:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                  tabs: [
-                    Tab(text: 'غير مكتملة'),
-                    Tab(text: 'مكتملة (للاعتماد)'),
-                    Tab(text: 'غير المفعّلة'),
-                    Tab(text: 'المرفوضة'),
-                  ],
+              AppEnterHeader(
+                index: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const TabBar(
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    labelPadding: EdgeInsets.symmetric(horizontal: 4),
+                    labelStyle:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                    tabs: [
+                      Tab(text: 'غير مكتملة'),
+                      Tab(text: 'مكتملة (للاعتماد)'),
+                      Tab(text: 'غير المفعّلة'),
+                      Tab(text: 'المرفوضة'),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 18),

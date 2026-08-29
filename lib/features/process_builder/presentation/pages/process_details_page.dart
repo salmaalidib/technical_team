@@ -11,6 +11,7 @@ import '../../domain/entities/process_details.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
+import '../widgets/process_animations.dart';
 import '../widgets/process_status_badges.dart';
 import '../widgets/stage_config_view.dart';
 
@@ -48,36 +49,44 @@ class _DetailsScaffold extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _BackBar(
-            onBack: () => context.canPop()
-                ? context.pop()
-                : context.go('/transactions'),
+          AppEnterHeader(
+            child: _BackBar(
+              onBack: () => context.canPop()
+                  ? context.pop()
+                  : context.go('/transactions'),
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: BlocBuilder<ProcessListBloc, ProcessListState>(
               buildWhen: (p, c) =>
-                  p.detailsStatus != c.detailsStatus ||
-                  p.details != c.details,
+                  p.detailsStatus != c.detailsStatus || p.details != c.details,
               builder: (context, state) {
+                // كل فرع بمفتاح خاص كي يلتقط المبدّل الانتقال بين الحالات.
+                late final Widget child;
                 switch (state.detailsStatus) {
                   case RequestStatus.initial:
                   case RequestStatus.loading:
-                    return const AppSkeleton.list(itemCount: 6);
+                    child = const AppSkeleton.list(
+                        key: ValueKey('loading'), itemCount: 6);
+                    break;
                   case RequestStatus.failure:
-                    return _ErrorState(
+                    child = _ErrorState(
+                      key: const ValueKey('error'),
                       message: state.detailsError ?? 'حدث خطأ غير متوقع',
                       onRetry: () => context
                           .read<ProcessListBloc>()
                           .add(LoadProcessDetails(id)),
                     );
+                    break;
                   case RequestStatus.success:
                     final d = state.details;
-                    if (d == null) {
-                      return const _EmptyState();
-                    }
-                    return _DetailsBody(details: d);
+                    child = d == null
+                        ? const _EmptyState(key: ValueKey('empty'))
+                        : _DetailsBody(key: const ValueKey('body'), details: d);
+                    break;
                 }
+                return AppStateSwitcher(child: child);
               },
             ),
           ),
@@ -127,7 +136,7 @@ class _BackBar extends StatelessWidget {
 class _DetailsBody extends StatelessWidget {
   final ProcessDetails details;
 
-  const _DetailsBody({required this.details});
+  const _DetailsBody({super.key, required this.details});
 
   @override
   Widget build(BuildContext context) {
@@ -138,27 +147,40 @@ class _DetailsBody extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
         children: [
-          _ProcessHeaderCard(info: details.process),
+          AppEnter(index: 0, child: _ProcessHeaderCard(info: details.process)),
           const SizedBox(height: AppSpacing.lg),
-          _ValidationCard(validation: details.validation),
+          AppEnter(
+            index: 1,
+            child: _ValidationCard(validation: details.validation),
+          ),
           const SizedBox(height: AppSpacing.xxl),
-          _SectionHeader(
-            icon: Icons.account_tree_rounded,
-            title: 'مراحل المعاملة',
-            count: stages.length,
+          AppEnter(
+            index: 2,
+            child: _SectionHeader(
+              icon: Icons.account_tree_rounded,
+              title: 'مراحل المعاملة',
+              count: stages.length,
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           if (stages.isEmpty)
-            const _InlineNotice(
-              icon: Icons.layers_clear_rounded,
-              text: 'لم تُضَف أي مرحلة إلى هذه المعاملة بعد',
+            const AppEnter(
+              index: 3,
+              child: _InlineNotice(
+                icon: Icons.layers_clear_rounded,
+                text: 'لم تُضَف أي مرحلة إلى هذه المعاملة بعد',
+              ),
             )
           else
+            // المراحل تنزل تباعاً فيُقرأ الخطّ الزمني من أعلى إلى أسفل.
             for (var i = 0; i < stages.length; i++)
-              _TimelineRow(
-                order: i + 1,
-                isLast: i == stages.length - 1,
-                child: _StageCard(stage: stages[i]),
+              AppEnter(
+                index: i + 3,
+                child: _TimelineRow(
+                  order: i + 1,
+                  isLast: i == stages.length - 1,
+                  child: _StageCard(stage: stages[i]),
+                ),
               ),
         ],
       ),
@@ -417,9 +439,7 @@ class _ValidationCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  valid
-                      ? Icons.verified_rounded
-                      : Icons.report_problem_rounded,
+                  valid ? Icons.verified_rounded : Icons.report_problem_rounded,
                   color: color,
                   size: 18,
                 ),
@@ -529,9 +549,7 @@ class _StageCard extends StatelessWidget {
                   label: stage.hasAssignments
                       ? 'تم تعيين الأدوار'
                       : 'لا يوجد تعيين',
-                  tone: stage.hasAssignments
-                      ? _TagTone.good
-                      : _TagTone.warning,
+                  tone: stage.hasAssignments ? _TagTone.good : _TagTone.warning,
                 ),
             ],
           ),
@@ -877,7 +895,7 @@ class _InlineNotice extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -901,7 +919,7 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({super.key, required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

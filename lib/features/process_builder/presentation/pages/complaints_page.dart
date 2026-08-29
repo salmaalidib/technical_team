@@ -8,6 +8,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
+import '../widgets/process_animations.dart';
 import '../widgets/process_list_view.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -77,7 +78,7 @@ class _ComplaintsView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Header(onCreate: openCreate),
+            AppEnterHeader(child: _Header(onCreate: openCreate)),
             const SizedBox(height: 24),
             const Expanded(
               child: ProcessListView(tab: ProcessListTab.complaints),

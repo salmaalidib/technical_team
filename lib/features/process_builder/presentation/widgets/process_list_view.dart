@@ -11,6 +11,7 @@ import '../../domain/entities/review_queue_item.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
+import 'process_animations.dart';
 import 'process_status_badges.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -49,18 +50,26 @@ class ProcessListView extends StatelessWidget {
     return BlocBuilder<ProcessListBloc, ProcessListState>(
       buildWhen: (p, c) => _statusOf(p) != _statusOf(c) || _listChanged(p, c),
       builder: (context, state) {
+        // كل فرع بمفتاح خاص كي يلتقط المبدّل الانتقال بين الحالات.
+        late final Widget child;
         switch (_statusOf(state)) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            return AppSkeleton.cards(withFooter: _hasFooter);
+            child = AppSkeleton.cards(
+                key: const ValueKey('loading'), withFooter: _hasFooter);
+            break;
           case RequestStatus.failure:
-            return _ErrorState(
+            child = _ErrorState(
+              key: const ValueKey('error'),
               message: _errorOf(state) ?? 'حدث خطأ غير متوقع',
               onRetry: () => _reload(context),
             );
+            break;
           case RequestStatus.success:
-            return _list(context, state);
+            child = _list(context, state);
+            break;
         }
+        return AppStateSwitcher(child: child);
       },
     );
   }
@@ -227,6 +236,7 @@ class ProcessListView extends StatelessWidget {
       // Sit near the top rather than dead-centre: on a tall desktop window a
       // centred line of text leaves the tab bar stranded above a large void.
       return Align(
+        key: const ValueKey('empty'),
         alignment: Alignment.topCenter,
         child: Padding(
           padding: const EdgeInsets.only(top: 56),
@@ -255,6 +265,7 @@ class ProcessListView extends StatelessWidget {
     }
 
     return RefreshIndicator(
+      key: const ValueKey('grid'),
       onRefresh: () async => _reload(context),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -279,7 +290,10 @@ class ProcessListView extends StatelessWidget {
               // "view details" row.
               mainAxisExtent: _hasFooter ? 220 : 175,
             ),
-            itemBuilder: (context, i) => _card(context, state, i),
+            itemBuilder: (context, i) => AppEnter(
+              index: i,
+              child: _card(context, state, i),
+            ),
           );
         },
       ),
@@ -589,9 +603,8 @@ class _MissingItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final missing = item.stagesMissingConfigCount;
     final total = item.stagesTotalCount;
-    final progressText = total == 0
-        ? 'لا توجد مراحل بعد'
-        : 'ناقص $missing من $total مرحلة';
+    final progressText =
+        total == 0 ? 'لا توجد مراحل بعد' : 'ناقص $missing من $total مرحلة';
 
     return _CardShell(
       onTap: () => _openComplete(context, item.id),
@@ -631,13 +644,16 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // مؤشّر التحميل يحلّ محلّ التسمية بتلاشٍ داخل نفس الزر، فلا يتغيّر عرضه.
     final child = loading
         ? const SizedBox(
+            key: ValueKey('loading'),
             height: 18,
             width: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
         : Row(
+            key: const ValueKey('label'),
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -672,7 +688,7 @@ class _ActionButton extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
-              child: child,
+              child: _switcher(child),
             )
           : ElevatedButton(
               onPressed: onPressed,
@@ -686,10 +702,15 @@ class _ActionButton extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm)),
               ),
-              child: child,
+              child: _switcher(child),
             ),
     );
   }
+
+  static Widget _switcher(Widget child) => AnimatedSwitcher(
+        duration: AppMotion.fast,
+        child: child,
+      );
 }
 
 class _CardShell extends StatelessWidget {
@@ -711,70 +732,78 @@ class _CardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Material(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: InkWell(
-          onTap: onTap,
+      child: AppHoverLift(
+        borderRadius: AppRadius.allMd,
+        child: Material(
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top block flexes to fill the fixed grid-cell height so that
-                // the footer / "view details" row lines up along the bottom.
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top block flexes to fill the fixed grid-cell height so that
+                  // the footer / "view details" row lines up along the bottom.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          subtitle!,
-                          maxLines: 1,
+                          title,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
                         ),
+                        if (subtitle != null && subtitle!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        Wrap(spacing: 8, runSpacing: 8, children: badges),
                       ],
-                      const SizedBox(height: 10),
-                      Wrap(spacing: 8, runSpacing: 8, children: badges),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.border),
-                const SizedBox(height: 12),
-                // "View details" affordance — replaces the old corner chevron.
-                if (footer != null)
-                  footer!
-                else
-                  const Text(
-                    'عرض التفاصيل',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 12),
+                  // "View details" affordance — replaces the old corner chevron.
+                  // الحالة تتبدّل بين زر إجراء ونص «عرض التفاصيل» بعد كل عملية،
+                  // فالتبديل المتحرّك يمنع القفزة في أسفل البطاقة.
+                  AnimatedSwitcher(
+                    duration: AppMotion.normal,
+                    switchInCurve: AppMotion.curve,
+                    child: footer ??
+                        const Text(
+                          'عرض التفاصيل',
+                          key: ValueKey('details'),
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -787,7 +816,7 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({super.key, required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

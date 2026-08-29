@@ -8,6 +8,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../bloc/process_list_bloc.dart';
 import '../bloc/process_list_event.dart';
 import '../bloc/process_list_state.dart';
+import '../widgets/process_animations.dart';
 import '../widgets/process_list_view.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -25,8 +26,7 @@ class ProcessByTypePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          getIt<ProcessListBloc>()..add(LoadProcessesByType(typeId)),
+      create: (_) => getIt<ProcessListBloc>()..add(LoadProcessesByType(typeId)),
       child: _ProcessByTypeView(typeId: typeId, typeName: typeName),
     );
   }
@@ -89,9 +89,11 @@ class _ProcessByTypeView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Header(typeName: typeName, onCreate: openCreate),
+              AppEnterHeader(
+                child: _Header(typeName: typeName, onCreate: openCreate),
+              ),
               const SizedBox(height: 20),
-              const _ActiveTabs(),
+              const AppEnterHeader(index: 1, child: _ActiveTabs()),
               const SizedBox(height: 16),
               Expanded(
                 child: TabBarView(

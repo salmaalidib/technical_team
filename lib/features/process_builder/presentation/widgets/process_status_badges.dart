@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_dimens.dart';
+import 'process_animations.dart';
 
 /// Colored pill summarising a process's approval state. Works for both list
 /// shapes: the admin tab passes `approvalStatus`, the review tab may also pass
@@ -58,25 +59,36 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // الشارة تُعيد بناء نفسها عند كل تفعيل/اعتماد، فتتحرّك ألوانها ونصّها
+    // بدل أن تُستبدل فجأة.
+    return AnimatedContainer(
+      duration: AppMotion.normal,
+      curve: AppMotion.curve,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: color),
+          AnimatedSwitcher(
+            duration: AppMotion.fast,
+            transitionBuilder: (child, animation) =>
+                ScaleTransition(scale: animation, child: child),
+            child: Icon(icon, key: ValueKey(icon), size: 15, color: color),
+          ),
           const SizedBox(width: 5),
-          Text(
-            label,
+          AnimatedDefaultTextStyle(
+            duration: AppMotion.normal,
+            curve: AppMotion.curve,
             style: TextStyle(
               color: color,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
+            child: Text(label),
           ),
         ],
       ),
