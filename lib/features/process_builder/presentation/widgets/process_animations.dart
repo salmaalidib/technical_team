@@ -33,7 +33,7 @@ class AppMotion {
 /// دخول متتابع لعنصر داخل قائمة أو شبكة — صعوداً مع تلاشٍ.
 ///
 /// [index] هو ترتيب العنصر، ومنه يُحسب التأخير.
-class AppEnter extends StatelessWidget {
+class AppEnter extends StatefulWidget {
   final Widget child;
   final int index;
   final Duration? duration;
@@ -46,30 +46,75 @@ class AppEnter extends StatelessWidget {
   });
 
   @override
+  State<AppEnter> createState() => _AppEnterState();
+}
+
+class _AppEnterState extends State<AppEnter> {
+  /// الحركة تُلعب مرّة واحدة عند أول ظهور فقط.
+  ///
+  /// بدون هذا الحارس تُعاد الحركة مع كل إعادة بناء — وفي شاشات مثل تخصيص
+  /// الخطوات تُعاد البناء عند كل ضغطة مفتاح، فتومض البطاقات وتنزلق أثناء
+  /// الكتابة. `animate_do` لا يملك خياراً لذلك، فنتولّاه هنا.
+  bool _played = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // بعد انتهاء الحركة الأولى نتوقّف عن تغليف الطفل بها نهائياً.
+    Future<void>.delayed(
+      AppMotion.delayFor(widget.index) +
+          (widget.duration ?? AppMotion.entrance),
+      () {
+        if (mounted) setState(() => _played = true);
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_played) return widget.child;
     return FadeInUp(
       from: 18,
-      duration: duration ?? AppMotion.entrance,
-      delay: AppMotion.delayFor(index),
-      child: child,
+      duration: widget.duration ?? AppMotion.entrance,
+      delay: AppMotion.delayFor(widget.index),
+      child: widget.child,
     );
   }
 }
 
 /// دخول ترويسة الصفحة — هبوطاً من الأعلى، بلا تأخير.
-class AppEnterHeader extends StatelessWidget {
+class AppEnterHeader extends StatefulWidget {
   final Widget child;
   final int index;
 
   const AppEnterHeader({super.key, required this.child, this.index = 0});
 
   @override
+  State<AppEnterHeader> createState() => _AppEnterHeaderState();
+}
+
+class _AppEnterHeaderState extends State<AppEnterHeader> {
+  bool _played = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(
+      AppMotion.delayFor(widget.index) + AppMotion.entrance,
+      () {
+        if (mounted) setState(() => _played = true);
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_played) return widget.child;
     return FadeInDown(
       from: 14,
       duration: AppMotion.entrance,
-      delay: AppMotion.delayFor(index),
-      child: child,
+      delay: AppMotion.delayFor(widget.index),
+      child: widget.child,
     );
   }
 }
@@ -85,28 +130,21 @@ class AppStateSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
+      // الخروج فوري والدخول وحده هو المتحرّك.
+      //
+      // AnimatedSwitcher يكدّس القديم والجديد فوق بعضهما أثناء التبديل، فلو
+      // حرّكنا الخروج أيضاً لظهر الهيكل العظمي والمحتوى معاً نصفَ شفافين —
+      // وهو ما كان يجعل الانتقال يبدو رديئاً. بجعل مدّة الخروج صفراً يختفي
+      // القديم فوراً فلا يتراكب شيء.
       duration: AppMotion.normal,
+      reverseDuration: Duration.zero,
       switchInCurve: AppMotion.curve,
-      switchOutCurve: AppMotion.curve,
-      // الافتراضي يكدّس الحالتين بمحاذاة المنتصف، وهو ما يقفز بالمحتوى أثناء
-      // التبديل؛ التثبيت على الأعلى يُبقي الترويسة ثابتة.
-      layoutBuilder: (current, previous) => Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          ...previous,
-          if (current != null) current,
-        ],
-      ),
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.03),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
-      ),
+      // التخطيط الافتراضي يكدّس بمحاذاة المنتصف ويتقلّص إلى أطول طفل، فيبدو
+      // المحتوى محشوراً في وسط الشاشة. هنا نعرض الطفل الحالي وحده فيملأ
+      // المساحة المتاحة كما لو لم يكن هناك مبدّل أصلاً.
+      layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
       child: child,
     );
   }

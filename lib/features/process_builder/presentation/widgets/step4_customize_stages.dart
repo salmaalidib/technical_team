@@ -14,7 +14,6 @@ import '../../domain/entities/widget_config.dart';
 import '../bloc/process_builder_bloc.dart';
 import '../bloc/process_builder_event.dart';
 import '../bloc/process_builder_state.dart';
-import 'process_animations.dart';
 import 'wizard_kit.dart';
 import '../../../../shared/theme/app_dimens.dart';
 
@@ -41,15 +40,12 @@ class Step4CustomizeStages extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 20),
-            for (var i = 0; i < stages.length; i++)
-              AppEnter(
-                index: i,
-                child: _StageCard(
-                  stage: stages[i],
-                  draft: state.drafts[stages[i].id],
-                  expanded: state.expandedStageId == stages[i].id,
-                  state: state,
-                ),
+            for (final stage in stages)
+              _StageCard(
+                stage: stage,
+                draft: state.drafts[stage.id],
+                expanded: state.expandedStageId == stage.id,
+                state: state,
               ),
           ],
         );
@@ -73,9 +69,7 @@ class _StageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: AppMotion.normal,
-      curve: AppMotion.curve,
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -84,15 +78,6 @@ class _StageCard extends StatelessWidget {
           color: expanded ? AppColors.primary : AppColors.border,
           width: expanded ? 1.6 : 1.2,
         ),
-        boxShadow: expanded
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ]
-            : const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,29 +89,17 @@ class _StageCard extends StatelessWidget {
                 .add(StageExpansionToggled(stage.id)),
             child: _CardHeader(stage: stage, draft: draft, expanded: expanded),
           ),
-          // المحرّر ينفتح وينطوي بحركة ارتفاع بدل الظهور المفاجئ.
-          AnimatedSize(
-            duration: AppMotion.normal,
-            curve: AppMotion.curve,
-            alignment: Alignment.topCenter,
-            child: (expanded && draft != null)
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Divider(height: 1, color: AppColors.border),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
-                        child: draft!.locked
-                            ? const _LockedStageNotice()
-                            : (stage.isUserTask
-                                ? _UserTaskEditor(state: state, draft: draft!)
-                                : _ServiceTaskEditor(
-                                    state: state, draft: draft!)),
-                      ),
-                    ],
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
+          if (expanded && draft != null) ...[
+            const Divider(height: 1, color: AppColors.border),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+              child: draft!.locked
+                  ? const _LockedStageNotice()
+                  : (stage.isUserTask
+                      ? _UserTaskEditor(state: state, draft: draft!)
+                      : _ServiceTaskEditor(state: state, draft: draft!)),
+            ),
+          ],
         ],
       ),
     );
@@ -180,9 +153,7 @@ class _CardHeader extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          AnimatedContainer(
-            duration: AppMotion.normal,
-            curve: AppMotion.curve,
+          Container(
             width: 46,
             height: 46,
             decoration: BoxDecoration(
@@ -226,17 +197,16 @@ class _CardHeader extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                // الملخّص يتغيّر مع كل تعديل في المحرّر، فيتبدّل بتلاشٍ قصير.
-                AnimatedSwitcher(
-                  duration: AppMotion.fast,
-                  child: Text(
-                    _subtitle,
-                    key: ValueKey(_subtitle),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                // سطر واحد ثابت: الملخّص يطول ويقصر مع التعديلات، ولو التفّ
+                // إلى سطرين لتغيّر ارتفاع الترويسة فتقفز البطاقة.
+                Text(
+                  _subtitle,
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -248,15 +218,11 @@ class _CardHeader extends StatelessWidget {
                 size: 18, color: AppColors.secondary),
             const SizedBox(width: 6),
           ],
-          // سهم واحد يدور نصف دورة بدل تبديل أيقونتين.
-          AnimatedRotation(
-            duration: AppMotion.normal,
-            curve: AppMotion.curve,
-            turns: expanded ? 0.5 : 0,
-            child: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: AppColors.textSecondary,
-            ),
+          Icon(
+            expanded
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
+            color: AppColors.textSecondary,
           ),
         ],
       ),
@@ -481,18 +447,26 @@ class _IsAssignmentToggle extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  enabled
-                      ? 'عند التفعيل: موظفو هذه المرحلة هم من يختارون وجهة '
-                          'المرحلة القادمة، بدل التوجيه التلقائي. لا يغيّر ذلك '
-                          'الجهات المُعيَّنة لتنفيذ هذه المرحلة.'
-                      : 'غير متاح مع «صاحب المعاملة» — توجيه المرحلة القادمة '
-                          'يقوم به موظف، لا المواطن.',
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    height: 1.5,
+                // النصّان يختلفان في الطول (ثلاثة أسطر مقابل سطرين)، فتبديل
+                // المفتاح كان يغيّر ارتفاع الكتلة ويقفز بما تحتها. نحجز
+                // ارتفاع ثلاثة أسطر ثابتاً فلا يتحرّك شيء عند التبديل.
+                SizedBox(
+                  height: 54,
+                  child: Text(
+                    enabled
+                        ? 'عند التفعيل: موظفو هذه المرحلة هم من يختارون وجهة '
+                            'المرحلة القادمة، بدل التوجيه التلقائي. لا يغيّر ذلك '
+                            'الجهات المُعيَّنة لتنفيذ هذه المرحلة.'
+                        : 'غير متاح مع «صاحب المعاملة» — توجيه المرحلة القادمة '
+                            'يقوم به موظف، لا المواطن.',
+                    textAlign: TextAlign.right,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],

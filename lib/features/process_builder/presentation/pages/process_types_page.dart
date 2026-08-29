@@ -226,6 +226,7 @@ class _TypesGrid extends StatelessWidget {
               SizedBox(
                 width: cardWidth,
                 child: AppEnter(
+                  key: ValueKey('enter-${state.typeProcesses[i].id}'),
                   index: i,
                   child: _TypeTile(
                     key: ValueKey(state.typeProcesses[i].id),

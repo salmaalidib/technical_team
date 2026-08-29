@@ -226,8 +226,14 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.bootStatus == RequestStatus.loading &&
-        (state.currentStep == 1 || state.completeMode)) {
+    // في وضع الإكمال يفتح المعالج على الخطوة 4 مباشرة، لكن الإطار الأول
+    // يُبنى قبل أن يبدأ الـ bloc بالتحميل — فتكون الحالة الافتراضية
+    // (initial / خطوة 1 / completeMode=false). لذلك لا يكفي فحص `loading`
+    // وحده: كان ذلك يمرّر الإطار الأول إلى الخطوة 1 فتظهر لوهلة ثم يظهر
+    // مؤشّر التحميل ثم الخطوات. اعتبار `initial` تحميلاً أيضاً يمنع هذا الوميض.
+    final booting = state.bootStatus == RequestStatus.loading ||
+        state.bootStatus == RequestStatus.initial;
+    if (booting && (state.currentStep == 1 || state.completeMode)) {
       return const _WizardTransition(
         child: Center(
           key: ValueKey('boot'),

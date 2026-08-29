@@ -67,8 +67,11 @@ class _DetailsScaffold extends StatelessWidget {
                 switch (state.detailsStatus) {
                   case RequestStatus.initial:
                   case RequestStatus.loading:
-                    child = const AppSkeleton.list(
-                        key: ValueKey('loading'), itemCount: 6);
+                    child = const Align(
+                      key: ValueKey('loading'),
+                      alignment: Alignment.topCenter,
+                      child: AppSkeleton.list(itemCount: 6),
+                    );
                     break;
                   case RequestStatus.failure:
                     child = _ErrorState(

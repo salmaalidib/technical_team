@@ -55,8 +55,14 @@ class ProcessListView extends StatelessWidget {
         switch (_statusOf(state)) {
           case RequestStatus.initial:
           case RequestStatus.loading:
-            child = AppSkeleton.cards(
-                key: const ValueKey('loading'), withFooter: _hasFooter);
+            // الهيكل العظمي يتقلّص رأسياً، وهو هنا داخل Expanded — فبدون
+            // تثبيته أعلى المساحة يطفو في منتصفها بينما تبدأ البطاقات
+            // الحقيقية من الأعلى.
+            child = Align(
+              key: const ValueKey('loading'),
+              alignment: Alignment.topCenter,
+              child: AppSkeleton.cards(withFooter: _hasFooter),
+            );
             break;
           case RequestStatus.failure:
             child = _ErrorState(
@@ -290,7 +296,10 @@ class ProcessListView extends StatelessWidget {
               // "view details" row.
               mainAxisExtent: _hasFooter ? 220 : 175,
             ),
+            // المفتاح مرتبط بموضع البطاقة، فلا تُعاد الحركة عند إعادة
+            // استخدام الخلايا أثناء التمرير.
             itemBuilder: (context, i) => AppEnter(
+              key: ValueKey('enter-$i'),
               index: i,
               child: _card(context, state, i),
             ),
