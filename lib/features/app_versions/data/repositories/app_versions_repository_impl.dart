@@ -31,6 +31,11 @@ class AppVersionsRepositoryImpl implements AppVersionsRepository {
   static Map<String, dynamic> _asMap(dynamic payload) =>
       Map<String, dynamic>.from(payload as Map);
 
+  /// الواجهة تدير إصدارات تطبيق التقني فقط. الخادم يرجع التطبيقات الثلاثة
+  /// (المواطن / الموظف / التقني)، فنُرشِّحها هنا — نقطة واحدة تمرّ منها كل
+  /// الشاشات، فلا يتسرّب تطبيق آخر إلى التبويبات أو إلى الاختيار التلقائي.
+  static const _visibleApplication = 'technical_team';
+
   @override
   Future<Either<Failure, List<ManagedApplication>>> getApplications() async {
     final result = await remote.getApplications();
@@ -40,6 +45,7 @@ class AppVersionsRepositoryImpl implements AppVersionsRepository {
         try {
           final list = _asList(_payload(body))
               .map((e) => ManagedApplication.fromJson(_asMap(e)))
+              .where((app) => app.name == _visibleApplication)
               .toList();
           return Right(list);
         } catch (_) {

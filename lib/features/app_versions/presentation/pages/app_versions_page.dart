@@ -17,7 +17,10 @@ import '../widgets/application_settings_dialog.dart';
 import '../widgets/version_card.dart';
 import '../widgets/version_form_dialog.dart';
 
-/// شاشة إدارة إصدارات التطبيقات الثلاثة — بديل Swagger.
+/// شاشة إدارة إصدارات تطبيق التقني — بديل Swagger.
+///
+/// الخادم يدير ثلاثة تطبيقات (المواطن / الموظف / التقني)، لكن هذه الواجهة
+/// تعرض تطبيق التقني وحده؛ الترشيح يتم في المستودع.
 ///
 /// تتطلب صلاحية `APP_VERSION_MANAGE` (مربوطة بدور «مسؤول تقني»)؛ بدونها يردّ
 /// الخادم 403 وتُعرض رسالة الصلاحية بدل قائمة فارغة غامضة.
@@ -111,7 +114,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'تسجيل إصدار جديد وإدارة التحديثات للتطبيقات الثلاثة',
+                'تسجيل إصدار جديد وإدارة تحديثات تطبيق التقني',
                 textAlign: TextAlign.right,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppColors.textSecondary,
@@ -195,7 +198,8 @@ void _openSettings(BuildContext context, ManagedApplication app) {
   );
 }
 
-/// تبويبات التطبيقات الثلاثة (المواطن / الموظف / التقني).
+/// تبويب التطبيق المعروض (التقني وحده). يبقى ظاهراً لأنه المدخل الوحيد إلى
+/// إعدادات التطبيق عبر الضغطة المطوّلة.
 class _ApplicationTabs extends StatelessWidget {
   const _ApplicationTabs();
 

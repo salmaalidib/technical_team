@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../domain/entities/audit_log_entry.dart';
 import 'audit_log_details_dialog.dart';
@@ -114,6 +115,7 @@ class _HeaderRow extends StatelessWidget {
                     AuditLogsTable._columns[i].title,
                     textDirection: TextDirection.rtl,
                     style: const TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: AppColors.primary,
@@ -235,6 +237,7 @@ class _TextCell extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         textDirection: ltr ? TextDirection.ltr : TextDirection.rtl,
         style: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 13,
           color: AppColors.textPrimary,
         ),
@@ -261,6 +264,7 @@ class _ActionCell extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textDirection: TextDirection.rtl,
           style: const TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,

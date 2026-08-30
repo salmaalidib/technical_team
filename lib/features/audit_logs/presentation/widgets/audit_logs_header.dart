@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/layouts/page_header_row.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../domain/entities/audit_log_entry.dart';
@@ -204,6 +205,7 @@ class _StatusChip extends StatelessWidget {
           label,
           textDirection: TextDirection.rtl,
           style: TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: isSelected ? AppColors.white : AppColors.textSecondary,

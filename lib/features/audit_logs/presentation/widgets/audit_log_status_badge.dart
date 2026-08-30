@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../domain/entities/audit_log_entry.dart';
 
@@ -57,6 +58,7 @@ class AuditLogStatusBadge extends StatelessWidget {
           Text(
             status.label,
             style: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: color,

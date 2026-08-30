@@ -22,7 +22,8 @@ class _NavItem {
 }
 
 const _navItems = <_NavItem>[
-  _NavItem(Icons.home_outlined, 'الرئيسية', '/dashboard'),
+  // الصفحة الرئيسية معلّقة: الدخول يذهب مباشرةً إلى المؤسسات.
+  // _NavItem(Icons.home_outlined, 'الرئيسية', '/dashboard'),
   _NavItem(Icons.apartment_outlined, 'المؤسسات', '/institutions'),
   _NavItem(Icons.folder_outlined, 'الأقسام والدوائر', '/departments'),
   _NavItem(Icons.shield_outlined, 'الأدوار', '/roles'),

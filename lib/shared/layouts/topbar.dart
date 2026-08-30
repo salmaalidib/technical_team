@@ -31,16 +31,6 @@ class AppTopbar extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 300,
-                minWidth: 150,
-              ),
-              child: const _SearchBox(),
-            ),
-          ),
-          const SizedBox(width: 14),
           const _NotificationButton(),
           const Spacer(flex: 2),
           if (!isCompact)
@@ -103,55 +93,6 @@ class _UserInfo extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SearchBox extends StatelessWidget {
-  const _SearchBox();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: TextField(
-        textDirection: TextDirection.rtl,
-        textAlign: TextAlign.right,
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.textPrimary,
-        ),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: AppColors.inputBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.primary),
-          ),
-          hintText: 'بحث...',
-          hintStyle: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 11,
-            horizontal: 12,
-          ),
-        ),
       ),
     );
   }

@@ -71,7 +71,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
-    // الإجباري يقاطع كل شيء آخر — لا دخول إلى /login أو /dashboard قبل التحديث.
+    // الإجباري يقاطع كل شيء آخر — لا دخول إلى /login أو /institutions قبل التحديث.
     if (updateBloc.state.forceUpdateEnabled && updateBloc.state.hasUpdate) {
       context.go('/force-update');
       return;
@@ -97,7 +97,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     context.go(
-      activeOrg.hasActiveOrg ? '/dashboard' : '/select-organization',
+      activeOrg.hasActiveOrg ? '/institutions' : '/select-organization',
     );
 
     // اختياري: يُعرض فوق الوجهة النهائية، بعد استقرار التنقّل، بلا حجب الإقلاع.

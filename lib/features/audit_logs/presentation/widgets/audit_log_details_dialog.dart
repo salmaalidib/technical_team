@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 import '../../domain/entities/audit_log_entry.dart';
@@ -161,6 +162,7 @@ class _Header extends StatelessWidget {
                   auditActionLabel(entry.action),
                   textDirection: TextDirection.rtl,
                   style: const TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -210,6 +212,7 @@ class _Row extends StatelessWidget {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               style: const TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textSecondary,
@@ -223,6 +226,7 @@ class _Row extends StatelessWidget {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               style: const TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
                 fontSize: 13.5,
                 color: AppColors.textPrimary,
               ),
@@ -253,6 +257,7 @@ class _DetailsBlock extends StatelessWidget {
               'التفاصيل',
               textDirection: TextDirection.rtl,
               style: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textSecondary,
@@ -271,7 +276,7 @@ class _DetailsBlock extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                 ),
                 icon: const Icon(Icons.copy_rounded, size: 15),
-                label: const Text('نسخ', style: TextStyle(fontSize: 12.5)),
+                label: const Text('نسخ', style: TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 12.5)),
               ),
           ],
         ),
@@ -289,6 +294,7 @@ class _DetailsBlock extends StatelessWidget {
                   'لا توجد تفاصيل إضافية لهذا السجل.',
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
                     fontSize: 13,
                     color: AppColors.textSecondary,
                   ),

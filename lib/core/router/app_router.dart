@@ -3,7 +3,8 @@ import 'package:technical_team/features/departments/presentation/pages/departmen
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
-import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+// الصفحة الرئيسية معلّقة — الوجهة بعد الـ splash صارت /institutions.
+// import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/institutions/presentation/pages/institutions_page.dart';
 import '../../features/roles/presentation/pages/roles_page.dart';
 import '../../features/type_processes/presentation/pages/type_processes_page.dart';
@@ -76,12 +77,13 @@ class AppRouter {
           );
         },
         routes: [
-          GoRoute(
-            path: '/dashboard',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DashboardPage(),
-            ),
-          ),
+          // معلّقة عمداً: الصفحة الرئيسية موقوفة حالياً.
+          // GoRoute(
+          //   path: '/dashboard',
+          //   pageBuilder: (context, state) => const NoTransitionPage(
+          //     child: DashboardPage(),
+          //   ),
+          // ),
           GoRoute(
             path: '/institutions',
             pageBuilder: (context, state) => const NoTransitionPage(

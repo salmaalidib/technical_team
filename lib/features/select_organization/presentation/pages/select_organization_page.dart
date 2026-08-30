@@ -130,7 +130,7 @@ class _SelectOrganizationPageState extends State<SelectOrganizationPage> {
                 subtitle: org.parentName,
                 onTap: () async {
                   await _cubit.setActive(org);
-                  if (context.mounted) context.go('/dashboard');
+                  if (context.mounted) context.go('/institutions');
                 },
               );
             },

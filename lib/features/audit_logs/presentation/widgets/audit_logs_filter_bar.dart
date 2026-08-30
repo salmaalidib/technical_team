@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../domain/entities/audit_log_entry.dart';
 import '../../domain/entities/audit_log_filter.dart';
@@ -203,6 +204,12 @@ class _AuditLogsFilterBarState extends State<AuditLogsFilterBar> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
+                      // لا يوجد filledButtonTheme في الثيم، فـ FilledButton
+                      // لا يرث Cairo كما ترثه بقية الأزرار.
+                      textStyle: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontWeight: FontWeight.w700,
+                      ),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 22, vertical: 16),
@@ -268,6 +275,7 @@ class _FilterLabel extends StatelessWidget {
         textAlign: TextAlign.right,
         textDirection: TextDirection.rtl,
         style: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 12.5,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondary,
@@ -285,6 +293,7 @@ InputDecoration _fieldDecoration({
   return InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(
+      fontFamily: AppTextStyles.fontFamily,
       fontSize: 13,
       color: AppColors.textSecondary,
     ),
@@ -337,7 +346,7 @@ class _TextFilterField extends StatelessWidget {
           keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
           inputFormatters:
               isNumeric ? [FilteringTextInputFormatter.digitsOnly] : null,
-          style: const TextStyle(fontSize: 13.5),
+          style: const TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 13.5),
           decoration: _fieldDecoration(
             hint: hint,
             icon: Icon(icon, size: 18, color: AppColors.textSecondary),
@@ -380,10 +389,10 @@ class _ActionDropdown extends StatelessWidget {
             icon: const Icon(Icons.bolt_outlined,
                 size: 18, color: AppColors.textSecondary),
           ),
-          style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+          style: const TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 13.5, color: AppColors.textPrimary),
           dropdownColor: AppColors.surface,
           borderRadius: AppRadius.allSm,
-          hint: const Text('كل الأحداث', style: TextStyle(fontSize: 13)),
+          hint: const Text('كل الأحداث', style: TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 13)),
           items: [
             const DropdownMenuItem<String?>(
               value: null,
@@ -425,10 +434,10 @@ class _StatusDropdown extends StatelessWidget {
             icon: const Icon(Icons.flag_outlined,
                 size: 18, color: AppColors.textSecondary),
           ),
-          style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+          style: const TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 13.5, color: AppColors.textPrimary),
           dropdownColor: AppColors.surface,
           borderRadius: AppRadius.allSm,
-          hint: const Text('كل الحالات', style: TextStyle(fontSize: 13)),
+          hint: const Text('كل الحالات', style: TextStyle(fontFamily: AppTextStyles.fontFamily, fontSize: 13)),
           items: [
             const DropdownMenuItem<AuditLogStatus?>(
               value: null,
@@ -492,6 +501,7 @@ class _DateFilterField extends StatelessWidget {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               style: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
                 fontSize: 13.5,
                 color: value == null
                     ? AppColors.textSecondary

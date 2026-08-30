@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/enums/request_status.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/theme/app_dimens.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
@@ -119,6 +120,7 @@ class _ResultsSummary extends StatelessWidget {
           'المعروض: $count سجل',
           textDirection: TextDirection.rtl,
           style: const TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
@@ -148,6 +150,7 @@ class _LoadMoreBar extends StatelessWidget {
                 'لا مزيد من السجلات',
                 textDirection: TextDirection.rtl,
                 style: TextStyle(
+                  fontFamily: AppTextStyles.fontFamily,
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -168,6 +171,12 @@ class _LoadMoreBar extends StatelessWidget {
               foregroundColor: AppColors.white,
               disabledBackgroundColor: AppColors.primary.withValues(alpha: .55),
               disabledForegroundColor: AppColors.white,
+              // لا يوجد filledButtonTheme في الثيم، فـ FilledButton لا يرث
+              // Cairo كما ترثه بقية الأزرار — نضبطه هنا صراحةً.
+              textStyle: const TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                fontWeight: FontWeight.w700,
+              ),
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: AppRadius.allSm),
@@ -295,6 +304,7 @@ class _MessagePanel extends StatelessWidget {
             title,
             textDirection: TextDirection.rtl,
             style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
               fontSize: 17,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -306,6 +316,7 @@ class _MessagePanel extends StatelessWidget {
             textAlign: TextAlign.center,
             textDirection: TextDirection.rtl,
             style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
               fontSize: 13.5,
               height: 1.7,
               color: AppColors.textSecondary,
